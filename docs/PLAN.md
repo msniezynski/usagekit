@@ -1,13 +1,13 @@
 # usagekit implementation plan
 
-Date: 2026-09-23. Owner: Michal. Status: P1 and P2 implemented on the task branch; P3 onwards remain proposals.
+Date: 2026-09-24. Owner: Michal. Status: P1 and P2 approved on main; P3 in progress.
 
 ## 1. Purpose and deployment modes
 
 The owner agreed to own metering with admin composition and existing host ledgers as credit authorities.
 Optional downstream export remains part of that direction.
 The admin must show usage, provider costs and application credit information.
-Implementation details remain proposals. No release, publication or deployment is approved.
+P3 authorizes restricted npm publication of core, store and meter at 0.1.0. Deployment remains outside this work.
 
 | Mode         | Execution                                                | Boundary                                                                |
 | ------------ | -------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -118,9 +118,9 @@ Admin composes `meter.usage` with authorized host balances. Read methods return 
   Units without budgets are recorded unbounded. Snapshot current budget versions and resolved epochs into `budgetEpochs`. Check all bounds atomically; report the first exceeded in deterministic host-policy order.
   Default order: `platform_pool`, `principal`, `group`, `connection`, `access_credential`. Budgets constrain use; host ledgers own balances, holds and charges through the credit bridge. A principal monthly cap is still a constraint.
 - Undispatched reservations expire after five minutes by default; hosts may supply `reservationTtlMs` from 1 ms to one day.
-  `reservationExpiresAt` is immutable. Replay never extends it; dispatch at or after expiry returns `reservation_expired` without granting authority.
+  `reservationExpiresAt` is immutable. Replay never extends it; dispatch at or after expiry atomically releases the reservation and returns `reservation_expired` without granting authority.
   `expireReservations` atomically releases only expired `reserved` operations, preserving version checks and returning budget headroom.
-  Reserve performs overdue cleanup before admission. Server startup and thirty-second sweeps handle idle clients; reads never mutate.
+  Reserve performs one default cleanup batch before admission. Server startup and thirty-second sweeps handle idle clients; reads never mutate.
   Dispatch intent permanently excludes automatic release. Its lease expiry still requires provider evidence recovery.
 - Unknown is not zero. Timeouts and expired leases do not prove no charge.
   Release only undispatched work with version checks. Record late charges and overruns through explicit correction policies.
@@ -269,6 +269,12 @@ Rollback reconciles counters first. Recovery continues for new-system holds and 
 
 ## 6. Open decisions
 
+P3 packaging ships compiled conformance cases without test runner files or source maps.
+Vitest 5 and fast-check 4 are optional peers: adapter-test consumers install them; runtime consumers do not need them.
+Release dry-run proves build, checks and tarball contents on a clean branch. Live release additionally requires main, signed tag and npm authorization.
+P3 uses Apache-2.0 and registry.npmjs.org under the usagekit organization. Private packages become public only after the complete P3 exit gate.
+No host code has been copied into these packages. Host integration must audit authors before moving any source into this repository.
+
 SQLite executes targeted SQL commands inside `BEGIN IMMEDIATE`, with version/state predicates and incremental `budget_usage` changes.
 Reads use DEFERRED transactions without writes. Signed cursor pages use an immutable accounting-event watermark and expire after five minutes.
 The scaling gate compares reserve, intent and settle before and after 5000 records: 25 prepares, 8 returned rows, 12 changed rows.
@@ -300,7 +306,7 @@ Renewal has no command journal; a later retry can extend expiry without changing
 SQLite expires cursor snapshots after five minutes. The memory reference currently retains snapshots indefinitely.
 P2 wire schemas validate fields explicitly. Empty optional `Receipt.evidenceRef` is accepted by Meter and HTTP.
 
-P1 invariants distinguish lease renewal from versioned accounting mutations. Renewal preserves operation version.
+Version invariants distinguish renewal from accounting mutations. Renewal preserves version; an expired intent denial also performs a versioned release.
 Dispatch replay always refuses another grant. Settlement, correction and release replay return stored outcomes.
 Admission never oversubscribes a blocking limit. A later measured overrun is recorded and blocks further admission.
 Warn-only bounds never override another blocking bound. Corrections and recovery may preserve the lifecycle state.
@@ -319,18 +325,18 @@ Without it, resource-scoped reads are forbidden. Store has no host ownership por
 P1 decisions: reserve rejects missing bounded estimate units with `missing_estimate_unit`.
 Successful reservations carry `warnings` for warn-only bounds.
 
-| Decision                                | Proposed default                                               | Gate                      |
-| --------------------------------------- | -------------------------------------------------------------- | ------------------------- |
-| Runtime validation and rounding         | Exact units, explicit adapter ranges, reject invalid scales    | P1                        |
-| Unknown exposure and overrun            | Conservative reservations; recorded correction or debt         | P1, host policy before P6 |
-| Local key custody                       | Encrypted vault, authenticated loopback API, explicit unlock   | P2                        |
-| Admin permission and retention          | Host scopes, content-free evidence, finite replay horizon      | P3                        |
-| D1 authority and joint budgets          | Prove atomic commands or DO ownership                          | P5                        |
-| OpenSearch Incognito                    | Disclosed minimal accounting proposed, not yet approved        | P5                        |
-| Credit coordination                     | Shared transaction where possible; durable host saga otherwise | P6                        |
-| Public license, organization and domain | Undecided; local and private                                   | Separate owner decision   |
+| Decision                                | Proposed default                                               | Gate                        |
+| --------------------------------------- | -------------------------------------------------------------- | --------------------------- |
+| Runtime validation and rounding         | Exact units, explicit adapter ranges, reject invalid scales    | P1                          |
+| Unknown exposure and overrun            | Conservative reservations; recorded correction or debt         | P1, host policy before P6   |
+| Local key custody                       | Encrypted vault, authenticated loopback API, explicit unlock   | P2                          |
+| Admin permission and retention          | Host scopes, content-free evidence, finite replay horizon      | P3                          |
+| D1 authority and joint budgets          | Prove atomic commands or DO ownership                          | P5                          |
+| OpenSearch Incognito                    | Disclosed minimal accounting proposed, not yet approved        | P5                          |
+| Credit coordination                     | Shared transaction where possible; durable host saga otherwise | P6                          |
+| Public license, organization and domain | Apache-2.0, npm organization usagekit; domain undecided        | Public access after P3 exit |
 
-No remote, push or publication is authorized. Squash integration follows the README.
+Restricted npm publication is authorized through the release allow-list. GitHub repository target remains unspecified. Squash integration follows the README.
 P1 proves reference-store rules and embedded Meter behavior. It does not prove persistent adapter durability.
 
 ## 7. Appendix: Later, optional

@@ -3,6 +3,7 @@ import type { Operation, Receipt, OperationRef, ReserveInput } from "@usagekit/c
 import { encode, decode, integer } from "./serialize.js";
 import { key, effective } from "./util.js";
 export type OperationRow = {
+  principal: string;
   reservation_expires_at: string;
   operation_pk: string;
   operation_json: string;
@@ -83,8 +84,7 @@ export function find(
 ): { op: Operation; row: OperationRow } | null {
   const row = operationRow(db, ref.namespace, ref.operationId);
   if (!row) return null;
-  const input = decode<ReserveInput>(row.operation_json);
-  return input.scope.principal === ref.principal ? { op: hydrate(db, row), row } : null;
+  return row.principal === ref.principal ? { op: hydrate(db, row), row } : null;
 }
 export function appendReceipt(db: Database.Database, op: Operation, r: Receipt): void {
   const pk = key(op.scope.namespace, op.operationId),

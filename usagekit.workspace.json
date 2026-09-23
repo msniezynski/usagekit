@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "status": "local-scaffold",
-  "publication": "blocked",
+  "status": "p3-preparation",
+  "publication": "restricted-release",
   "projects": [
     {
       "name": "@usagekit/core",
@@ -85,5 +85,6 @@
     "@usagekit/client",
     "@usagekit/server",
     "@usagekit/store-sqlite"
-  ]
+  ],
+  "publishable": ["@usagekit/core", "@usagekit/store", "@usagekit/meter"]
 }

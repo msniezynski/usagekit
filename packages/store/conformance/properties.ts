@@ -32,7 +32,7 @@ export function propertyTests(factory: StoreFactory) {
           async (k, sequence) => {
             const f = await factory();
             try {
-              const i = input(),
+              const i = input({ reservationTtlMs: 1000 }),
                 r = await f.store.reserve(i);
               if (r.outcome !== "reserved") throw new Error("fixture");
               let grants = 0;
@@ -123,15 +123,16 @@ export function propertyTests(factory: StoreFactory) {
                     });
                 }
                 const after = (await f.store.getOperation(ref(i)))!;
-                const accepted =
+                const mutated =
                   result &&
                   typeof result === "object" &&
-                  (("granted" in result && result.granted) ||
+                  (("reason" in result && result.reason === "reservation_expired") ||
+                    ("granted" in result && result.granted) ||
                     ("claimed" in result && result.claimed) ||
                     ("outcome" in result &&
                       ["settled", "released"].includes(String(result.outcome))));
                 expect(grants).toBeLessThanOrEqual(1);
-                expect(after.version).toBe(before.version + (accepted ? 1 : 0));
+                expect(after.version).toBe(before.version + (mutated ? 1 : 0));
                 expect(after.receipts.length).toBeGreaterThanOrEqual(before.receipts.length);
                 const allowed: Record<Operation["state"], Operation["state"][]> = {
                   reserved: ["reserved", "dispatch_intended", "released"],

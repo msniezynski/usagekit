@@ -5,8 +5,9 @@ costs and application credits. Both BYOK and platform-funded keys are in scope.
 Host A uses Postgres and Prisma. Host B adds team-owned connections.
 Host C targets Cloudflare D1. A local server shares the embedded Meter contract.
 
-**Status: P1 and P2 implemented on the same task branch for review. Main is unchanged.**
-All packages are private. No remote, publication, license or organization is selected.
+**Status: P1 and P2 approved on main. P3 packaging and host integration are in progress.**
+Licensed under Apache-2.0. Core, Store and Meter target `@usagekit` on registry.npmjs.org at version 0.1.0.
+Initial publication is restricted. Other workspaces remain private. See [consuming packages](docs/CONSUMING.md).
 
 ## Start here
 
@@ -51,9 +52,9 @@ This README is the single source of workflow rules. Keep one root README.
    Main contains stable, reviewed, explicitly owner-approved versions only.
 6. Passing checks or implementing work does not authorize promotion, push, publication, deployment or release.
    Agents must never supply owner approval themselves.
-7. This phase is local-only. Do not add remotes, create GitHub repositories/PRs, push,
-   publish npm packages, deploy or choose the final organization/license without
-   a new explicit instruction. Future organizations are intentionally unspecified.
+7. P3 authorizes restricted npm publication of core, store and meter through `npm run release`.
+   Public access follows the P3 exit gate. GitHub hosting still requires an explicit repository target.
+   Do not publish other workspaces or deploy services without separate authorization.
 8. Never bypass hooks. Fix the cause of a failure. Local guards are not a tamper-proof security boundary.
 
 The approved bootstrap is on local `main`. New work stays on task branches for review.
@@ -102,7 +103,7 @@ Full tests run through `npm run check` and during approved main promotion.
 Conformance runs unchanged against memory, embedded Meter, SQLite and the remote Meter over HTTP.
 The adapter converts typed validation failures to Store exceptions; other outcomes stay unchanged.
 Memory and remote-memory skip `durable` and `rollingWindows`. SQLite skips only `rollingWindows`. Each run reports its skips.
-There is no pre-push hook. Private package flags and prepublish scripts still block npm publication.
+There is no pre-push hook. The release allow-list and publish guard restrict publication to the approved three packages.
 
 ## Workspace layout
 
@@ -121,7 +122,7 @@ There is no pre-push hook. Private package flags and prepublish scripts still bl
 
 Future packages are listed in the [plan](docs/PLAN.md#4-package-grid), without placeholder directories.
 Host schema mappings stay in host repositories. Shared adapters provide mechanics only.
-Names under `@usagekit` remain provisional local identifiers. They claim no public ownership.
+The npm organization is `usagekit`. Registry authentication belongs outside consumer repositories.
 
 Web projects extend `tsconfig.base.json`; Node projects extend `tsconfig.node.json`.
 Checks reject unknown directories, dependency cycles and imports bypassing package boundaries.
@@ -166,5 +167,6 @@ three-consumer validation. The ignore list otherwise covers dependencies, genera
 output, environment files, OS metadata and local worktrees. Source, lockfile, hooks,
 tests and build configuration belong in Git.
 
-No license, public organization, registry ownership or release version is decided
-by this scaffold. Review the proposed boundaries and ADRs before implementation.
+The root [LICENSE](LICENSE) and [NOTICE](NOTICE) ship with each published package.
+Live release requires clean main, a verified signed version tag, passing checks and tarball inspection.
+`npm run release -- --dry-run` verifies a clean task branch without publishing or asserting that tag and registry gates passed.

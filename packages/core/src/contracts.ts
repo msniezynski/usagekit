@@ -118,7 +118,9 @@ export type Receipt = {
 export type ReserveInput = {
   /** Durable dispatch identity. Reuse with different semantics is a conflict. */
   operationId: string;
-  /** Undispatched lifetime, 1..86400000 ms; defaults to five minutes. Replay never extends it. */
+  /** Undispatched lifetime, 1..86400000 ms; defaults to five minutes. Replay never extends it.
+   * Queued hosts must take dispatch intent at enqueue and carry the lease, or cover queue delay with this lifetime.
+   */
   reservationTtlMs?: number;
   scope: Scope;
   fundingSource: FundingSource;
@@ -417,6 +419,8 @@ export type ExpireReservationsResult =
  * One interface for embedded and remote implementations.
  * All reads require verified server context and return forbidden for unauthorized scope.
  * Meter validates inputs and resolves host policy; Store repeats all concurrent checks atomically.
+ * Embedded hosts must schedule expireReservations themselves; the local server does so every thirty seconds.
+ * Admission sweeps at most one default batch. Maintenance owns the remaining expired backlog.
  */
 export interface Meter {
   expireReservations(input: ExpireReservationsInput): Promise<ExpireReservationsResult>;

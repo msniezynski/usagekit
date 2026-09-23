@@ -1,9 +1,8 @@
 {
   "name": "@usagekit/meter",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "description": "Admission, reservations, settlement and recovery.",
   "exports": {
     ".": {
@@ -12,15 +11,24 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "!dist/**/*.tsbuildinfo",
+    "LICENSE",
+    "NOTICE"
   ],
   "scripts": {
     "build": "tsc -b",
     "typecheck": "tsc -b",
-    "prepublishOnly": "node ../../scripts/deny-publish.mjs"
+    "prepublishOnly": "node ../../scripts/publish-guard.mjs",
+    "prepack": "node ../../scripts/package-license.mjs"
   },
   "dependencies": {
-    "@usagekit/core": "0.0.0",
-    "@usagekit/store": "0.0.0"
+    "@usagekit/core": "0.1.0",
+    "@usagekit/store": "0.1.0"
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://registry.npmjs.org/"
   }
 }

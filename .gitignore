@@ -8,3 +8,7 @@ coverage/
 !.env.example
 .wt/
 /docs/adr/
+
+packages/*/LICENSE
+packages/*/NOTICE
+packages/store/dist-conformance/

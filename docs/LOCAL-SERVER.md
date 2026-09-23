@@ -104,8 +104,8 @@ Restart preserves operations, receipts, command replays, reservations and expire
 A new worker claims expired work through `Meter.claimForRecovery`, then settles from provider evidence.
 Recovery never grants dispatch again. No provider evidence worker runs automatically in P2.
 Only undispatched reservations expire: five minutes by default, with an SDK override from 1 ms to one day.
-Dispatch after the reservation deadline fails. Replay never extends the deadline or grants another call.
-Startup, thirty-second sweeps and admission release overdue `reserved` operations and restore headroom.
+Dispatch after the reservation deadline atomically releases the hold and fails. Replay never extends the deadline or grants another call.
+Startup and thirty-second sweeps release overdue `reserved` operations. Admission cleans at most one default batch.
 `usagekit report expire --json` runs one maintenance batch; repeat while `hasMore` is true.
 Dispatch-intended work never expires into release, even when its dispatch lease expires.
 SQLite commands update one operation and its budget counters. Reads use read-only transactions and signed snapshot cursors.

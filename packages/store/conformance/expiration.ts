@@ -35,6 +35,7 @@ export function expirationTests(factory: StoreFactory) {
         r = await f.store.reserve(i);
       if (r.outcome !== "reserved") throw new Error("fixture");
       await f.store.reserve(input({ reservationTtlMs: 1 }));
+      await f.store.reserve(input({ reservationTtlMs: 1 }));
       f.clock.advance(1);
       expect(
         await f.store.markDispatchIntent({
@@ -45,7 +46,7 @@ export function expirationTests(factory: StoreFactory) {
       ).toMatchObject({
         granted: false,
         reason: "reservation_expired",
-        operation: { state: "reserved", version: 1 },
+        operation: { state: "released", version: 2 },
       });
       expect(await f.store.expireReservations({ namespace: "test", limit: 1 })).toEqual({
         outcome: "expired",
@@ -93,6 +94,45 @@ export function expirationTests(factory: StoreFactory) {
       ]);
       expect(results.map((r) => ("count" in r ? r.count : -1)).sort()).toEqual([0, 1]);
       expect(await f.store.getOperation(ref(other))).toMatchObject({ state: "reserved" });
+    });
+    test("admission sweeps at most one default batch of expired reservations", async () => {
+      for (let n = 0; n < 105; n++)
+        await f.store.reserve(input({ operationId: `expired-${n}`, reservationTtlMs: 1 }));
+      f.clock.advance(1);
+      await f.store.reserve(input());
+      expect(await f.store.expireReservations({ namespace: "test" })).toEqual({
+        outcome: "expired",
+        count: 5,
+        hasMore: false,
+      });
+    });
+    test("expired intent releases its own hold atomically without sweeping another operation", async () => {
+      f.budgets.push(budget({ limit: quantity(2n) }));
+      const i = input({ reservationTtlMs: 1 }),
+        r = await f.store.reserve(i);
+      if (r.outcome !== "reserved") throw new Error("fixture");
+      const other = input({ reservationTtlMs: 1 });
+      await f.store.reserve(other);
+      f.clock.advance(1);
+      expect(
+        await f.store.markDispatchIntent({
+          ...command(r.operation),
+          holder: "h",
+          leaseTtlMs: 1000,
+        }),
+      ).toMatchObject({
+        granted: false,
+        reason: "reservation_expired",
+        operation: { state: "released", version: 2 },
+      });
+      expect(await f.store.getOperation(ref(other))).toMatchObject({ state: "reserved" });
+      expect(
+        await f.store.applicableBudgets({
+          scope: i.scope,
+          surface: i.surface,
+          units: ["requests"],
+        }),
+      ).toMatchObject([{ reserved: quantity(1n), remaining: quantity(1n) }]);
     });
     test("invalid lifetimes and batch sizes are rejected", async () => {
       for (const ttl of [0, -1, 86400001, 1.5])

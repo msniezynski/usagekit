@@ -146,6 +146,11 @@ test("Git rejects actual two-parent commits and coauthor messages on task refs",
   assert.throws(() => g(["update-ref", "refs/heads/feat/attribution", coauthor]), /attribution/);
 });
 
+test("publish allow-list guard rejects direct publication without a release session", () => {
+  const guard = fileURLToPath(new URL("../publish-guard.mjs", import.meta.url));
+  assert.throws(() => run(process.execPath, [guard]), /Publish only through/);
+});
+
 test("publication guard fails without contacting a service", () => {
   const deny = fileURLToPath(new URL("../deny-publish.mjs", import.meta.url));
   assert.throws(() => run(process.execPath, [deny]), /Publication is disabled/);

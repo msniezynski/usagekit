@@ -147,6 +147,24 @@ export function commands(
     log(i, kind, result);
     return result;
   };
+  const releaseExpired = (op: Operation) => {
+    const before = structuredClone(op);
+    op.state = "released";
+    touch(op);
+    mutate(before, op, null, true);
+    log(
+      {
+        namespace: op.scope.namespace,
+        principal: op.scope.principal,
+        operationId: op.operationId,
+        expectedVersion: before.version,
+        commandId: crypto.randomUUID(),
+        reason: "reservation_expired",
+      },
+      "release",
+      { outcome: "released", replayed: false, operation: op },
+    );
+  };
   const expire = (i: ExpireReservationsInput) => {
     const limit = i.limit ?? 100;
     if (!i.namespace?.trim() || !Number.isInteger(limit) || limit < 1 || limit > 1000)
@@ -162,23 +180,8 @@ export function commands(
           principal: row.principal,
           operationId: row.operation_id,
         })!,
-        op = found.op,
-        before = structuredClone(op);
-      op.state = "released";
-      touch(op);
-      mutate(before, op, null, true);
-      log(
-        {
-          namespace: i.namespace,
-          principal: row.principal,
-          operationId: row.operation_id,
-          expectedVersion: before.version,
-          commandId: crypto.randomUUID(),
-          reason: "reservation_expired",
-        },
-        "release",
-        { outcome: "released", replayed: false, operation: op },
-      );
+        op = found.op;
+      releaseExpired(op);
     }
     return {
       outcome: "expired" as const,
@@ -195,9 +198,7 @@ export function commands(
         i.estimate.forEach(validateQuantity);
         if (new Set(i.estimate.map((q) => q.unit)).size !== i.estimate.length)
           throw new InvalidInput("estimate", "duplicate unit");
-        while (expire({ namespace: i.scope.namespace, limit: 1000 }).hasMore) {
-          /* indexed expired work only */
-        }
+        expire({ namespace: i.scope.namespace });
         const existing = operationRow(db, i.scope.namespace, i.operationId);
         if (existing) {
           const op = hydrate(db, existing);
@@ -265,8 +266,10 @@ export function commands(
         if (op.state === "released") return { granted: false, reason: "released", operation: op };
         if (op.state !== "reserved")
           return { granted: false, reason: "already_dispatched", operation: op };
-        if (Date.parse(op.reservationExpiresAt) <= clock.now().getTime())
+        if (Date.parse(op.reservationExpiresAt) <= clock.now().getTime()) {
+          releaseExpired(op);
           return { granted: false, reason: "reservation_expired", operation: op };
+        }
         if (op.version !== i.expectedVersion)
           return { granted: false, reason: "version_conflict", operation: op };
         const before = structuredClone(op);

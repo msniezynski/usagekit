@@ -1,30 +1,53 @@
 {
   "name": "@usagekit/store",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "description": "Atomic store commands, reference store and conformance tests.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./conformance": "./conformance/index.ts",
+    "./conformance": {
+      "types": "./dist/conformance/index.d.ts",
+      "import": "./dist/conformance/index.js"
+    },
     "./reference": {
       "types": "./dist/reference.d.ts",
       "import": "./dist/reference.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "!dist/**/*.tsbuildinfo",
+    "LICENSE",
+    "NOTICE"
   ],
   "scripts": {
     "build": "tsc -b",
     "typecheck": "tsc -b",
-    "prepublishOnly": "node ../../scripts/deny-publish.mjs"
+    "prepublishOnly": "node ../../scripts/publish-guard.mjs",
+    "prepack": "node ../../scripts/package-license.mjs"
   },
   "dependencies": {
-    "@usagekit/core": "0.0.0"
+    "@usagekit/core": "0.1.0"
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "peerDependencies": {
+    "vitest": ">=5.0.1 <6",
+    "fast-check": ">=4.10.2 <5"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    },
+    "fast-check": {
+      "optional": true
+    }
   }
 }

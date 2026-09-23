@@ -8,9 +8,7 @@ export function reserve(s: State, i: ReserveInput, policy?: AdmissionPolicy): Re
   i.estimate.forEach(validateQuantity);
   if (new Set(i.estimate.map((q) => q.unit)).size !== i.estimate.length)
     throw new InvalidInput("estimate", "duplicate unit");
-  while (expireReservations(s, { namespace: i.scope.namespace }).hasMore) {
-    /* drain expired holds before admission */
-  }
+  expireReservations(s, { namespace: i.scope.namespace });
   const k = key(i.scope.namespace, i.operationId),
     existing = s.operations.get(k);
   if (existing)
@@ -81,8 +79,15 @@ export function intent(s: State, i: DispatchIntentInput): DispatchGrant {
   if (op.state === "released") return { granted: false, reason: "released", operation: copy(op) };
   if (op.state !== "reserved")
     return { granted: false, reason: "already_dispatched", operation: copy(op) };
-  if (Date.parse(op.reservationExpiresAt) <= s.clock.now().getTime())
+  if (Date.parse(op.reservationExpiresAt) <= s.clock.now().getTime()) {
+    release(s, {
+      ...i,
+      commandId: crypto.randomUUID(),
+      expectedVersion: op.version,
+      reason: "reservation_expired",
+    });
     return { granted: false, reason: "reservation_expired", operation: copy(op) };
+  }
   if (op.version !== i.expectedVersion)
     return { granted: false, reason: "version_conflict", operation: copy(op) };
   op.lease = {

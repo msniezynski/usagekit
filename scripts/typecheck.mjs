@@ -9,4 +9,5 @@ run(["-b"]);
 for (const project of JSON.parse(readFileSync("usagekit.workspace.json", "utf8")).projects) {
   run(["-p", `${project.path}/tsconfig.test.json`]);
 }
+await import("./build-conformance.mjs");
 await import("./copy-assets.mjs");

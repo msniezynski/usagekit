@@ -1,14 +1,14 @@
 import { describe, afterAll } from "vitest";
 import type { StoreFactory, StoreCapabilities } from "./factory.js";
-import { expirationTests } from "./expiration.test.js";
-import { reserveTests } from "./reserve.test.js";
-import { admissionTests } from "./admission.test.js";
-import { dispatchTests } from "./dispatch.test.js";
-import { authorityTests } from "./authority.test.js";
-import { recoveryTests } from "./recovery.test.js";
-import { readsTests } from "./reads.test.js";
-import { propertyTests } from "./properties.test.js";
-import { capabilityTests } from "./capabilities.test.js";
+import { expirationTests } from "./expiration.js";
+import { reserveTests } from "./reserve.js";
+import { admissionTests } from "./admission.js";
+import { dispatchTests } from "./dispatch.js";
+import { authorityTests } from "./authority.js";
+import { recoveryTests } from "./recovery.js";
+import { readsTests } from "./reads.js";
+import { propertyTests } from "./properties.js";
+import { capabilityTests } from "./capabilities.js";
 export function runStoreConformance(factory: StoreFactory, capabilities: StoreCapabilities) {
   describe("store conformance", () => {
     reserveTests(factory);

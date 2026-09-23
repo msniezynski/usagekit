@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -19,7 +19,7 @@
     "prepublishOnly": "node ../../scripts/deny-publish.mjs"
   },
   "dependencies": {
-    "@usagekit/core": "0.0.0"
+    "@usagekit/core": "0.1.0"
   },
   "devDependencies": {
     "@usagekit/http": "0.0.0"

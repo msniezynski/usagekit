@@ -5,14 +5,21 @@ import { git } from "./lib/git.mjs";
 import { filesUnder, readJson, validateGraph, validateImports } from "./lib/workspace.mjs";
 import { satisfiesRuntimeRange } from "./lib/runtime.mjs";
 import { checkPrivateTerms } from "./lib/private-terms.mjs";
+import { publishable } from "./lib/release.mjs";
+import { checkPackages } from "./check-packages.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 process.chdir(root);
 const workspace = readJson("usagekit.workspace.json");
 validateGraph(workspace.projects);
 const rootManifest = readJson("package.json");
-if (rootManifest.private !== true || workspace.publication !== "blocked")
-  throw new Error("Local-only publication guard changed.");
+if (
+  rootManifest.private !== true ||
+  workspace.publication !== "restricted-release" ||
+  JSON.stringify(workspace.publishable) !== JSON.stringify(publishable) ||
+  rootManifest.license !== "Apache-2.0"
+)
+  throw new Error("Publication allow-list or root identity changed.");
 if (git(["ls-files", "--", "docs/adr"]))
   throw new Error("ADR files must remain untracked, including force-added files.");
 checkPrivateTerms(root);
@@ -35,14 +42,22 @@ for (const project of workspace.projects) {
   if (!base || resolve(project.path, config.extends ?? "") !== resolve(base))
     throw new Error(`Runtime config mismatch: ${project.path} must extend ${base}.`);
   const manifest = readJson(`${project.path}/package.json`);
+  const released = publishable.includes(project.name);
   if (
     manifest.name !== project.name ||
-    manifest.private !== true ||
-    manifest.license !== "UNLICENSED"
+    (released ? manifest.private === true : manifest.private !== true) ||
+    manifest.license !== "Apache-2.0" ||
+    (released &&
+      (manifest.version !== "0.1.0" ||
+        manifest.publishConfig?.access !== "restricted" ||
+        manifest.sideEffects !== false))
   ) {
     throw new Error(`Invalid local package identity/publication guard: ${project.path}`);
   }
-  if (manifest.scripts?.prepublishOnly !== "node ../../scripts/deny-publish.mjs")
+  if (
+    manifest.scripts?.prepublishOnly !==
+    `node ../../scripts/${released ? "publish-guard" : "deny-publish"}.mjs`
+  )
     throw new Error(`Missing publish guard in ${project.path}`);
   const deps = {
     ...manifest.dependencies,
@@ -53,7 +68,8 @@ for (const project of workspace.projects) {
     if (
       name.startsWith("@usagekit/") &&
       ((!project.allows.includes(name) && !(project.typeAllows ?? []).includes(name)) ||
-        version !== "0.0.0")
+        version !==
+          readJson(`${workspace.projects.find((p) => p.name === name)?.path}/package.json`).version)
     ) {
       throw new Error(`Disallowed workspace dependency in ${project.name}: ${name}`);
     }
@@ -74,6 +90,7 @@ for (const project of workspace.projects) {
 const readmes = filesUnder(root).filter((f) => /(^|\/)readme\.md$/i.test(f));
 if (readmes.length !== 1 || readmes[0] !== resolve("README.md"))
   throw new Error("Keep one root README.md.");
+checkPackages({ requireBuild: false });
 console.log(
-  `Workspace boundaries verified: ${workspace.projects.length} private projects, runtime configs, one README, no tracked ADRs.`,
+  `Workspace boundaries verified: ${workspace.projects.length} projects, publication allow-list, runtime configs, one README, no tracked ADRs.`,
 );
