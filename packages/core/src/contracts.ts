@@ -1,3 +1,5 @@
+export type ValidationFailure = { outcome: "invalid"; field: string; reason: string };
+
 /** Exact USD units: 1 unit = 1/10000 cent. */
 export type Money = { units: bigint; currency: "USD" };
 
@@ -116,6 +118,8 @@ export type Receipt = {
 export type ReserveInput = {
   /** Durable dispatch identity. Reuse with different semantics is a conflict. */
   operationId: string;
+  /** Undispatched lifetime, 1..86400000 ms; defaults to five minutes. Replay never extends it. */
+  reservationTtlMs?: number;
   scope: Scope;
   fundingSource: FundingSource;
   /** Platform pools this operation draws from, when the provider key is platform-funded. */
@@ -132,7 +136,9 @@ export type ReserveInput = {
   parentOperationId?: string;
 };
 
+/** Expiry fences dispatch. Explicit release or expiry maintenance changes state; reads never mutate. */
 export type Operation = ReserveInput & {
+  reservationExpiresAt: string;
   state: LifecycleState;
   version: number;
   createdAt: string;
@@ -156,8 +162,20 @@ export type Operation = ReserveInput & {
  * Budget denial returns AllowanceExceeded data, not an expected-outcome exception.
  */
 export type ReserveResult =
-  | { outcome: "reserved"; replayed: false; operation: Operation }
-  | { outcome: "reserved"; replayed: true; operation: Operation }
+  | ValidationFailure
+  | { outcome: "invalid"; reason: "missing_estimate_unit"; unit: string; operation: null }
+  | {
+      outcome: "reserved";
+      replayed: false;
+      operation: Operation;
+      warnings: readonly AllowanceExceeded[];
+    }
+  | {
+      outcome: "reserved";
+      replayed: true;
+      operation: Operation;
+      warnings: readonly AllowanceExceeded[];
+    }
   | { outcome: "exceeded"; exceeded: AllowanceExceeded; operation: null }
   | { outcome: "conflict"; reason: "semantic_mismatch"; operation: Operation };
 
@@ -181,11 +199,17 @@ export type Lease = { leaseId: string; holder: string; expiresAt: string };
  * Neither replay nor lease expiry grants another upstream call.
  */
 export type DispatchGrant =
+  | ValidationFailure
   | { granted: true; operation: Operation; lease: Lease }
   | {
       granted: false;
-      operation: Operation;
-      reason: "already_dispatched" | "version_conflict" | "not_reserved" | "released";
+      operation: Operation | null;
+      reason:
+        | "already_dispatched"
+        | "version_conflict"
+        | "not_reserved"
+        | "released"
+        | "reservation_expired";
     };
 
 export type DispatchIntentInput = OperationCommand & {
@@ -193,6 +217,11 @@ export type DispatchIntentInput = OperationCommand & {
   holder: string;
   leaseTtlMs: number;
 };
+/**
+ * No command journal or commandId. Renewal uses max(current expiry, now + TTL).
+ * Repeating at the same clock instant is idempotent; a later retry can extend expiry.
+ * It never shortens the lease, changes the operation version, or regrants dispatch.
+ */
 export type LeaseRenewalInput = OperationRef & { leaseId: string; leaseTtlMs: number };
 
 /**
@@ -200,6 +229,7 @@ export type LeaseRenewalInput = OperationRef & { leaseId: string; leaseTtlMs: nu
  * A rejected holder must stop work and hand over to recovery.
  */
 export type LeaseRenewal =
+  | ValidationFailure
   | { renewed: true; lease: Lease }
   | { renewed: false; reason: "expired" | "not_holder" | "not_active" };
 
@@ -212,6 +242,7 @@ export type RecoveryClaimInput = OperationRef & { holder: string; leaseTtlMs: nu
  * idempotency evidence, then settles, corrects, or leaves pending uncertain exposure.
  */
 export type RecoveryClaim =
+  | ValidationFailure
   | { claimed: true; operation: Operation; lease: Lease }
   | {
       claimed: false;
@@ -222,8 +253,10 @@ export type RecoveryClaim =
 /**
  * Lease authority requires an active dispatch lease held by the caller.
  * Recovery authority requires the active lease issued by claimForRecovery.
- * Late evidence requires host authorization, pending or settled state, and no active
- * lease. The store records source. This path needs no dispatch lease.
+ * Late evidence requires host authorization and no active lease. Settle accepts pending
+ * only; correcting settled work requires replacesReceiptId and reason. Every new command
+ * checks expectedVersion. Identical successful replays return the recorded result.
+ * The store records source. This path needs no dispatch lease.
  */
 export type Authority =
   | { kind: "lease"; leaseId: string }
@@ -250,6 +283,7 @@ export type CorrectionInput = OperationCommand & {
  * Successful accounting may retain pending state when exposure remains unknown.
  */
 export type SettleResult =
+  | ValidationFailure
   | { outcome: "settled"; replayed: boolean; operation: Operation }
   | {
       outcome: "rejected";
@@ -259,16 +293,17 @@ export type SettleResult =
         | "version_conflict"
         | "invalid_state"
         | "receipt_conflict";
-      operation: Operation;
+      operation: Operation | null;
     };
 
 /** Identical successful command replay returns the stored result with replayed: true. */
 export type ReleaseResult =
+  | ValidationFailure
   | { outcome: "released"; replayed: boolean; operation: Operation }
   | {
       outcome: "rejected";
       reason: "not_reserved" | "version_conflict";
-      operation: Operation;
+      operation: Operation | null;
     };
 
 /** Requested data scope only; this is not authorization. Pool reads follow AccessContext pool rules. */
@@ -283,7 +318,7 @@ export type UsageScope =
  * HTTP builds this context from authentication, never the request body or query string.
  * Namespace must match. Principal and group scopes require their corresponding
  * readable list or "*". Connection and access-credential scopes require a readable
- * owning principal or group: Store resolves ownership, Meter checks authorization.
+ * owning principal or group: the host resolver supplies ownership to Meter for authorization.
  * A pool scope requires readablePools membership, "*", or canManageBudgets.
  */
 export type AccessContext = {
@@ -358,7 +393,10 @@ export type BudgetStatus = {
 };
 
 /** A scope wider than AccessContext is forbidden; never silently widen or narrow it. */
-export type ReadResult<T> = { outcome: "ok"; value: T } | { outcome: "forbidden" };
+export type ReadResult<T> =
+  | ValidationFailure
+  | { outcome: "ok"; value: T }
+  | { outcome: "forbidden" };
 
 /** Data-only budget denial. A P1 implementation may wrap it in a runtime error class. */
 export interface AllowanceExceeded {
@@ -369,12 +407,19 @@ export interface AllowanceExceeded {
   readonly resetsAt: string | null;
 }
 
+/** Trusted maintenance command. Host authorizes namespace-wide cleanup; no provider call or charge is undone. */
+export type ExpireReservationsInput = { namespace: string; limit?: number };
+export type ExpireReservationsResult =
+  | ValidationFailure
+  | { outcome: "expired"; count: number; hasMore: boolean };
+
 /**
  * One interface for embedded and remote implementations.
  * All reads require verified server context and return forbidden for unauthorized scope.
  * Meter validates inputs and resolves host policy; Store repeats all concurrent checks atomically.
  */
 export interface Meter {
+  expireReservations(input: ExpireReservationsInput): Promise<ExpireReservationsResult>;
   reserve(input: ReserveInput): Promise<ReserveResult>;
   markDispatchIntent(input: DispatchIntentInput): Promise<DispatchGrant>;
   renewLease(input: LeaseRenewalInput): Promise<LeaseRenewal>;
@@ -393,3 +438,7 @@ export interface Meter {
     query: ApplicableBudgetsQuery,
   ): Promise<ReadResult<readonly BudgetStatus[]>>;
 }
+
+/** Trusted host admission policy; Store applies order in the atomic command. */
+export type AdmissionPolicy = { budgetOrder: readonly BudgetScope["kind"][] };
+export type BudgetOwner = Extract<BudgetScope, { kind: "principal" | "group" }>;

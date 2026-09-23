@@ -1,0 +1,120 @@
+import { schemas, responses } from "./schemas/index.js";
+/** Translate the Valibot schema graph, including strict object and decimal validation. */
+function jsonSchema(s: any): Record<string, unknown> {
+  if (s.pipe) {
+    const [base, ...actions] = s.pipe;
+    const out = jsonSchema({ ...base, pipe: undefined });
+    for (const a of actions) {
+      if (a.type === "regex") out.pattern = a.requirement.source;
+      if (a.type === "integer") out.type = "integer";
+      if (a.type === "min_value") out.minimum = a.requirement;
+      if (a.type === "max_value") out.maximum = a.requirement;
+      if (a.type === "min_length") out.minLength = a.requirement;
+      if (a.type === "iso_timestamp") out.format = "date-time";
+      if (a.type === "ends_with") out.pattern = `${a.requirement}$`;
+    }
+    return out;
+  }
+  switch (s.type) {
+    case "string":
+    case "number":
+    case "boolean":
+    case "null":
+      return { type: s.type };
+    case "literal":
+      return { const: s.literal };
+    case "picklist":
+      return { enum: s.options };
+    case "optional":
+      return jsonSchema(s.wrapped);
+    case "nullable":
+      return { anyOf: [jsonSchema(s.wrapped), { type: "null" }] };
+    case "array":
+      return { type: "array", items: jsonSchema(s.item) };
+    case "union":
+    case "variant":
+      return { anyOf: s.options.map(jsonSchema) };
+    case "record":
+      return { type: "object", additionalProperties: jsonSchema(s.value) };
+    case "strict_object":
+      return {
+        type: "object",
+        additionalProperties: false,
+        properties: Object.fromEntries(
+          Object.entries(s.entries).map(([k, v]) => [k, jsonSchema(v)]),
+        ),
+        required: Object.entries(s.entries)
+          .filter(([, v]) => (v as any).type !== "optional")
+          .map(([k]) => k),
+      };
+    default:
+      throw new Error(`Unsupported schema node ${s.type}`);
+  }
+}
+export function generateOpenApi() {
+  const paths: Record<string, unknown> = {};
+  for (const [name, schema] of Object.entries(schemas)) {
+    const response = jsonSchema(responses[name as keyof typeof responses]),
+      read = ["operation", "usage", "defined", "applicable"].includes(name);
+    const path = read
+      ? name === "operation"
+        ? "/v1/operations/{id}"
+        : name === "usage"
+          ? "/v1/usage"
+          : `/v1/budgets/${name}`
+      : `/v1/operations/${name}`;
+    const operation = {
+      security: [{ bearerAuth: [] }],
+      responses: {
+        "200": {
+          description: "Typed result",
+          content: { "application/json": { schema: response } },
+        },
+        "400": { description: "Invalid schema" },
+        "401": { description: "Authentication required" },
+        "403": { description: "Forbidden" },
+        "500": { description: "Unexpected failure" },
+      },
+      ...(read
+        ? {
+            parameters: [
+              ...(name === "operation"
+                ? [{ name: "id", in: "path", required: true, schema: { type: "string" } }]
+                : []),
+              {
+                name: "q",
+                in: "query",
+                required: true,
+                description: "Base64url-encoded JSON query",
+                schema: { type: "string" },
+                "x-decoded-schema": jsonSchema(schema),
+              },
+            ],
+          }
+        : {
+            requestBody: {
+              required: true,
+              content: { "application/json": { schema: jsonSchema(schema) } },
+            },
+          }),
+    };
+    paths[path] = { [read ? "get" : "post"]: operation };
+    if (name === "usage")
+      paths["/v1/usage/query"] = {
+        post: {
+          ...operation,
+          parameters: [],
+          requestBody: {
+            required: true,
+            content: { "application/json": { schema: jsonSchema(schema) } },
+          },
+        },
+      };
+  }
+  return {
+    openapi: "3.1.0",
+    info: { title: "usagekit", version: "0.0.0" },
+    components: { securitySchemes: { bearerAuth: { type: "http", scheme: "bearer" } } },
+    paths,
+  };
+}

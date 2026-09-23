@@ -56,7 +56,9 @@ try {
   g(["restore", "packages/core/src/index.ts"]);
   rmSync(join(cwd, "untracked.txt"));
   const second = g(["rev-parse", "HEAD"]);
-  n(["scripts/approve-main.mjs", "--approved-sha", second]);
+  const subject = "feat: add embedded metering and durable local server";
+  n(["scripts/approve-main.mjs", "--approved-sha", second, "--subject", subject]);
+  assert.equal(g(["show", "-s", "--format=%s", "main"]), subject);
   assert.equal(g(["rev-list", "--count", "main"]), "2");
   assert.equal(g(["rev-list", "--min-parents=2", "main"]), "");
   assert.equal(g(["symbolic-ref", "--short", "HEAD"]), "feat/smoke-change");

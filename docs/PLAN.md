@@ -1,6 +1,6 @@
 # usagekit implementation plan
 
-Date: 2026-09-23. Owner: Michal. Status: proposal with type-only bootstrap contracts.
+Date: 2026-09-23. Owner: Michal. Status: P1 and P2 implemented on the task branch; P3 onwards remain proposals.
 
 ## 1. Purpose and deployment modes
 
@@ -29,8 +29,8 @@ A check done in Meter is never sufficient on its own.
 Store returns a typed outcome for every rejection; it does not throw for expected outcomes.
 
 One interface, two implementations, one contract test suite that runs against both.
-Core exports `Meter`; embedded Meter and the future HTTP client implement it.
-Only types exist today. Runtime validation and implementations belong to P1 and P2.
+Core exports `Meter`; embedded Meter and the HTTP client implement it.
+P1 and P2 validate runtime inputs; the same conformance suite exercises both implementations.
 Bigints cross HTTP as decimal strings. The client restores bigint DTOs; timestamps remain UTC ISO strings.
 See [core contracts](../packages/core/src/contracts.ts) for all quantities, lifecycle, receipt and command DTOs.
 `AllowanceExceeded` is data, not an Error subclass. `Cost` excludes contradictory money/certainty combinations.
@@ -58,6 +58,7 @@ async function execute(meter: Meter) {
     holder: context.holder,
     leaseTtlMs: context.leaseTtlMs,
   });
+  if ("outcome" in grant) return grant;
   if (!grant.granted) return recoverExisting(grant.operation);
   // Host helper renews during long calls and stops on rejected renewal.
   const receipt: Receipt = await callProviderAndCaptureOutcome(context, async () => {
@@ -66,6 +67,7 @@ async function execute(meter: Meter) {
       leaseId: grant.lease.leaseId,
       leaseTtlMs: context.leaseTtlMs,
     });
+    if ("outcome" in renewal) throw handOverToRecovery(grant.operation);
     if (!renewal.renewed) throw handOverToRecovery(grant.operation);
     return renewal.lease;
   });
@@ -76,6 +78,7 @@ async function execute(meter: Meter) {
     authority: { kind: "lease", leaseId: grant.lease.leaseId },
     receipt,
   });
+  if (settled.outcome === "invalid") return settled;
   if (settled.outcome !== "settled") return recoverExisting(settled.operation);
   await settleHostCreditsIdempotently(settled.operation);
   return meter.usage(access, {
@@ -103,7 +106,7 @@ Admin composes `meter.usage` with authorized host balances. Read methods return 
   Keep original epochs for in-flight work; test moving rolling-window boundaries before advertising support.
 - The paid wrapper is not the only interception point. Inventory workers, queues, polls, retries, pagination and connection tests.
   Cache reads do not create provider usage. HTTP success does not prove business success or billing.
-- Store commands are atomic: `reserve`, `markDispatchIntent`, `renewLease`, `claimForRecovery`, `settle`, `releaseUndispatched` and `correct`.
+- Store commands are atomic: `reserve`, `markDispatchIntent`, `renewLease`, `claimForRecovery`, `settle`, `releaseUndispatched`, `expireReservations` and `correct`.
   Store reads are `getOperation`, `aggregate`, `definedBudgets` and `applicableBudgets`. Every adapter proves mutation atomicity independently.
   Admission includes settled use and outstanding reservations across applicable owner, platform, connection and credential bounds.
   Connection locks alone cannot enforce a shared principal or platform limit.
@@ -114,6 +117,11 @@ Admin composes `meter.usage` with authorized host balances. Read methods return 
   Estimate every bounded unit. Missing units are Meter validation errors; Store re-checks against current budgets to prevent bypass.
   Units without budgets are recorded unbounded. Snapshot current budget versions and resolved epochs into `budgetEpochs`. Check all bounds atomically; report the first exceeded in deterministic host-policy order.
   Default order: `platform_pool`, `principal`, `group`, `connection`, `access_credential`. Budgets constrain use; host ledgers own balances, holds and charges through the credit bridge. A principal monthly cap is still a constraint.
+- Undispatched reservations expire after five minutes by default; hosts may supply `reservationTtlMs` from 1 ms to one day.
+  `reservationExpiresAt` is immutable. Replay never extends it; dispatch at or after expiry returns `reservation_expired` without granting authority.
+  `expireReservations` atomically releases only expired `reserved` operations, preserving version checks and returning budget headroom.
+  Reserve performs overdue cleanup before admission. Server startup and thirty-second sweeps handle idle clients; reads never mutate.
+  Dispatch intent permanently excludes automatic release. Its lease expiry still requires provider evidence recovery.
 - Unknown is not zero. Timeouts and expired leases do not prove no charge.
   Release only undispatched work with version checks. Record late charges and overruns through explicit correction policies.
 - Certainty is independent from lifecycle: `measured | estimated | unknown` versus `reserved | dispatch_intended | pending | settled | released`.
@@ -129,7 +137,8 @@ Admin composes `meter.usage` with authorized host balances. Read methods return 
   Expiry does not change state. Recovery claims only `dispatch_intended` or `pending` operations without active leases.
   Each claim issues a new leaseId and fences the old holder. Recovery never redispatches.
   Resolve provider or supported idempotency evidence, then settle, correct, or leave `pending` uncertain exposure.
-- Settlement requires active caller-held dispatch or recovery authority. Late evidence requires `pending` or `settled` state and no active lease.
+- Settlement requires active caller-held dispatch or recovery authority. Late-evidence settlement requires `pending` state and no active lease.
+  After settlement, new evidence requires `correct`, a replaced receipt and a reason. All new commands check the operation version.
   Late evidence needs host authorization, not a lease; Store records its source.
   Corrections follow those authority rules and target existing receipts. Append revisions; never delete evidence.
   Identical command replay returns the stored result with `replayed: true`; a changed receipt returns `receipt_conflict`.
@@ -149,7 +158,7 @@ Admin composes `meter.usage` with authorized host balances. Read methods return 
   HTTP derives access from authentication, never request bodies or query strings. Store does not accept AccessContext.
   `groupBy: "principal"` requires group or namespace scope; grouping also supports `access_credential` and `platform_pool`.
   Within the verified namespace, principal/group reads require their readable list or `*`.
-  Connection/access-credential reads require a readable owning principal or group. Store resolves ownership; Meter checks it.
+  Connection/access-credential reads require a readable owning principal or group. A host callback resolves ownership; Meter checks it.
   Direct pool reads require `readablePools`, `*`, or `canManageBudgets`; this also applies to pool usage.
   `definedBudgets` lists definitions for exactly one `BudgetScope`, without an operation or required connection.
   `applicableBudgets` requires a readable operation principal and lists matching bounds for its scope, surface, units and pools.
@@ -204,25 +213,25 @@ The pool constrains shared spend; provider balances and customer credit balances
 
 ## 4. Package grid
 
-Only three workspace directories exist. Add future packages when their first real implementation exists.
+Eight workspace directories exist. Add future packages when their first real implementation exists.
 Host schema mappings live in host repositories. Shared Prisma code provides mechanics only.
 
 | Package        | Exists | Runtime | Responsibility                                                 |
 | -------------- | ------ | ------- | -------------------------------------------------------------- |
 | `core`         | yes    | web     | Exact DTOs and the single Meter interface                      |
-| `store`        | yes    | web     | Atomic port; reference store and conformance planned           |
-| `meter`        | yes    | web     | Core interface re-export; embedded implementation planned      |
+| `store`        | yes    | web     | Atomic port, reference rules and factory-based conformance     |
+| `meter`        | yes    | web     | Embedded validation, host policy and authorized reads          |
 | `providers`    | no     | web     | Descriptors, price versions, receipt fixtures and probes       |
 | `store-prisma` | no     | node    | Optional shared Prisma mechanics, without host schema mappings |
-| `store-sqlite` | no     | node    | Local server storage                                           |
+| `store-sqlite` | yes    | node    | Local server storage                                           |
 | `store-d1`     | no     | web     | Cloudflare storage and atomicity proof                         |
-| `http`         | no     | web     | Authenticated write/read handlers and wire validation          |
-| `client`       | no     | web     | Remote implementation of the core Meter interface              |
+| `http`         | yes    | web     | Authenticated write/read handlers and wire validation          |
+| `client`       | yes    | web     | Remote implementation of the core Meter interface              |
 | `react`        | no     | web     | Headless usage, balance and budget views                       |
 | `proxy`        | no     | node    | Local provider routes, key injection and admission             |
 | `wallet`       | no     | web     | Optional ledger primitives after host stabilization            |
-| `server`       | no     | node    | Local API, SQLite, vault and recovery scheduler                |
-| `cli`          | no     | node    | Local server commands and usage reads                          |
+| `server`       | yes    | node    | Local API, SQLite, vault and explicit recovery commands        |
+| `cli`          | yes    | node    | Local server commands and usage reads                          |
 
 Web projects extend `tsconfig.base.json`. Node projects extend `tsconfig.node.json`.
 A D1 entry point must not import Node modules or a Node SQLite entry point.
@@ -233,15 +242,15 @@ Optional exporters start in host/server composition. No separate analytics packa
 
 Each stage keeps an exit gate. This order serves embedded metering, the local server, then proxy traffic.
 
-| Stage | Deliverable                                                                      | Serves          | Exit gate                                                                                                                                                                                                                                                                                         |
-| ----- | -------------------------------------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P1    | Core types, atomic store port, in-memory store, conformance and embedded Meter   | all             | Precision, concurrency, replay and unknown outcomes pass. Crash recovery rules pass against the in-memory store under simulated process loss. Lost holders cannot regain dispatch; replay returns stored results. Recovery claims only lease-free operations; late evidence settles pending work. |
-| P2    | store-sqlite, HTTP write/read, client, local server without proxy, CLI usage     | local server    | Embedded/remote parity, keys, authenticated admission and denied budgets pass. SQLite restart recovery: reserve and mark intent, terminate, restart on the same file. `getOperation` shows `dispatch_intended` with an expired lease. Recovery claim succeeds; new dispatch intent is refused.    |
-| P3    | Host A adapter in its repository, shadow mode and first admin over Meter queries | embedded, admin | Matching usage totals, host balances, scoped reads and no billing side effects                                                                                                                                                                                                                    |
-| P4    | Local proxy routes, key injection, receipt extraction and blocking               | proxy           | Allowlisted routes, real denied dispatch, correct errors and restart recovery                                                                                                                                                                                                                     |
-| P5    | store-d1 and host C backend with privacy/reward gates                            | embedded        | Shared-bound races, cache/pagination, reward deduplication and approved retention                                                                                                                                                                                                                 |
-| P6    | Authoritative host A cutover with credit coordination                            | embedded        | Single authority, real database crash tests, reconciled holds and rehearsed rollback                                                                                                                                                                                                              |
-| P7    | Headless React and local reference UI                                            | admin           | Usage/cost/credit views, freshness, permission checks and accessible host composition                                                                                                                                                                                                             |
+| Stage | Deliverable                                                                      | Serves          | Exit gate                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ----- | -------------------------------------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P1    | Core types, atomic store port, in-memory store, conformance and embedded Meter   | all             | Passed: precision, atomic admission, replay, leases, pending exposure, corrections, access, snapshot reads and generated interleavings. Simulated process loss fences old holders and never regrants dispatch. Skipped guarantees: `durable`, `rollingWindows`.                                                                                                                                                                                                                                                                                                                                                                 |
+| P2    | store-sqlite, HTTP write/read, client, local server without proxy, CLI usage     | local server    | Passed: unchanged conformance through SQLite and remote Meter, authenticated CLI admission, encrypted keys and token rotation. SIGKILL/reopen preserves intent and expired lease; recovery succeeds and redispatch fails. Two-process admission: 20/20 races, one winner each. HTTP restart and transaction rollback pass. SIGKILL before intent recovers headroom after reservation expiry. At 5000 records, command statements, returned rows and changed rows stay constant. Read-only reads and concurrent budget version writes pass. SQLite skips only `rollingWindows`; remote-memory skips `durable`, `rollingWindows`. |
+| P3    | Host A adapter in its repository, shadow mode and first admin over Meter queries | embedded, admin | Matching usage totals, host balances, scoped reads and no billing side effects                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| P4    | Local proxy routes, key injection, receipt extraction and blocking               | proxy           | Allowlisted routes, real denied dispatch, correct errors and restart recovery                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| P5    | store-d1 and host C backend with privacy/reward gates                            | embedded        | Shared-bound races, cache/pagination, reward deduplication and approved retention                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| P6    | Authoritative host A cutover with credit coordination                            | embedded        | Single authority, real database crash tests, reconciled holds and rehearsed rollback                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| P7    | Headless React and local reference UI                                            | admin           | Usage/cost/credit views, freshness, permission checks and accessible host composition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 The store conformance suite is parameterized by a store factory.
 Durability tests require a persistent store. The in-memory store skips them and reports the skip.
@@ -260,6 +269,56 @@ Rollback reconciles counters first. Recovery continues for new-system holds and 
 
 ## 6. Open decisions
 
+SQLite executes targeted SQL commands inside `BEGIN IMMEDIATE`, with version/state predicates and incremental `budget_usage` changes.
+Reads use DEFERRED transactions without writes. Signed cursor pages use an immutable accounting-event watermark and expire after five minutes.
+The scaling gate compares reserve, intent and settle before and after 5000 records: 25 prepares, 8 returned rows, 12 changed rows.
+Aggregation work follows matching history. Reservation cleanup follows expired backlog; neither claims constant work for arbitrary backlog or query size.
+Migration removes redundant full snapshots and backfills events and reservation deadlines. Legacy pre-event cursors must restart their query.
+Operation identity stays namespace-wide, matching P1, with an additional unique index over namespace and operation ID.
+Quantities and budget totals store INTEGER values with explicit scales. Cursor snapshots expire after five minutes.
+Wire command IDs identify requests. Reserve deduplicates by operation ID; renewal and recovery retain P1 semantics without a command journal.
+P2 uses the existing P1 task branch by owner instruction, without promoting main.
+Client has a type-only HTTP dependency for inferred wire DTOs; checks reject runtime imports of that package.
+CLI has an explicit server dependency to implement `serve`; other commands remain HTTP clients.
+Encrypted vault tests require no plaintext marker in any file, including the encrypted vault.
+CLI reserve obtains dispatch intent before allowing a provider call. Replayed reservations never authorize dispatch.
+CLI settlement and release persist exact request bodies for retries, including receipt times and expected versions.
+The local token owns the namespace. Before multi-user writes, P6 requires independent write permissions, not read permission reused as authorization.
+P6 must also prevent cross-principal operation-ID collisions and existence disclosure before exposing namespace-wide identity to untrusted callers.
+P2 decisions: `reservationTtlMs`, `reservationExpiresAt`, `reservation_expired` and namespace-scoped `expireReservations` extend the shared contract.
+Expiry sweeps return `count` and `hasMore`; repeated sweeps are safe, but counts are not command-journal replay results.
+HTTP expiry requires `canManageBudgets`. Embedded hosts authorize maintenance and coordinate any external credit holds themselves.
+The local server releases overdue undispatched reservations at startup and every thirty seconds. A budget read can retain exposure until cleanup.
+No provider catalog or provider-evidence recovery worker exists in P2. Provider tests validate format without network calls.
+Interactive vault creation confirms the passphrase; automated environment input is supplied once by its operator.
+Startup errors expose safe categories. Provider identity changes under an existing connection ID are rejected.
+Wire integer decoding recognizes accounting DTO shapes; unrelated metadata strings remain strings.
+See [local server operation](LOCAL-SERVER.md) for startup, custody, reporting and recovery limits.
+
+P1 review: default budget ordering has one frozen source in core.
+Renewal has no command journal; a later retry can extend expiry without changing operation version.
+SQLite expires cursor snapshots after five minutes. The memory reference currently retains snapshots indefinitely.
+P2 wire schemas validate fields explicitly. Empty optional `Receipt.evidenceRef` is accepted by Meter and HTTP.
+
+P1 invariants distinguish lease renewal from versioned accounting mutations. Renewal preserves operation version.
+Dispatch replay always refuses another grant. Settlement, correction and release replay return stored outcomes.
+Admission never oversubscribes a blocking limit. A later measured overrun is recorded and blocks further admission.
+Warn-only bounds never override another blocking bound. Corrections and recovery may preserve the lifecycle state.
+Lease IDs are capabilities inside the trusted embedded boundary. Hosts authenticate workers before exposing write methods.
+`canReadBillingDetail: false` forbids detailed usage and operation reads. Budget access follows the explicit scope rules.
+The test-only conformance entry point is typechecked separately and excluded from production declaration emission.
+
+P1 decisions: dispatch, settlement and release rejections permit null operations for unknown IDs.
+
+P1 decisions: `ValidationFailure` is shared by command and read results.
+`createMeter({ resolveOwnership })` accepts an optional trusted host callback for connection or token ownership.
+Without it, resource-scoped reads are forbidden. Store has no host ownership port.
+`AdmissionPolicy` passes host budget order into atomic reserve.
+`BudgetOwner` names the principal or group returned by the host ownership callback.
+
+P1 decisions: reserve rejects missing bounded estimate units with `missing_estimate_unit`.
+Successful reservations carry `warnings` for warn-only bounds.
+
 | Decision                                | Proposed default                                               | Gate                      |
 | --------------------------------------- | -------------------------------------------------------------- | ------------------------- |
 | Runtime validation and rounding         | Exact units, explicit adapter ranges, reject invalid scales    | P1                        |
@@ -272,7 +331,7 @@ Rollback reconciles counters first. Recovery continues for new-system holds and 
 | Public license, organization and domain | Undecided; local and private                                   | Separate owner decision   |
 
 No remote, push or publication is authorized. Squash integration follows the README.
-Type-only bootstrap completion does not imply working metering or adapter conformance.
+P1 proves reference-store rules and embedded Meter behavior. It does not prove persistent adapter durability.
 
 ## 7. Appendix: Later, optional
 

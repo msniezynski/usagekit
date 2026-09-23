@@ -158,3 +158,44 @@ test("post-commit writes only git-local audit metadata", (t) => {
   assert.equal(data.commit, base);
   assert.ok(data.checkedAt);
 });
+
+test("test dependency allowlist preserves production and web boundaries", () => {
+  const project = { name: "@usagekit/core", path: "packages/core", runtime: "web" };
+  const file = resolve("packages/core/src/example.test.ts");
+  validateImports(project, 'import {test} from "vitest";', file, {}, ["vitest", "fast-check"]);
+  assert.throws(
+    () =>
+      validateImports(
+        project,
+        'import {test} from "vitest";',
+        resolve("packages/core/src/index.ts"),
+        {},
+      ),
+    /Undeclared/,
+  );
+  assert.throws(
+    () => validateImports(project, 'import fs from "node:fs";', file, {}, ["vitest"]),
+    /Node-only/,
+  );
+  assert.throws(
+    () => validateImports(project, 'import "../../store/src/index.js";', file, {}, ["vitest"]),
+    /relative/,
+  );
+});
+
+test("client may import HTTP DTO types but never runtime HTTP code", () => {
+  const project = {
+    name: "@usagekit/client",
+    path: "packages/client",
+    runtime: "web",
+    typeAllows: ["@usagekit/http"],
+  };
+  const file = resolve("packages/client/src/index.ts"),
+    deps = { "@usagekit/http": "0.0.0" };
+  validateImports(project, 'import type { WireInputs } from "@usagekit/http";', file, deps);
+  assert.throws(
+    () =>
+      validateImports(project, 'import { createUsageHandlers } from "@usagekit/http";', file, deps),
+    /Type-only/,
+  );
+});

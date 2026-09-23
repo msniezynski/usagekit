@@ -26,6 +26,64 @@
       "allows": ["@usagekit/core", "@usagekit/store"],
       "purpose": "Admission, reservations, settlement and recovery.",
       "runtime": "web"
+    },
+    {
+      "name": "@usagekit/store-sqlite",
+      "path": "packages/store-sqlite",
+      "phase": "local-server",
+      "allows": ["@usagekit/core", "@usagekit/store"],
+      "purpose": "store-sqlite local server capability.",
+      "runtime": "node"
+    },
+    {
+      "name": "@usagekit/http",
+      "path": "packages/http",
+      "phase": "local-server",
+      "allows": ["@usagekit/core", "@usagekit/meter"],
+      "purpose": "http local server capability.",
+      "runtime": "web"
+    },
+    {
+      "name": "@usagekit/client",
+      "path": "packages/client",
+      "phase": "local-server",
+      "allows": ["@usagekit/core"],
+      "purpose": "client local server capability.",
+      "runtime": "web",
+      "typeAllows": ["@usagekit/http"]
+    },
+    {
+      "name": "@usagekit/server",
+      "path": "packages/server",
+      "phase": "local-server",
+      "allows": [
+        "@usagekit/core",
+        "@usagekit/store",
+        "@usagekit/meter",
+        "@usagekit/store-sqlite",
+        "@usagekit/http"
+      ],
+      "purpose": "server local server capability.",
+      "runtime": "node"
+    },
+    {
+      "name": "@usagekit/cli",
+      "path": "packages/cli",
+      "phase": "local-server",
+      "allows": ["@usagekit/core", "@usagekit/client", "@usagekit/server"],
+      "purpose": "cli local server capability.",
+      "runtime": "node"
     }
+  ],
+  "testDependencies": [
+    "vitest",
+    "fast-check",
+    "hono",
+    "@usagekit/store",
+    "@usagekit/meter",
+    "@usagekit/http",
+    "@usagekit/client",
+    "@usagekit/server",
+    "@usagekit/store-sqlite"
   ]
 }

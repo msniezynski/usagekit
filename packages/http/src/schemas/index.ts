@@ -1,0 +1,293 @@
+import * as v from "valibot";
+const text = v.pipe(v.string(), v.minLength(1));
+const integer = v.pipe(v.number(), v.integer(), v.minValue(0));
+const decimal = v.pipe(v.string(), v.regex(/^-?\d+$/));
+const timestamp = v.pipe(v.string(), v.isoTimestamp(), v.endsWith("Z"));
+const obj = v.strictObject;
+export const Money = obj({ units: decimal, currency: v.literal("USD") });
+export const Quantity = obj({ value: decimal, scale: v.pipe(integer, v.maxValue(18)), unit: text });
+const credential = obj({ kind: text, id: text });
+export const Scope = obj({
+  namespace: text,
+  principal: text,
+  actor: v.optional(text),
+  group: v.optional(text),
+  connection: text,
+  accessCredential: v.optional(credential),
+  providerCredentialVersion: v.optional(text),
+});
+const surface = v.picklist(["app", "programmatic"]);
+const source = v.picklist(["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]);
+const funding = v.picklist(["byok", "platform"]);
+export const BudgetScope = v.variant("kind", [
+  obj({ kind: v.literal("principal"), namespace: text, principal: text }),
+  obj({ kind: v.literal("group"), namespace: text, group: text }),
+  obj({ kind: v.literal("connection"), namespace: text, connection: text }),
+  obj({ kind: v.literal("access_credential"), namespace: text, accessCredential: credential }),
+  obj({ kind: v.literal("platform_pool"), namespace: text, poolId: text }),
+]);
+export const UsageScope = v.variant("kind", [
+  obj({ kind: v.literal("principal"), namespace: text, principal: text }),
+  obj({ kind: v.literal("group"), namespace: text, group: text }),
+  obj({ kind: v.literal("namespace"), namespace: text }),
+  obj({ kind: v.literal("platform_pool"), namespace: text, poolId: text }),
+]);
+const window = v.variant("kind", [
+  obj({ kind: v.literal("calendar_month"), timezone: v.literal("UTC") }),
+  obj({ kind: v.literal("provider_cycle"), cycleId: text, startsAt: timestamp, endsAt: timestamp }),
+  obj({ kind: v.literal("rolling"), days: integer }),
+  obj({ kind: v.literal("since_reset"), epoch: text, startsAt: timestamp }),
+]);
+export const Budget = obj({
+  id: text,
+  version: integer,
+  scope: BudgetScope,
+  surface: v.picklist(["app", "programmatic", "any"]),
+  unit: text,
+  limit: v.nullable(Quantity),
+  window,
+  onExceed: v.picklist(["block", "warn"]),
+});
+const Measurement = v.variant("certainty", [
+  obj({ certainty: v.literal("unknown"), unit: text, quantity: v.null() }),
+  obj({ certainty: v.picklist(["measured", "estimated"]), unit: text, quantity: Quantity }),
+]);
+const Cost = v.variant("certainty", [
+  obj({ certainty: v.literal("unknown"), money: v.null() }),
+  obj({ certainty: v.picklist(["measured", "estimated"]), money: Money }),
+]);
+export const Receipt = obj({
+  id: text,
+  supersedes: v.optional(text),
+  measurements: v.array(Measurement),
+  cost: Cost,
+  providerRequestId: v.optional(text),
+  providerPriceVersion: v.optional(text),
+  evidenceRef: v.optional(v.string()),
+  occurredAt: timestamp,
+  recordedAt: timestamp,
+  cached: v.boolean(),
+  failed: v.boolean(),
+});
+const reserveFields = {
+  operationId: text,
+  reservationTtlMs: v.optional(v.pipe(integer, v.minValue(1), v.maxValue(86400000))),
+  scope: Scope,
+  fundingSource: funding,
+  platformPools: v.optional(v.array(text)),
+  costOwner: text,
+  creditAccountRef: v.optional(text),
+  customerPriceVersion: v.optional(text),
+  surface,
+  source,
+  provider: text,
+  operation: text,
+  estimate: v.array(Quantity),
+  correlationId: v.optional(text),
+  parentOperationId: v.optional(text),
+};
+const Ref = { namespace: text, principal: text, operationId: text };
+const Command = { ...Ref, commandId: text, expectedVersion: integer };
+const leaseTtl = v.pipe(integer, v.minValue(1), v.maxValue(86400000));
+export const Lease = obj({ leaseId: text, holder: text, expiresAt: timestamp });
+const authority = v.variant("kind", [
+  obj({ kind: v.literal("lease"), leaseId: text }),
+  obj({ kind: v.literal("recovery"), leaseId: text }),
+  obj({ kind: v.literal("late_evidence"), source: text }),
+]);
+export const Operation = obj({
+  ...reserveFields,
+  reservationExpiresAt: timestamp,
+  state: v.picklist(["reserved", "dispatch_intended", "pending", "settled", "released"]),
+  version: integer,
+  createdAt: timestamp,
+  updatedAt: timestamp,
+  budgetEpochs: v.array(
+    obj({
+      budgetId: text,
+      budgetVersion: integer,
+      epoch: text,
+      startsAt: timestamp,
+      endsAt: v.nullable(timestamp),
+    }),
+  ),
+  receipts: v.array(Receipt),
+  lease: v.nullable(Lease),
+});
+const Epoch = obj({ epoch: text, startsAt: timestamp, endsAt: v.nullable(timestamp) });
+const Status = obj({
+  budget: Budget,
+  epoch: Epoch,
+  used: v.nullable(Quantity),
+  reserved: v.nullable(Quantity),
+  remaining: v.nullable(Quantity),
+  redacted: v.optional(v.literal(true)),
+});
+export const UsageQuery = obj({
+  scope: UsageScope,
+  from: timestamp,
+  to: timestamp,
+  connection: v.optional(text),
+  units: v.array(text),
+  groupBy: v.array(
+    v.picklist([
+      "principal",
+      "provider",
+      "operation",
+      "surface",
+      "source",
+      "connection",
+      "day",
+      "access_credential",
+      "platform_pool",
+    ]),
+  ),
+  cursor: v.optional(text),
+  limit: v.optional(v.pipe(integer, v.minValue(1), v.maxValue(1000))),
+});
+const UsagePage = obj({
+  rows: v.array(
+    obj({
+      dimensions: v.record(v.string(), v.string()),
+      measurements: v.array(Measurement),
+      cost: Cost,
+      fundingSource: funding,
+      costOwner: text,
+      unknownOperations: decimal,
+    }),
+  ),
+  asOf: timestamp,
+  watermark: text,
+  nextCursor: v.optional(text),
+});
+export const schemas = {
+  expire: obj({
+    namespace: text,
+    commandId: text,
+    limit: v.optional(v.pipe(integer, v.minValue(1), v.maxValue(1000))),
+  }),
+  reserve: obj({ ...reserveFields, commandId: text }),
+  intent: obj({ ...Command, holder: text, leaseTtlMs: leaseTtl }),
+  renew: obj({ ...Ref, commandId: text, leaseId: text, leaseTtlMs: leaseTtl }),
+  claim: obj({ ...Ref, commandId: text, holder: text, leaseTtlMs: leaseTtl }),
+  settle: obj({ ...Command, authority, receipt: Receipt }),
+  correct: obj({ ...Command, authority, receipt: Receipt, replacesReceiptId: text, reason: text }),
+  release: obj({ ...Command, reason: text }),
+  operation: obj(Ref),
+  usage: UsageQuery,
+  defined: obj({ scope: BudgetScope }),
+  applicable: obj({
+    scope: Scope,
+    surface,
+    units: v.array(text),
+    platformPools: v.optional(v.array(text)),
+  }),
+};
+export type RouteName = keyof typeof schemas;
+export type WireInputs = { [K in RouteName]: v.InferOutput<(typeof schemas)[K]> };
+const invalid = obj({ outcome: v.literal("invalid"), field: text, reason: text });
+const exceeded = obj({
+  code: v.literal("allowance_exceeded"),
+  budget: Budget,
+  used: Quantity,
+  reserved: Quantity,
+  resetsAt: v.nullable(timestamp),
+});
+const read = <T extends v.GenericSchema>(schema: T) =>
+  v.union([
+    obj({ outcome: v.literal("ok"), value: schema }),
+    obj({ outcome: v.literal("forbidden") }),
+    invalid,
+  ]);
+const settleResult = v.union([
+  obj({ outcome: v.literal("settled"), replayed: v.boolean(), operation: Operation }),
+  obj({
+    outcome: v.literal("rejected"),
+    reason: v.picklist([
+      "not_holder",
+      "lease_expired",
+      "version_conflict",
+      "invalid_state",
+      "receipt_conflict",
+    ]),
+    operation: v.nullable(Operation),
+  }),
+  invalid,
+]);
+export const responses = {
+  expire: v.union([
+    obj({ outcome: v.literal("expired"), count: integer, hasMore: v.boolean() }),
+    invalid,
+  ]),
+  reserve: v.union([
+    obj({
+      outcome: v.literal("reserved"),
+      replayed: v.boolean(),
+      operation: Operation,
+      warnings: v.array(exceeded),
+    }),
+    obj({ outcome: v.literal("exceeded"), exceeded, operation: v.null() }),
+    obj({
+      outcome: v.literal("conflict"),
+      reason: v.literal("semantic_mismatch"),
+      operation: Operation,
+    }),
+    obj({
+      outcome: v.literal("invalid"),
+      reason: v.literal("missing_estimate_unit"),
+      unit: text,
+      operation: v.null(),
+    }),
+    invalid,
+  ]),
+  intent: v.union([
+    obj({ granted: v.literal(true), operation: Operation, lease: Lease }),
+    obj({
+      granted: v.literal(false),
+      operation: v.nullable(Operation),
+      reason: v.picklist([
+        "already_dispatched",
+        "version_conflict",
+        "not_reserved",
+        "released",
+        "reservation_expired",
+      ]),
+    }),
+    invalid,
+  ]),
+  renew: v.union([
+    obj({ renewed: v.literal(true), lease: Lease }),
+    obj({ renewed: v.literal(false), reason: v.picklist(["expired", "not_holder", "not_active"]) }),
+    invalid,
+  ]),
+  claim: v.union([
+    obj({ claimed: v.literal(true), operation: Operation, lease: Lease }),
+    obj({
+      claimed: v.literal(false),
+      operation: v.nullable(Operation),
+      reason: v.picklist(["lease_active", "not_recoverable", "not_found"]),
+    }),
+    invalid,
+  ]),
+  settle: settleResult,
+  correct: settleResult,
+  release: v.union([
+    obj({ outcome: v.literal("released"), replayed: v.boolean(), operation: Operation }),
+    obj({
+      outcome: v.literal("rejected"),
+      reason: v.picklist(["not_reserved", "version_conflict"]),
+      operation: v.nullable(Operation),
+    }),
+    invalid,
+  ]),
+  operation: read(v.nullable(Operation)),
+  usage: read(UsagePage),
+  defined: read(v.array(Budget)),
+  applicable: read(v.array(Status)),
+};
+export function parseWire(name: RouteName, data: unknown) {
+  return v.safeParse(schemas[name], data);
+}
+export function validResponse(name: RouteName, data: unknown): boolean {
+  return v.safeParse(responses[name], data).success;
+}

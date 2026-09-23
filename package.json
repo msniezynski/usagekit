@@ -10,8 +10,7 @@
     "npm": ">=10.9.3 <11"
   },
   "workspaces": [
-    "packages/*",
-    "apps/*"
+    "packages/*"
   ],
   "scripts": {
     "prepare": "node scripts/install-hooks.mjs",
@@ -20,16 +19,22 @@
     "check:workspace": "node scripts/check-workspace.mjs",
     "check:format": "prettier --check .",
     "format": "prettier --write .",
-    "typecheck": "tsc -b",
-    "build": "tsc -b",
+    "typecheck": "node scripts/typecheck.mjs",
+    "build": "tsc -b && node scripts/copy-assets.mjs && npm rebuild @usagekit/cli",
     "test": "node --test scripts/tests/*.test.mjs",
-    "check": "npm run check:runtime && npm run check:workspace && npm run check:format && npm run typecheck && npm test",
+    "check": "npm run check:runtime && npm run check:workspace && npm run check:format && npm run typecheck && npm run test:unit && npm test",
     "approve:main": "node scripts/approve-main.mjs",
-    "prepublishOnly": "node scripts/deny-publish.mjs"
+    "prepublishOnly": "node scripts/deny-publish.mjs",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest"
   },
   "devDependencies": {
+    "@types/node": "22.20.4",
+    "@vitest/coverage-v8": "5.0.1",
+    "fast-check": "4.10.2",
     "prettier": "3.6.2",
     "typescript": "5.9.3",
-    "@types/node": "22.20.4"
-  }
+    "vitest": "5.0.1"
+  },
+  "type": "module"
 }

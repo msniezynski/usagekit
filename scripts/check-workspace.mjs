@@ -50,13 +50,25 @@ for (const project of workspace.projects) {
     ...manifest.peerDependencies,
   };
   for (const [name, version] of Object.entries(deps)) {
-    if (name.startsWith("@usagekit/") && (!project.allows.includes(name) || version !== "0.0.0")) {
+    if (
+      name.startsWith("@usagekit/") &&
+      ((!project.allows.includes(name) && !(project.typeAllows ?? []).includes(name)) ||
+        version !== "0.0.0")
+    ) {
       throw new Error(`Disallowed workspace dependency in ${project.name}: ${name}`);
     }
   }
-  for (const file of filesUnder(resolve(project.path, "src"))) {
+  for (const file of filesUnder(resolve(project.path)).filter(
+    (f) => f.includes("/src/") || f.includes("/conformance/"),
+  )) {
     if (/\.[cm]?[jt]sx?$/.test(file))
-      validateImports(project, readFileSync(file, "utf8"), file, deps);
+      validateImports(
+        project,
+        readFileSync(file, "utf8"),
+        file,
+        deps,
+        file.endsWith(".test.ts") ? workspace.testDependencies : [],
+      );
   }
 }
 const readmes = filesUnder(root).filter((f) => /(^|\/)readme\.md$/i.test(f));

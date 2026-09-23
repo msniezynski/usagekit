@@ -5,7 +5,7 @@ costs and application credits. Both BYOK and platform-funded keys are in scope.
 Host A uses Postgres and Prisma. Host B adds team-owned connections.
 Host C targets Cloudflare D1. A local server shares the embedded Meter contract.
 
-**Status: type-only bootstrap for review. No Meter implementation is shipped.**
+**Status: P1 and P2 implemented on the same task branch for review. Main is unchanged.**
 All packages are private. No remote, publication, license or organization is selected.
 
 ## Start here
@@ -18,19 +18,24 @@ The lockfile pins dependencies. `@types/node` is pinned to the Node 22 line.
 nvm use
 npm ci
 npm run check
+npm run build
+export PATH="$PWD/node_modules/.bin:$PATH"
+usagekit serve
 ```
+
+See [local server operation](docs/LOCAL-SERVER.md) for tokens, the vault, budgets, scripts and restart recovery.
 
 `npm ci` installs local hooks through `prepare`. Use `npm run setup` if scripts were disabled.
 Hooks prefer the pinned NVM binary. Otherwise PATH must satisfy the supported range.
 
-| Command             | Purpose                                                                    |
-| ------------------- | -------------------------------------------------------------------------- |
-| `npm run check`     | Runtime, workspace/privacy checks, formatting, TypeScript and policy tests |
-| `npm run format`    | Format source and documentation, excluding local ADRs                      |
-| `npm run typecheck` | Check references and emit declarations into ignored `dist/`                |
-| `npm run build`     | Build the three existing workspaces                                        |
-| `npm test`          | Policy tests in disposable local repositories                              |
-| `npm run setup`     | Install repository-local hooks and Git defaults                            |
+| Command             | Purpose                                                                          |
+| ------------------- | -------------------------------------------------------------------------------- |
+| `npm run check`     | Runtime, workspace/privacy checks, formatting, TypeScript, unit and policy tests |
+| `npm run format`    | Format source and documentation, excluding local ADRs                            |
+| `npm run typecheck` | Check references and emit declarations into ignored `dist/`                      |
+| `npm run build`     | Build the eight existing workspaces                                              |
+| `npm test`          | Policy tests in disposable local repositories                                    |
+| `npm run setup`     | Install repository-local hooks and Git defaults                                  |
 
 ## Working agreement
 
@@ -51,7 +56,8 @@ This README is the single source of workflow rules. Keep one root README.
    a new explicit instruction. Future organizations are intentionally unspecified.
 8. Never bypass hooks. Fix the cause of a failure. Local guards are not a tamper-proof security boundary.
 
-There are no commits or `main` ref in this handoff. The owner reviews and commits:
+The approved bootstrap is on local `main`. New work stays on task branches for review.
+For an initial bootstrap commit, the workflow is:
 
 ```sh
 git add .
@@ -62,10 +68,11 @@ Only after separate approval of the exact committed version:
 
 ```sh
 git rev-parse HEAD
-npm run approve:main -- --approved-sha <full-reviewed-head-sha>
+npm run approve:main -- --approved-sha <full-reviewed-head-sha> --subject "feat: describe the approved result"
 ```
 
 Promotion requires a clean task branch, active hooks and passing full checks.
+Present the proposed squash title when requesting owner approval. `--subject` accepts one Conventional Commit title.
 It creates one squash commit with the reviewed tree and previous main as its sole parent.
 The first approval creates a root commit. The current task branch stays checked out.
 Rebase and obtain new approval if main advances. Nothing is pushed by promotion.
@@ -90,17 +97,27 @@ Hooks live in `.githooks/`, installed as local `core.hooksPath`.
 Pre-commit permits partial staging and untracked files. It does not run policy tests.
 It checks current files; the privacy guard also scans indexed content. Review staged changes independently.
 Full tests run through `npm run check` and during approved main promotion.
+`npm run test:unit` runs Vitest; `npm run test:unit:watch` watches changes.
+`npx vitest run --coverage` enforces 90% lines for reference Store and Meter, and 85% for SQLite, HTTP, client and server.
+Conformance runs unchanged against memory, embedded Meter, SQLite and the remote Meter over HTTP.
+The adapter converts typed validation failures to Store exceptions; other outcomes stay unchanged.
+Memory and remote-memory skip `durable` and `rollingWindows`. SQLite skips only `rollingWindows`. Each run reports its skips.
 There is no pre-push hook. Private package flags and prepublish scripts still block npm publication.
 
 ## Workspace layout
 
 `usagekit.workspace.json` defines the existing inventory and allowed dependencies.
 
-| Workspace        | Current contents                                         |
-| ---------------- | -------------------------------------------------------- |
-| `packages/core`  | Meter interface, exact quantities and domain DTO types   |
-| `packages/store` | Atomic storage command and query interfaces              |
-| `packages/meter` | Re-export of core Meter; runtime implementation deferred |
+| Workspace               | Current contents                                                |
+| ----------------------- | --------------------------------------------------------------- |
+| `packages/core`         | Meter interface, exact quantities and domain DTO types          |
+| `packages/store`        | Atomic commands, in-memory store and factory-based conformance  |
+| `packages/meter`        | Embedded Meter with validation, policy and authorized reads     |
+| `packages/store-sqlite` | Durable transactions, migrations and admission projection       |
+| `packages/http`         | Web handlers, strict Valibot wire schemas and generated OpenAPI |
+| `packages/client`       | Remote Meter with explicit accounting retries                   |
+| `packages/server`       | Loopback API, token authentication and encrypted local vault    |
+| `packages/cli`          | Serve, provider, budget, reporting and usage commands           |
 
 Future packages are listed in the [plan](docs/PLAN.md#4-package-grid), without placeholder directories.
 Host schema mappings stay in host repositories. Shared adapters provide mechanics only.
@@ -129,6 +146,7 @@ The [plan](docs/PLAN.md) defines delivery gates. Detailed architecture remains p
 - Accounting is content-free. Every credit balance has one authority, composed into authorized admin views.
 - Only the first dispatch grant may call the provider. Replay and lease expiry never grant it again.
   Recovery claims lease-free work with fencing and settles from evidence.
+  Undispatched reservations expire after five minutes by default; atomic cleanup restores headroom without releasing intended dispatches.
 - Query scope is not authorization. Access comes from verified server context.
   Budgets are constraints; ledgers are balance authorities.
   Caller credential and provider secret version are two different identities.

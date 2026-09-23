@@ -4,6 +4,7 @@ import { git } from "./git.mjs";
 
 function filesUnder(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    if (["dist", "node_modules"].includes(entry.name)) return [];
     const path = resolve(dir, entry.name);
     return entry.isDirectory() ? filesUnder(path) : [path];
   });

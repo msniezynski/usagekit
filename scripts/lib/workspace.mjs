@@ -25,11 +25,17 @@ export function filesUnder(dir) {
   });
 }
 
-export function validateImports(project, source, file, dependencies) {
+export function validateImports(project, source, file, dependencies, testDependencies = []) {
   for (const { fileName: specifier } of ts.preProcessFile(source, true, true).importedFiles) {
     if (specifier.startsWith(".")) {
       const target = resolve(file, "..", specifier);
-      const local = relative(resolve(project.path, "src"), target);
+      const local = relative(
+        resolve(
+          project.path,
+          file.endsWith(".test.ts") || file.includes("/conformance/") ? "." : "src",
+        ),
+        target,
+      );
       if (local === ".." || local.startsWith(`..${sep}`) || local.startsWith(sep)) {
         throw new Error(`Cross-workspace relative import in ${file}: ${specifier}`);
       }
@@ -43,7 +49,15 @@ export function validateImports(project, source, file, dependencies) {
     const name = specifier.startsWith("@")
       ? specifier.split("/").slice(0, 2).join("/")
       : specifier.split("/")[0];
-    if (!Object.hasOwn(dependencies, name))
+    if ((project.typeAllows ?? []).includes(name) && !file.endsWith(".test.ts")) {
+      const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true);
+      const declaration = ast.statements.find(
+        (n) => ts.isImportDeclaration(n) && n.moduleSpecifier.text === specifier,
+      );
+      if (!declaration?.importClause?.isTypeOnly)
+        throw new Error(`Type-only workspace import required in ${file}: ${specifier}`);
+    }
+    if (!Object.hasOwn(dependencies, name) && !testDependencies.includes(name))
       throw new Error(`Undeclared import in ${file}: ${specifier}`);
   }
 }

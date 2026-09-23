@@ -1,4 +1,7 @@
+import type { AdmissionPolicy } from "@usagekit/core";
 import type {
+  ExpireReservationsInput,
+  ExpireReservationsResult,
   Budget,
   ApplicableBudgetsQuery,
   BudgetStatus,
@@ -30,11 +33,12 @@ import type {
  * A Meter-side check is never sufficient. Expected rejections return typed outcomes, not exceptions.
  * Admission includes unsettled reservations across all applicable bounds.
  * Reserve selects current budgets atomically by namespace, scope, surface, units and pools.
- * Ownership is resolved by Store; authorization and pool-figure redaction belong to Meter.
+ * Host ownership resolution, authorization and pool-figure redaction belong to Meter.
  * Adapters prove these guarantees through one conformance suite, without callback locks.
  */
 export interface Store {
-  reserve(input: ReserveInput): Promise<ReserveResult>;
+  expireReservations(input: ExpireReservationsInput): Promise<ExpireReservationsResult>;
+  reserve(input: ReserveInput, policy?: AdmissionPolicy): Promise<ReserveResult>;
   markDispatchIntent(input: DispatchIntentInput): Promise<DispatchGrant>;
   renewLease(input: LeaseRenewalInput): Promise<LeaseRenewal>;
   claimForRecovery(input: RecoveryClaimInput): Promise<RecoveryClaim>;
@@ -46,3 +50,8 @@ export interface Store {
   definedBudgets(query: DefinedBudgetsQuery): Promise<readonly Budget[]>;
   applicableBudgets(query: ApplicableBudgetsQuery): Promise<readonly BudgetStatus[]>;
 }
+
+export { createMemoryStore } from "./memory/memory-store.js";
+export { createManualClock } from "./clock.js";
+export type { Clock, ManualClock } from "./clock.js";
+export { InvalidInput } from "./memory/state.js";

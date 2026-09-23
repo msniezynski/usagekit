@@ -9,6 +9,11 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./conformance": "./conformance/index.ts",
+    "./reference": {
+      "types": "./dist/reference.d.ts",
+      "import": "./dist/reference.js"
     }
   },
   "files": [

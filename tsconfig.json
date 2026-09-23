@@ -9,6 +9,21 @@
     },
     {
       "path": "./packages/meter"
+    },
+    {
+      "path": "./packages/store-sqlite"
+    },
+    {
+      "path": "./packages/http"
+    },
+    {
+      "path": "./packages/client"
+    },
+    {
+      "path": "./packages/server"
+    },
+    {
+      "path": "./packages/cli"
     }
   ]
 }

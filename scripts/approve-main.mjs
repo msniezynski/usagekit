@@ -2,15 +2,9 @@ import "./check-runtime.mjs";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { assertClean, assertCommitMessage, assertTaskBranch, git, run } from "./lib/git.mjs";
-import { clearExpiredApproval } from "./lib/approval.mjs";
+import { clearExpiredApproval, parseApprovalArgs } from "./lib/approval.mjs";
 
-const args = process.argv.slice(2);
-const reviewedSha = args.length === 2 && args[0] === "--approved-sha" ? args[1] : null;
-if (!reviewedSha || !/^[a-f0-9]{40}$/.test(reviewedSha)) {
-  throw new Error(
-    "Usage: npm run approve:main -- --approved-sha <full reviewed HEAD SHA>. Explicit owner approval is required.",
-  );
-}
+const { reviewedSha, subject: approvedSubject } = parseApprovalArgs(process.argv.slice(2));
 const branch = git(["symbolic-ref", "--quiet", "--short", "HEAD"]);
 assertTaskBranch(branch);
 const source = git(["rev-parse", "HEAD"]);
@@ -40,7 +34,7 @@ const tree = git(["rev-parse", `${source}^{tree}`]);
 if (!/^0+$/.test(old) && tree === git(["rev-parse", `${old}^{tree}`])) {
   throw new Error("The reviewed tree is already on main.");
 }
-const subject = `chore(workspace): integrate approved ${branch}`;
+const subject = approvedSubject ?? `chore(workspace): integrate approved ${branch}`;
 assertCommitMessage(subject);
 const next = git(["commit-tree", tree, ...(/^0+$/.test(old) ? [] : ["-p", old])], {
   input: `${subject}\n\nReviewed-source: ${source}\n`,
