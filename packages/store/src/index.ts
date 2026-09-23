@@ -1,0 +1,48 @@
+import type {
+  Budget,
+  ApplicableBudgetsQuery,
+  BudgetStatus,
+  DefinedBudgetsQuery,
+  CorrectionInput,
+  DispatchGrant,
+  DispatchIntentInput,
+  LeaseRenewal,
+  LeaseRenewalInput,
+  Operation,
+  OperationRef,
+  RecoveryClaim,
+  RecoveryClaimInput,
+  ReleaseInput,
+  ReleaseResult,
+  ReserveInput,
+  ReserveResult,
+  SettleInput,
+  SettleResult,
+  UsagePage,
+  UsageQuery,
+} from "@usagekit/core";
+
+/**
+ * Authorization is the Meter's job; atomic condition checks are the Store's job.
+ * Store does not take AccessContext. Meter resolves applicable budgets, funding and price policy.
+ * Each command atomically re-checks state, version, lease ownership, budget headroom
+ * including outstanding reservations, and command replay identity.
+ * A Meter-side check is never sufficient. Expected rejections return typed outcomes, not exceptions.
+ * Admission includes unsettled reservations across all applicable bounds.
+ * Reserve selects current budgets atomically by namespace, scope, surface, units and pools.
+ * Ownership is resolved by Store; authorization and pool-figure redaction belong to Meter.
+ * Adapters prove these guarantees through one conformance suite, without callback locks.
+ */
+export interface Store {
+  reserve(input: ReserveInput): Promise<ReserveResult>;
+  markDispatchIntent(input: DispatchIntentInput): Promise<DispatchGrant>;
+  renewLease(input: LeaseRenewalInput): Promise<LeaseRenewal>;
+  claimForRecovery(input: RecoveryClaimInput): Promise<RecoveryClaim>;
+  settle(input: SettleInput): Promise<SettleResult>;
+  correct(input: CorrectionInput): Promise<SettleResult>;
+  releaseUndispatched(input: ReleaseInput): Promise<ReleaseResult>;
+  getOperation(input: OperationRef): Promise<Operation | null>;
+  aggregate(query: UsageQuery): Promise<UsagePage>;
+  definedBudgets(query: DefinedBudgetsQuery): Promise<readonly Budget[]>;
+  applicableBudgets(query: ApplicableBudgetsQuery): Promise<readonly BudgetStatus[]>;
+}

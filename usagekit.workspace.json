@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "status": "local-scaffold",
+  "publication": "blocked",
+  "projects": [
+    {
+      "name": "@usagekit/core",
+      "path": "packages/core",
+      "phase": "foundation",
+      "allows": [],
+      "purpose": "Exact quantities, ownership and pure domain types.",
+      "runtime": "web"
+    },
+    {
+      "name": "@usagekit/store",
+      "path": "packages/store",
+      "phase": "foundation",
+      "allows": ["@usagekit/core"],
+      "purpose": "Atomic store commands, reference store and conformance tests.",
+      "runtime": "web"
+    },
+    {
+      "name": "@usagekit/meter",
+      "path": "packages/meter",
+      "phase": "foundation",
+      "allows": ["@usagekit/core", "@usagekit/store"],
+      "purpose": "Admission, reservations, settlement and recovery.",
+      "runtime": "web"
+    }
+  ]
+}
