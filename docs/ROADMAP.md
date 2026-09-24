@@ -1,0 +1,373 @@
+# usagekit roadmap
+
+Date: 2026-09-24. Owner: Michal. This is the bird's-eye view. [PLAN.md](PLAN.md) holds the
+engineering contract, constraints and stage exit gates; this file holds purpose, model,
+current position and the order of work. When they disagree, this file wins on order and scope,
+PLAN.md wins on contract detail.
+
+## 1. What usagekit is
+
+usagekit meters what a user spends at third-party API providers through an application.
+The user connects a provider key, or the application funds calls from a shared platform key.
+Every paid call becomes an operation with a reservation, a dispatch grant, a receipt and a
+settlement. Budgets bound the spend per user, project, connection, access token or shared pool,
+per surface (app or programmatic) and per window (calendar month, provider cycle, since reset).
+The local ledger is the source of truth; provider balances are reconciliation signals.
+
+It is not a billing system for the application's own customers. That is what OpenMeter, Stripe
+Meters or Metronome do. usagekit sits one level below: it counts the upstream cost the
+application incurs on behalf of each user, and it can feed that into any of those systems.
+
+## 2. Who uses it and why
+
+- **An application developer (embedded mode).** They already wrap provider calls somewhere.
+  They add `@usagekit/core`, `meter` and a store adapter, map their users and connections onto
+  the scope model, and get atomic admission, budgets, replay-safe accounting, recovery after
+  crashes and a queryable usage ledger. They do not rewrite provider clients. They keep their
+  own authentication, routing, product billing and UI.
+- **A single developer or agent operator (local server).** They run `usagekit serve`, store
+  keys in the encrypted vault, set budgets, and report or proxy calls through it. Any SDK or
+  agent gets a spend limit without code changes once the proxy stage lands.
+- **A team building a new product on Cloudflare or similar.** They start from the Worker
+  example and the D1 adapter instead of designing metering from scratch.
+
+The reason to use it instead of writing it: the parts that are hard are not the counting. They
+are concurrency under a shared limit, crashes between reservation and settlement, unknown costs
+that are not zero, corrections that must not erase evidence, and exact money without floats.
+usagekit ships those as a conformance suite that every adapter must pass.
+
+## 3. Who is measured: the scope model
+
+Every operation carries the full scope, so usage can be grouped by any dimension later.
+
+| Field              | Meaning                                              | Typical host mapping                                   |
+| ------------------ | ---------------------------------------------------- | ------------------------------------------------------ |
+| `namespace`        | One deployment or tenant partition                   | one per environment                                    |
+| `principal`        | Who is billed and who owns the budget                | the user, or the team in team-owned hosts              |
+| `group`            | How the principal organizes work                     | project, workspace, site                               |
+| `connection`       | One provider key the principal or platform connected | provider connection row                                |
+| `accessCredential` | Which token or client called the application         | API key, personal token, OAuth client, MCP client      |
+| `actor`            | Who acted inside the principal                       | team member, guest session                             |
+| `fundingSource`    | Whose key paid upstream                              | `byok` for the user's key, `platform` for a shared key |
+| `platformPools`    | Shared caps a platform-funded call draws from        | free-tier pool, hosted provider pool                   |
+
+Two shapes cover the hosts seen so far:
+
+- **User-owned.** The user connects keys, projects are folders under the user, the user pays.
+  `principal` is the user, `group` is the project. "Project A used this much, project B that
+  much" is a `groupBy: group` query under one principal. Project and user are different fields
+  even when one user has one project.
+- **Team-owned.** The team pays, members act. `principal` is the team, `actor` is the member.
+  Per-member limits are today a host responsibility; a per-actor budget scope is on the list of
+  additions (section 8).
+
+Access to N providers per user is the connection list under the principal, filtered by the
+provider allowlist the host configures (section 9). Each connection has its own budgets per
+surface; the principal can have an overall cap on top.
+
+## 4. Backend only, or UI too
+
+Backend only is a complete product. A host that already has an admin panel and a settings page
+needs `core`, `meter`, a store adapter and the mapping. Nothing else is required.
+
+UI is layered so a host takes exactly as much as fits:
+
+1. **View models.** Pure functions over `Meter`: usage table rows, budget status rows,
+   exceptions, and a compact status line for a header. Amounts arrive as decimal strings with
+   unit and certainty; "unavailable" is a distinct state, never zero. No React, no styling.
+   This is the layer every host should use, because money formatting, certainty and pagination
+   are exactly where hand-written panels go wrong.
+2. **Hooks.** `@usagekit/react` over the same view models for hosts with a `Meter` on the
+   client (remote Meter over HTTP). Server-rendered hosts skip this layer and call view models
+   from server code.
+3. **Reference components.** A shadcn registry: usage table, budget card, exceptions queue,
+   period and scope filter, header status, connection list. Each block exists for Radix and for
+   Base UI, styled with semantic tokens in the `new-york` style. Hosts copy blocks into their
+   tree with `shadcn add`; the copied code imports the host's own `@/components/ui/*`
+   primitives. A host with its own design system reads the block and rebinds primitives or
+   writes its own component over the view model.
+4. **Pages.** Always the host's: authentication, authorization, audit, routing, translations.
+
+Personal access, meaning one person seeing their usage across every application that uses
+usagekit, is a hosted service and stays out of scope until the embedded and local modes are
+proven. The scope model already keeps `principal` independent of any host user table so that
+door stays open.
+
+What the component library buys: correctness that is hard to get right (money, certainty,
+unavailable states, cursors), speed for new hosts and examples, a recognizable vocabulary
+across applications, and a live demo of the library. What it costs: two primitive variants to
+maintain and a registry to test against both.
+
+## 5. What the community gets
+
+- **A provider catalog to maintain together.** One declarative descriptor per provider: auth
+  scheme, operations with request matching, price table versions with source and check date,
+  receipt extractors with recorded fixtures, balance probes, reset-date source. When a provider
+  changes a price or a response field, the fix is a pull request to one file with a fixture.
+  This is the LiteLLM model applied to usage, not to model routing.
+- **A fixture recorder.** The local server can record a redacted request and response pair for
+  an operation on request, so contributing a descriptor for a new provider does not require
+  reading undocumented responses by hand.
+- **A conformance suite.** Anyone can write a store adapter for their database and prove it
+  with the same tests the built-in adapters pass, including the scaling gate and the race tests.
+- **A local server** for personal use, with the proxy as the zero-code enforcement path.
+- **A registry of UI blocks** for both primitive families.
+
+## 6. Where we are
+
+| Item                                 | State on 2026-09-24                                                                                                                                                                 |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P1 core, store, meter                | On `main`. 110-case conformance suite, property tests, embedded Meter.                                                                                                              |
+| P2 SQLite, HTTP, client, server, CLI | On `main`. Row-level SQLite adapter, scaling gate, restart and race tests, encrypted vault, reservation expiry.                                                                     |
+| Packages on npm                      | `@usagekit/core`, `store`, `meter` at 0.1.0, Apache-2.0, **public**. Token setup in older docs is obsolete.                                                                         |
+| P3 host A embedded shadow            | Complete on a host branch: Postgres adapter passes conformance, shadow on own and hosted paths, admin comparison page. Awaiting rebase onto the host's moved `main` and a draft PR. |
+| Repository hosting                   | No remote yet. Sources exist only locally.                                                                                                                                          |
+| Provider catalog                     | Does not exist. Host A keeps its own catalog and price resolver.                                                                                                                    |
+| UI layer                             | Does not exist. Host A's admin page is hand-written on its own table component.                                                                                                     |
+
+## 7. Order of work
+
+The order changed after P3. Shadow data accumulates in host A over weeks regardless of what
+is built next, so the UI comparison and the catalog come before the proxy and the cutover.
+Stage numbers below are the new sequence; the former IDs from PLAN.md are in parentheses.
+
+| Stage | Deliverable                                                                                                                                                                                                                            | Exit gate                                                                                                                                                    |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| P3    | Host A rebase, hosted path coverage, draft PR, shadow on one production project                                                                                                                                                        | Host checks green after rebase; shadow overhead recorded; zero admission changes                                                                             |
+| P4    | Public repository with CI, provenance on publish, `repository` fields, docs updated for public packages; view models, hooks, shadcn registry for Radix and Base UI, header status model; local server UI on the registry (was P7)      | Host A admin page rebuilt on view models with its own primitives and compared against the hand-written one; registry `add` tested on both primitive families |
+| P5    | Provider catalog: descriptor type in `core`, `providers` package with the two first providers, price sources, extractors with fixtures, host allowlist, implementer contract and lint rule, fixture recorder in the local server (new) | Contract tests on fixtures for every advertised operation; host A maps its catalog onto descriptors without behavior change                                  |
+| P6    | Local proxy on the catalog: routes, key injection, receipt extraction, blocking (was P4)                                                                                                                                               | Allowlisted routes, real denied dispatch, correct errors, restart recovery                                                                                   |
+| P7    | `store-d1` adapter and a Cloudflare Worker example, not a product backend (was P5)                                                                                                                                                     | Conformance with `durable: true` under Miniflare, two-Worker race on one Durable Object, example runs in `wrangler dev`                                      |
+| P8    | Host A authoritative cutover with dual-ledger coordination and end-user views (was P6)                                                                                                                                                 | Single authority, crash tests on the real database, reconciled holds, rehearsed rollback, per-user usage and budget pages live                               |
+
+Later, optional: host B adapter, AI receipts and streaming, outbox and export, wallet
+extraction, hosted personal service, and two companion packages that share the wrapper and
+proxy hook: a rate limiter and a response cache. Chain order is fixed now so they slot in
+later without contract changes: cache lookup, then rate limit, then reservation. A cache hit or
+a rate-limit rejection never creates an operation or takes headroom; both are counted in the
+per-state request counter and appear in coverage. Rate limiter state is not a ledger and gets
+its own port. Cache stores responses under its own retention and privacy policy, never in
+accounting tables; descriptors declare cache keys, default TTLs and provider rate limits.
+See PLAN.md section 7.
+
+## 8. Topics added after P3
+
+These were missing from the plan and are now owned by a stage.
+
+- **Funding source switch (P8).** A connection can move from the user's key to a platform key
+  and back. The switch creates a new provider credential version; in-flight operations settle
+  under the old funding; per-surface budgets stay; a platform pool becomes an additional bound.
+  History is never rewritten.
+- **Two ledgers during cutover (P8).** Own-key spend and platform-funded spend touch different
+  credit authorities. Coordination rules must be written per funding source before cutover.
+- **Header status (P4).** A compact view model: remaining, of what, reset time, warning
+  threshold, per visible bound. Refreshed in the same request that settles an operation, not by
+  polling.
+- **End-user views (P4 models, P8 live).** Connect a provider from the host's allowlist, see
+  own usage per connection and surface, see budgets and headroom, switch funding where the host
+  offers it. Today the plan only describes the operator and the machine.
+- **Provider catalog with host allowlist (P5).** Hosts decide which descriptors are active.
+  Users connect only those.
+- **Implementer contract (P5).** The only allowed path for a paid call is the wrapper that
+  reserves, dispatches through the descriptor and settles. Direct provider client calls are a
+  lint error. Which operations exist, how their cost is estimated and how the receipt is
+  extracted is descriptor data, not host code.
+- **Per-actor budgets (P4 contract note, P8 decision).** Team-owned hosts need a member limit
+  under a team principal. Either an `actor` budget scope or a documented host-side rule.
+- **Throughput of the event commit-order lock (before P8).** The Postgres adapter serializes
+  every accounting write on one advisory lock to keep cursor watermarks exact. Measure requests
+  per second before it becomes authoritative.
+- **Retention (before P8).** Command journal and event tables grow per operation. Define
+  pruning for replay keys and events past a horizon while keeping financial evidence.
+- **Host token cleanup (P3 follow-up).** Packages are public; remove the read-only registry
+  token wiring from host A's CI, deployment and developer docs after one token-free install.
+- **Budgets per source, not only per surface (P4 contract, first item).** Today a budget
+  matches `app`, `programmatic` or `any`. Users need separate limits for web, API, CLI and MCP,
+  as many as they want, stacked with principal, group, connection and token limits.
+  `Budget.surface` widens to `Surface | Source | "any"`: a surface value matches its source
+  group, a source value matches exactly that source. The host sets both surface and source at
+  the authentication boundary; a client cannot choose them. Named host-defined source groups
+  are deferred; two budgets express "CLI and SDK together, MCP apart". Change touches the
+  core type, the reference matcher, both SQL adapters, wire schemas and conformance tests.
+  No migration: adapters store the field as text.
+- **Hard and soft limits (P4 contract, P5 catalog).** One budget with `limit`, `onExceed`
+  `block` or `allow`, optional `hardLimit` and `alerts` recorded once per epoch; overage price
+  rows apply past the allowance; descriptor plans declare `allowanceMode`. See section 9.
+- **Tracking policy per operation (P5 contract, P6 proxy, P4 coverage view).** A connection
+  chooses `metered` or `passthrough` per catalog operation; unknown paths are `unpriced`.
+  Counts are kept in every state; cost is kept only for metered. See section 9.
+- **Plan-dependent prices (P5 catalog, P4 UI).** List prices vary by provider plan and by call
+  option. The descriptor carries a price table with plan and option axes and a plan list; the
+  connection carries the selected plan. See section 9.
+- **Billing import and reconciliation (P5 parsers, P4 view, P8 live).** A provider's own
+  billing export corrects estimates after the fact and reveals calls the application never saw.
+  See section 10.
+
+## 9. Prices, methods and fixtures
+
+Three price sources exist and host A already uses all three. usagekit adopts the same model.
+
+| Source     | Where it lives                                                                       | Who maintains it                        | Used for                                                                             |
+| ---------- | ------------------------------------------------------------------------------------ | --------------------------------------- | ------------------------------------------------------------------------------------ |
+| `list`     | Descriptor price table: operation, unit price, valid from, source URL, checked date  | Community, by pull request              | Estimate before the call when nothing better exists                                  |
+| `manual`   | Host or user override per connection and operation                                   | The user, in the host UI                | Estimate when the user knows their negotiated or plan price                          |
+| `measured` | Median of settled receipts for that connection and operation, above a minimum sample | Derived, never stored in the descriptor | Suggested next to the list price; used for estimates when the sample is large enough |
+| `unknown`  | No source                                                                            |                                         | Reserve a conservative estimate or block, per host policy                            |
+
+Resolution order for an estimate: `manual`, then `measured` with enough samples, then `list`,
+then `unknown`. The receipt after the call is always the truth for settlement; prices only feed
+the estimate and the admission check.
+
+On the three questions this raises:
+
+- **Downloading a provider's price list.** Almost no provider exposes prices through an API.
+  The list price is community-maintained data with a source URL and a check date. Drift is
+  found by people and by measured receipts disagreeing with the list, not by automation.
+- **Setting prices per method and API path.** Yes, as `manual` per connection and operation.
+  An operation in the descriptor names its request match (method and path pattern) so the proxy
+  can route it and the UI can show "this price applies to these calls". The user sets a price
+  per operation, not per raw path.
+- **Recording fixtures and suggesting prices per endpoint.** Fixtures serve extractor tests,
+  not pricing. The local server records a redacted request and response pair on request, and
+  that pair becomes the contract test for the descriptor. Price suggestions come from measured
+  receipts: for providers that report cost per call, directly; for providers that only expose a
+  balance, from balance probe deltas around isolated calls, marked as estimates. The UI shows
+  the suggestion next to the list price and lets the user accept it as `manual`.
+
+Operations are the unit of pricing, routing and reporting. A descriptor advertises only
+operations that have fixtures. Unknown paths through the proxy are metered as `requests` with
+unknown cost, never priced by guess.
+
+### Proxy and the catalog
+
+The catalog is the set of operations usagekit can price, not an allowlist of paths. Which
+providers are enabled, and whether unknown paths pass, is a separate host or local-server
+setting. The proxy and the embedded wrapper execute the same descriptor: `match` maps a request
+to an operation, `estimate` feeds admission, `extract` produces the receipt. The proxy
+authenticates the client with the server token, sets `source: "proxy"` and the surface itself,
+strips client authentication and injects the vault key; the client never sends a provider key.
+
+Unknown paths pass by default and are recorded as operation `unknown` in `requests` with
+unknown cost, listed in the exceptions queue with a one-step fixture recording offer. A strict
+mode rejects them with 404. Nothing is ever priced by guess. A client `Idempotency-Key` becomes
+the `operationId`; without it every request is a new operation, because every request costs.
+Body-hash deduplication stays forbidden. Receipts are extracted after the response stream
+closes; a broken stream settles with unknown cost and leaves the operation `pending` for
+reconciliation.
+
+### Hard and soft limits
+
+Marketplace plans set a precedent: an allowance per period with either a hard limit that stops
+requests or a soft limit that lets requests through and bills the excess per unit. usagekit
+adopts the distinction on one budget instead of two unrelated ones.
+
+- `limit` is the allowance; `onExceed` is `block` (hard) or `allow` (soft).
+- A soft budget may carry `hardLimit`, an outer cap that blocks. A soft limit without a cap is
+  a known way to get an unwanted bill, so the connect flow proposes one.
+- `alerts` lists thresholds, as a percent of `limit` or as a quantity. The store records each
+  crossing once per budget and epoch, so hosts receive one warning per threshold without their
+  own deduplication. Delivery channels stay with the host. This extends the `warnings` already
+  returned by `reserve`.
+- Past `limit` on a soft budget, estimates use the price row marked `overage: true` for the
+  connection's plan; below it, the plan's included-unit row.
+- The descriptor's plan list carries `allowanceMode: "hard" | "soft"` so the proposed budget on
+  connect mirrors how the provider itself behaves: prepaid balances and no-overage plans are
+  hard, plans that bill excess are soft.
+
+Rate limits per second or minute are flow control, not spend, and stay outside budgets. Hosts
+keep their own limiters.
+
+### Tracking policy per operation
+
+Whether usagekit can price an operation and whether the user wants it metered are independent.
+Each connection carries a tracking policy over the catalog's operations, default `metered`.
+
+| State         | Meaning                                           | Proxy and wrapper behavior                                                        |
+| ------------- | ------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `metered`     | In the catalog and enabled                        | Reserve, admit, inject key, extract receipt, settle                               |
+| `passthrough` | User or host disabled tracking for this operation | Inject key and forward; count the request only; no reservation, receipt or budget |
+| `unpriced`    | Not in the catalog                                | As passthrough, flagged unknown, with a fixture recording offer                   |
+
+Request counts per operation, connection, source and day are kept for every request, keyed by
+outcome state: `metered`, `passthrough`, `unpriced`, and later `cached` and `rate_limited`.
+Only `metered` creates an operation. Counts carry no content, and without them a summary cannot
+say what share of traffic is outside control. A
+coverage view model per connection and window reports metered, passthrough and unpriced counts
+and shares, and states that cost excludes the untracked requests. A budget on a connection with
+passthrough operations protects only part of the traffic; views say so next to the budget.
+There is no "forward without counting" state: a user who wants that points the client at the
+upstream directly. Per-operation budgets become possible on top of this and are deferred.
+
+### Plans and options
+
+A list price is rarely one number per operation. Three things move it:
+
+- **The plan changes the price.** A subscription tier buys a quantity of units for a monthly
+  fee, so the unit price differs per tier.
+- **The plan changes the unit.** Inside the tier an operation costs one unit of the cycle
+  allowance; past the allowance it costs money per call or is refused.
+- **A call option changes the price.** The same operation priced by queue priority, depth,
+  device or region parameters.
+
+The descriptor therefore holds a price table with axes, not a scalar:
+
+```ts
+plans: [{ id: "developer", cycle: "monthly_plan", allowance: { unit: "units", value: 5000n } }],
+prices: [
+  { validFrom: "2026-09-01", operation: "search", plan: "developer", unit: "units", perUnit: "1" },
+  { validFrom: "2026-09-01", operation: "search", plan: "developer", overage: true, unit: "cents", perUnit: "1.5000" },
+  { validFrom: "2026-09-01", operation: "serp.task", option: { queue: "live" }, unit: "cents", perUnit: "0.2000" },
+],
+```
+
+The connection carries `plan`, chosen by the user when connecting or read from the balance
+probe when the provider reports it. Estimate resolution matches operation, plan and options
+against the table. A plan-priced descriptor with no plan on the connection resolves to
+`unknown`, never to a default plan.
+
+A plan allowance is a budget the provider set. On connect, usagekit proposes a `connection`
+budget in the allowance unit with a `provider_cycle` window and the probe's reset date; the
+user accepts or edits it. A plan change mid-cycle follows the funding-switch rule: new
+credential version, in-flight operations settle on the old plan, the proposed budget gets a new
+version. The descriptor never holds negotiated prices, discounts or volume tiers beyond the
+public list; those are `manual` on the connection, and billing import below supplies evidence.
+
+## 10. Billing import and reconciliation
+
+After the fact, a provider's own billing export is the strongest evidence available. Importing
+it corrects estimates, closes `pending` operations and reveals calls the application never saw.
+The contract already supports the mechanics: `correct` appends a superseding receipt under
+`late_evidence` authority, receipts carry `providerRequestId` and `evidenceRef`, and certainty
+is per dimension so cost can become `measured` while quantity stays `estimated`.
+
+Three things are missing and are owned by stages below.
+
+- **Export format in the descriptor (P5).** A `billingExport` section: where to fetch or what
+  file to accept, format, columns, granularity and matching key. Parsers are extractors with
+  fixtures like any other. Exports differ by provider: per-task history with cost, a bare
+  account counter, or a daily CSV per key.
+- **Matching rules (P5 contract, P8 live).** One line to one operation by `providerRequestId`
+  yields `correct` with a `measured` receipt. One line to many operations, such as a daily
+  total for a key, does not spread cents across operations by guess: it creates a
+  **reconciliation entry** for the connection and window with ledger total, evidence total,
+  difference, source and import hash. Operations keep their own certainty. A line with no
+  matching operation creates an operation with source `import`, flagged as unobserved by the
+  application, which is a signal for the user (the key was used elsewhere) and for the operator
+  (an uninstrumented paid path).
+- **Idempotent import (P8).** Import identity is the file hash, window and connection. Every
+  receipt or entry from an import references it through `evidenceRef`. Re-importing the same
+  file replays; a different file for the same window revises and supersedes the previous
+  import.
+
+Model additions: a reconciliation entry object beside operations, an optional `reconciled`
+dimension on usage aggregates so views can show "by application" next to "by invoice", and an
+explicit receipt `source` of `dispatch`, `probe` or `import`.
+
+Billing import is also the best `measured` price source for providers that do not report cost
+per call: invoice total for a window divided by the operations in it, with the invoice as
+evidence. The UI shows that unit price as the suggestion next to the list price.
+
+Stage placement: P5 adds the descriptor section and parsers with fixtures for the first two
+providers; P4 adds the "estimated versus billed" view model and the import entry point on the
+connection view; P8 turns import into a production source of corrections with the
+reconciliation entry in the contract and idempotency tests.

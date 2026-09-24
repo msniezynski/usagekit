@@ -7,7 +7,7 @@ Host C targets Cloudflare D1. A local server shares the embedded Meter contract.
 
 **Status: P1 and P2 approved on main. P3 packaging and host integration are in progress.**
 Licensed under Apache-2.0. Core, Store and Meter target `@usagekit` on registry.npmjs.org at version 0.1.0.
-Initial publication is restricted. Other workspaces remain private. See [consuming packages](docs/CONSUMING.md).
+`core`, `store` and `meter` are published publicly on npm. Other workspaces remain private. See [consuming packages](docs/CONSUMING.md) and the [roadmap](docs/ROADMAP.md).
 
 ## Start here
 
@@ -52,7 +52,7 @@ This README is the single source of workflow rules. Keep one root README.
    Main contains stable, reviewed, explicitly owner-approved versions only.
 6. Passing checks or implementing work does not authorize promotion, push, publication, deployment or release.
    Agents must never supply owner approval themselves.
-7. P3 authorizes restricted npm publication of core, store and meter through `npm run release`.
+7. Publication of core, store and meter runs only through `npm run release`; the packages are public.
    Public access follows the P3 exit gate. GitHub hosting still requires an explicit repository target.
    Do not publish other workspaces or deploy services without separate authorization.
 8. Never bypass hooks. Fix the cause of a failure. Local guards are not a tamper-proof security boundary.

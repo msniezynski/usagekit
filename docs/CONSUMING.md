@@ -7,18 +7,8 @@ npm install --save-exact @usagekit/core@0.1.0 @usagekit/store@0.1.0 @usagekit/me
 ```
 
 The registry is `https://registry.npmjs.org/`. No scope registry mapping is needed.
-Initial access is restricted. Publication status must be verified before installing.
-Private consumers need a read-only granular npm token scoped to these packages.
-Set `NPM_TOKEN` securely and add this line to user-level `~/.npmrc` only:
-
-```ini
-//registry.npmjs.org/:_authToken=${NPM_TOKEN}
-```
-
-Never commit the token line to a consumer repository. Protect `~/.npmrc` with mode 0600.
-GitHub Actions uses setup-node with registry-url and NODE_AUTH_TOKEN from its NPM_TOKEN secret.
-Vercel uses NPM_TOKEN for private package installation. Record expiry and rotate before it expires.
-Once packages are public, verify token-free npm ci before deleting dedicated tokens and authentication setup.
+The packages are public. No registry token is required to install them.
+Consumers that configured a read-only token during the private phase should verify a token-free `npm ci` and then remove the token from CI, deployment and user configuration.
 
 ## Embedded contract
 
