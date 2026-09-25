@@ -20,6 +20,7 @@
             "bearerAuth": []
           }
         ],
+        "description": "Command route. A handler mounted with commands: false answers 404 here after authentication.",
         "responses": {
           "200": {
             "description": "Typed result",
@@ -76,6 +77,9 @@
           "403": {
             "description": "Forbidden"
           },
+          "404": {
+            "description": "Commands disabled on this mount"
+          },
           "500": {
             "description": "Unexpected failure"
           }
@@ -116,6 +120,7 @@
             "bearerAuth": []
           }
         ],
+        "description": "Command route. A handler mounted with commands: false answers 404 here after authentication.",
         "responses": {
           "200": {
             "description": "Typed result",
@@ -188,6 +193,15 @@
                                 "providerCredentialVersion": {
                                   "type": "string",
                                   "minLength": 1
+                                },
+                                "tags": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                  },
+                                  "minItems": 1,
+                                  "maxItems": 16
                                 }
                               },
                               "required": ["namespace", "principal", "connection"]
@@ -653,11 +667,40 @@
                                           }
                                         },
                                         "required": ["kind", "namespace", "poolId"]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "const": "tag"
+                                          },
+                                          "namespace": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          },
+                                          "tag": {
+                                            "type": "string",
+                                            "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                          }
+                                        },
+                                        "required": ["kind", "namespace", "tag"]
                                       }
                                     ]
                                   },
                                   "surface": {
-                                    "enum": ["app", "programmatic", "any"]
+                                    "enum": [
+                                      "app",
+                                      "programmatic",
+                                      "any",
+                                      "app",
+                                      "worker",
+                                      "api",
+                                      "sdk",
+                                      "cli",
+                                      "mcp",
+                                      "proxy"
+                                    ]
                                   },
                                   "unit": {
                                     "type": "string",
@@ -764,7 +807,72 @@
                                     ]
                                   },
                                   "onExceed": {
-                                    "enum": ["block", "warn"]
+                                    "enum": ["block", "allow", "warn"]
+                                  },
+                                  "hardLimit": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "value": {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+$"
+                                      },
+                                      "scale": {
+                                        "type": "number",
+                                        "maximum": 18
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["value", "scale", "unit"]
+                                  },
+                                  "alerts": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "at": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "percent": {
+                                                  "type": "number",
+                                                  "minimum": 1,
+                                                  "maximum": 100
+                                                }
+                                              },
+                                              "required": ["percent"]
+                                            },
+                                            {
+                                              "type": "object",
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "value": {
+                                                  "type": "string",
+                                                  "pattern": "^-?\\d+$"
+                                                },
+                                                "scale": {
+                                                  "type": "number",
+                                                  "maximum": 18
+                                                },
+                                                "unit": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                }
+                                              },
+                                              "required": ["value", "scale", "unit"]
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": ["at"]
+                                    },
+                                    "maxItems": 8
                                   }
                                 },
                                 "required": [
@@ -777,6 +885,9 @@
                                   "window",
                                   "onExceed"
                                 ]
+                              },
+                              "boundary": {
+                                "enum": ["limit", "hardLimit"]
                               },
                               "used": {
                                 "type": "object",
@@ -829,11 +940,120 @@
                                 ]
                               }
                             },
-                            "required": ["code", "budget", "used", "reserved", "resetsAt"]
+                            "required": [
+                              "code",
+                              "budget",
+                              "boundary",
+                              "used",
+                              "reserved",
+                              "resetsAt"
+                            ]
+                          }
+                        },
+                        "alerts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "budgetId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "budgetVersion": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "epoch": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "at": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "percent": {
+                                        "type": "number",
+                                        "minimum": 1,
+                                        "maximum": 100
+                                      }
+                                    },
+                                    "required": ["percent"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "value": {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+$"
+                                      },
+                                      "scale": {
+                                        "type": "number",
+                                        "maximum": 18
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["value", "scale", "unit"]
+                                  }
+                                ]
+                              },
+                              "used": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^-?\\d+$"
+                                  },
+                                  "scale": {
+                                    "type": "number",
+                                    "maximum": 18
+                                  },
+                                  "unit": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": ["value", "scale", "unit"]
+                              },
+                              "reserved": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^-?\\d+$"
+                                  },
+                                  "scale": {
+                                    "type": "number",
+                                    "maximum": 18
+                                  },
+                                  "unit": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": ["value", "scale", "unit"]
+                              }
+                            },
+                            "required": [
+                              "budgetId",
+                              "budgetVersion",
+                              "epoch",
+                              "at",
+                              "used",
+                              "reserved"
+                            ]
                           }
                         }
                       },
-                      "required": ["outcome", "replayed", "operation", "warnings"]
+                      "required": ["outcome", "replayed", "operation", "warnings", "alerts"]
                     },
                     {
                       "type": "object",
@@ -963,11 +1183,40 @@
                                         }
                                       },
                                       "required": ["kind", "namespace", "poolId"]
+                                    },
+                                    {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "const": "tag"
+                                        },
+                                        "namespace": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "tag": {
+                                          "type": "string",
+                                          "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                        }
+                                      },
+                                      "required": ["kind", "namespace", "tag"]
                                     }
                                   ]
                                 },
                                 "surface": {
-                                  "enum": ["app", "programmatic", "any"]
+                                  "enum": [
+                                    "app",
+                                    "programmatic",
+                                    "any",
+                                    "app",
+                                    "worker",
+                                    "api",
+                                    "sdk",
+                                    "cli",
+                                    "mcp",
+                                    "proxy"
+                                  ]
                                 },
                                 "unit": {
                                   "type": "string",
@@ -1074,7 +1323,72 @@
                                   ]
                                 },
                                 "onExceed": {
-                                  "enum": ["block", "warn"]
+                                  "enum": ["block", "allow", "warn"]
+                                },
+                                "hardLimit": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "value": {
+                                      "type": "string",
+                                      "pattern": "^-?\\d+$"
+                                    },
+                                    "scale": {
+                                      "type": "number",
+                                      "maximum": 18
+                                    },
+                                    "unit": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    }
+                                  },
+                                  "required": ["value", "scale", "unit"]
+                                },
+                                "alerts": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "at": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                              "percent": {
+                                                "type": "number",
+                                                "minimum": 1,
+                                                "maximum": 100
+                                              }
+                                            },
+                                            "required": ["percent"]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                              "value": {
+                                                "type": "string",
+                                                "pattern": "^-?\\d+$"
+                                              },
+                                              "scale": {
+                                                "type": "number",
+                                                "maximum": 18
+                                              },
+                                              "unit": {
+                                                "type": "string",
+                                                "minLength": 1
+                                              }
+                                            },
+                                            "required": ["value", "scale", "unit"]
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": ["at"]
+                                  },
+                                  "maxItems": 8
                                 }
                               },
                               "required": [
@@ -1087,6 +1401,9 @@
                                 "window",
                                 "onExceed"
                               ]
+                            },
+                            "boundary": {
+                              "enum": ["limit", "hardLimit"]
                             },
                             "used": {
                               "type": "object",
@@ -1139,7 +1456,7 @@
                               ]
                             }
                           },
-                          "required": ["code", "budget", "used", "reserved", "resetsAt"]
+                          "required": ["code", "budget", "boundary", "used", "reserved", "resetsAt"]
                         },
                         "operation": {
                           "type": "null"
@@ -1212,6 +1529,15 @@
                                 "providerCredentialVersion": {
                                   "type": "string",
                                   "minLength": 1
+                                },
+                                "tags": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                  },
+                                  "minItems": 1,
+                                  "maxItems": 16
                                 }
                               },
                               "required": ["namespace", "principal", "connection"]
@@ -1609,6 +1935,9 @@
           "403": {
             "description": "Forbidden"
           },
+          "404": {
+            "description": "Commands disabled on this mount"
+          },
           "500": {
             "description": "Unexpected failure"
           }
@@ -1672,6 +2001,15 @@
                       "providerCredentialVersion": {
                         "type": "string",
                         "minLength": 1
+                      },
+                      "tags": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                        },
+                        "minItems": 1,
+                        "maxItems": 16
                       }
                     },
                     "required": ["namespace", "principal", "connection"]
@@ -1772,6 +2110,7 @@
             "bearerAuth": []
           }
         ],
+        "description": "Command route. A handler mounted with commands: false answers 404 here after authentication.",
         "responses": {
           "200": {
             "description": "Typed result",
@@ -1841,6 +2180,15 @@
                                 "providerCredentialVersion": {
                                   "type": "string",
                                   "minLength": 1
+                                },
+                                "tags": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                  },
+                                  "minItems": 1,
+                                  "maxItems": 16
                                 }
                               },
                               "required": ["namespace", "principal", "connection"]
@@ -2270,6 +2618,15 @@
                                     "providerCredentialVersion": {
                                       "type": "string",
                                       "minLength": 1
+                                    },
+                                    "tags": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                      },
+                                      "minItems": 1,
+                                      "maxItems": 16
                                     }
                                   },
                                   "required": ["namespace", "principal", "connection"]
@@ -2661,6 +3018,9 @@
           "403": {
             "description": "Forbidden"
           },
+          "404": {
+            "description": "Commands disabled on this mount"
+          },
           "500": {
             "description": "Unexpected failure"
           }
@@ -2725,6 +3085,7 @@
             "bearerAuth": []
           }
         ],
+        "description": "Command route. A handler mounted with commands: false answers 404 here after authentication.",
         "responses": {
           "200": {
             "description": "Typed result",
@@ -2807,6 +3168,9 @@
           "403": {
             "description": "Forbidden"
           },
+          "404": {
+            "description": "Commands disabled on this mount"
+          },
           "500": {
             "description": "Unexpected failure"
           }
@@ -2866,6 +3230,7 @@
             "bearerAuth": []
           }
         ],
+        "description": "Command route. A handler mounted with commands: false answers 404 here after authentication.",
         "responses": {
           "200": {
             "description": "Typed result",
@@ -2935,6 +3300,15 @@
                                 "providerCredentialVersion": {
                                   "type": "string",
                                   "minLength": 1
+                                },
+                                "tags": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                  },
+                                  "minItems": 1,
+                                  "maxItems": 16
                                 }
                               },
                               "required": ["namespace", "principal", "connection"]
@@ -3364,6 +3738,15 @@
                                     "providerCredentialVersion": {
                                       "type": "string",
                                       "minLength": 1
+                                    },
+                                    "tags": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                      },
+                                      "minItems": 1,
+                                      "maxItems": 16
                                     }
                                   },
                                   "required": ["namespace", "principal", "connection"]
@@ -3749,6 +4132,9 @@
           "403": {
             "description": "Forbidden"
           },
+          "404": {
+            "description": "Commands disabled on this mount"
+          },
           "500": {
             "description": "Unexpected failure"
           }
@@ -3808,6 +4194,7 @@
             "bearerAuth": []
           }
         ],
+        "description": "Command route. A handler mounted with commands: false answers 404 here after authentication.",
         "responses": {
           "200": {
             "description": "Typed result",
@@ -3880,6 +4267,15 @@
                                 "providerCredentialVersion": {
                                   "type": "string",
                                   "minLength": 1
+                                },
+                                "tags": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                  },
+                                  "minItems": 1,
+                                  "maxItems": 16
                                 }
                               },
                               "required": ["namespace", "principal", "connection"]
@@ -4221,9 +4617,111 @@
                             "receipts",
                             "lease"
                           ]
+                        },
+                        "alerts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "budgetId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "budgetVersion": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "epoch": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "at": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "percent": {
+                                        "type": "number",
+                                        "minimum": 1,
+                                        "maximum": 100
+                                      }
+                                    },
+                                    "required": ["percent"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "value": {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+$"
+                                      },
+                                      "scale": {
+                                        "type": "number",
+                                        "maximum": 18
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["value", "scale", "unit"]
+                                  }
+                                ]
+                              },
+                              "used": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^-?\\d+$"
+                                  },
+                                  "scale": {
+                                    "type": "number",
+                                    "maximum": 18
+                                  },
+                                  "unit": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": ["value", "scale", "unit"]
+                              },
+                              "reserved": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^-?\\d+$"
+                                  },
+                                  "scale": {
+                                    "type": "number",
+                                    "maximum": 18
+                                  },
+                                  "unit": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": ["value", "scale", "unit"]
+                              }
+                            },
+                            "required": [
+                              "budgetId",
+                              "budgetVersion",
+                              "epoch",
+                              "at",
+                              "used",
+                              "reserved"
+                            ]
+                          }
                         }
                       },
-                      "required": ["outcome", "replayed", "operation"]
+                      "required": ["outcome", "replayed", "operation", "alerts"]
                     },
                     {
                       "type": "object",
@@ -4298,6 +4796,15 @@
                                     "providerCredentialVersion": {
                                       "type": "string",
                                       "minLength": 1
+                                    },
+                                    "tags": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                      },
+                                      "minItems": 1,
+                                      "maxItems": 16
                                     }
                                   },
                                   "required": ["namespace", "principal", "connection"]
@@ -4679,6 +5186,9 @@
           },
           "403": {
             "description": "Forbidden"
+          },
+          "404": {
+            "description": "Commands disabled on this mount"
           },
           "500": {
             "description": "Unexpected failure"
@@ -4929,6 +5439,7 @@
             "bearerAuth": []
           }
         ],
+        "description": "Command route. A handler mounted with commands: false answers 404 here after authentication.",
         "responses": {
           "200": {
             "description": "Typed result",
@@ -5001,6 +5512,15 @@
                                 "providerCredentialVersion": {
                                   "type": "string",
                                   "minLength": 1
+                                },
+                                "tags": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                  },
+                                  "minItems": 1,
+                                  "maxItems": 16
                                 }
                               },
                               "required": ["namespace", "principal", "connection"]
@@ -5342,9 +5862,111 @@
                             "receipts",
                             "lease"
                           ]
+                        },
+                        "alerts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                              "budgetId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "budgetVersion": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "epoch": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "at": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "percent": {
+                                        "type": "number",
+                                        "minimum": 1,
+                                        "maximum": 100
+                                      }
+                                    },
+                                    "required": ["percent"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "value": {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+$"
+                                      },
+                                      "scale": {
+                                        "type": "number",
+                                        "maximum": 18
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["value", "scale", "unit"]
+                                  }
+                                ]
+                              },
+                              "used": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^-?\\d+$"
+                                  },
+                                  "scale": {
+                                    "type": "number",
+                                    "maximum": 18
+                                  },
+                                  "unit": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": ["value", "scale", "unit"]
+                              },
+                              "reserved": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^-?\\d+$"
+                                  },
+                                  "scale": {
+                                    "type": "number",
+                                    "maximum": 18
+                                  },
+                                  "unit": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": ["value", "scale", "unit"]
+                              }
+                            },
+                            "required": [
+                              "budgetId",
+                              "budgetVersion",
+                              "epoch",
+                              "at",
+                              "used",
+                              "reserved"
+                            ]
+                          }
                         }
                       },
-                      "required": ["outcome", "replayed", "operation"]
+                      "required": ["outcome", "replayed", "operation", "alerts"]
                     },
                     {
                       "type": "object",
@@ -5419,6 +6041,15 @@
                                     "providerCredentialVersion": {
                                       "type": "string",
                                       "minLength": 1
+                                    },
+                                    "tags": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                      },
+                                      "minItems": 1,
+                                      "maxItems": 16
                                     }
                                   },
                                   "required": ["namespace", "principal", "connection"]
@@ -5800,6 +6431,9 @@
           },
           "403": {
             "description": "Forbidden"
+          },
+          "404": {
+            "description": "Commands disabled on this mount"
           },
           "500": {
             "description": "Unexpected failure"
@@ -6060,6 +6694,7 @@
             "bearerAuth": []
           }
         ],
+        "description": "Command route. A handler mounted with commands: false answers 404 here after authentication.",
         "responses": {
           "200": {
             "description": "Typed result",
@@ -6132,6 +6767,15 @@
                                 "providerCredentialVersion": {
                                   "type": "string",
                                   "minLength": 1
+                                },
+                                "tags": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                  },
+                                  "minItems": 1,
+                                  "maxItems": 16
                                 }
                               },
                               "required": ["namespace", "principal", "connection"]
@@ -6544,6 +7188,15 @@
                                     "providerCredentialVersion": {
                                       "type": "string",
                                       "minLength": 1
+                                    },
+                                    "tags": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                      },
+                                      "minItems": 1,
+                                      "maxItems": 16
                                     }
                                   },
                                   "required": ["namespace", "principal", "connection"]
@@ -6926,6 +7579,9 @@
           "403": {
             "description": "Forbidden"
           },
+          "404": {
+            "description": "Commands disabled on this mount"
+          },
           "500": {
             "description": "Unexpected failure"
           }
@@ -7055,6 +7711,15 @@
                                     "providerCredentialVersion": {
                                       "type": "string",
                                       "minLength": 1
+                                    },
+                                    "tags": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                      },
+                                      "minItems": 1,
+                                      "maxItems": 16
                                     }
                                   },
                                   "required": ["namespace", "principal", "connection"]
@@ -7831,7 +8496,9 @@
                       "connection",
                       "day",
                       "access_credential",
-                      "platform_pool"
+                      "platform_pool",
+                      "funding_source",
+                      "tag"
                     ]
                   }
                 },
@@ -8187,7 +8854,9 @@
                         "connection",
                         "day",
                         "access_credential",
-                        "platform_pool"
+                        "platform_pool",
+                        "funding_source",
+                        "tag"
                       ]
                     }
                   },
@@ -8345,11 +9014,40 @@
                                       }
                                     },
                                     "required": ["kind", "namespace", "poolId"]
+                                  },
+                                  {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "const": "tag"
+                                      },
+                                      "namespace": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "tag": {
+                                        "type": "string",
+                                        "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                      }
+                                    },
+                                    "required": ["kind", "namespace", "tag"]
                                   }
                                 ]
                               },
                               "surface": {
-                                "enum": ["app", "programmatic", "any"]
+                                "enum": [
+                                  "app",
+                                  "programmatic",
+                                  "any",
+                                  "app",
+                                  "worker",
+                                  "api",
+                                  "sdk",
+                                  "cli",
+                                  "mcp",
+                                  "proxy"
+                                ]
                               },
                               "unit": {
                                 "type": "string",
@@ -8456,7 +9154,72 @@
                                 ]
                               },
                               "onExceed": {
-                                "enum": ["block", "warn"]
+                                "enum": ["block", "allow", "warn"]
+                              },
+                              "hardLimit": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "value": {
+                                    "type": "string",
+                                    "pattern": "^-?\\d+$"
+                                  },
+                                  "scale": {
+                                    "type": "number",
+                                    "maximum": 18
+                                  },
+                                  "unit": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": ["value", "scale", "unit"]
+                              },
+                              "alerts": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "at": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "percent": {
+                                              "type": "number",
+                                              "minimum": 1,
+                                              "maximum": 100
+                                            }
+                                          },
+                                          "required": ["percent"]
+                                        },
+                                        {
+                                          "type": "object",
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "value": {
+                                              "type": "string",
+                                              "pattern": "^-?\\d+$"
+                                            },
+                                            "scale": {
+                                              "type": "number",
+                                              "maximum": 18
+                                            },
+                                            "unit": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": ["value", "scale", "unit"]
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": ["at"]
+                                },
+                                "maxItems": 8
                               }
                             },
                             "required": [
@@ -8635,6 +9398,24 @@
                         }
                       },
                       "required": ["kind", "namespace", "poolId"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "const": "tag"
+                        },
+                        "namespace": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "tag": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                        }
+                      },
+                      "required": ["kind", "namespace", "tag"]
                     }
                   ]
                 }
@@ -8786,11 +9567,40 @@
                                           }
                                         },
                                         "required": ["kind", "namespace", "poolId"]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "const": "tag"
+                                          },
+                                          "namespace": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          },
+                                          "tag": {
+                                            "type": "string",
+                                            "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                          }
+                                        },
+                                        "required": ["kind", "namespace", "tag"]
                                       }
                                     ]
                                   },
                                   "surface": {
-                                    "enum": ["app", "programmatic", "any"]
+                                    "enum": [
+                                      "app",
+                                      "programmatic",
+                                      "any",
+                                      "app",
+                                      "worker",
+                                      "api",
+                                      "sdk",
+                                      "cli",
+                                      "mcp",
+                                      "proxy"
+                                    ]
                                   },
                                   "unit": {
                                     "type": "string",
@@ -8897,7 +9707,72 @@
                                     ]
                                   },
                                   "onExceed": {
-                                    "enum": ["block", "warn"]
+                                    "enum": ["block", "allow", "warn"]
+                                  },
+                                  "hardLimit": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "value": {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+$"
+                                      },
+                                      "scale": {
+                                        "type": "number",
+                                        "maximum": 18
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["value", "scale", "unit"]
+                                  },
+                                  "alerts": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "at": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "percent": {
+                                                  "type": "number",
+                                                  "minimum": 1,
+                                                  "maximum": 100
+                                                }
+                                              },
+                                              "required": ["percent"]
+                                            },
+                                            {
+                                              "type": "object",
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "value": {
+                                                  "type": "string",
+                                                  "pattern": "^-?\\d+$"
+                                                },
+                                                "scale": {
+                                                  "type": "number",
+                                                  "maximum": 18
+                                                },
+                                                "unit": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                }
+                                              },
+                                              "required": ["value", "scale", "unit"]
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": ["at"]
+                                    },
+                                    "maxItems": 8
                                   }
                                 },
                                 "required": [
@@ -9128,12 +10003,24 @@
                     "providerCredentialVersion": {
                       "type": "string",
                       "minLength": 1
+                    },
+                    "tags": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                      },
+                      "minItems": 1,
+                      "maxItems": 16
                     }
                   },
                   "required": ["namespace", "principal", "connection"]
                 },
                 "surface": {
                   "enum": ["app", "programmatic"]
+                },
+                "source": {
+                  "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
                 },
                 "units": {
                   "type": "array",

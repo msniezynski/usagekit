@@ -3,6 +3,8 @@ import type { StoreFactory, StoreCapabilities } from "./factory.js";
 import { expirationTests } from "./expiration.js";
 import { reserveTests } from "./reserve.js";
 import { admissionTests } from "./admission.js";
+import { alertTests } from "./alerts.js";
+import { tagTests } from "./tags.js";
 import { dispatchTests } from "./dispatch.js";
 import { authorityTests } from "./authority.js";
 import { recoveryTests } from "./recovery.js";
@@ -14,6 +16,8 @@ export function runStoreConformance(factory: StoreFactory, capabilities: StoreCa
     reserveTests(factory);
     expirationTests(factory);
     admissionTests(factory);
+    alertTests(factory);
+    tagTests(factory);
     dispatchTests(factory);
     authorityTests(factory);
     recoveryTests(factory);

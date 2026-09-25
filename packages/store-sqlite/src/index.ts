@@ -2,15 +2,17 @@ import Database from "better-sqlite3";
 import { chmodSync, existsSync, openSync, closeSync } from "node:fs";
 import type { Budget } from "@usagekit/core";
 import type { Store, Clock } from "@usagekit/store";
+import { InvalidInput, validateBudget } from "@usagekit/store";
 import { migrate } from "./migrate.js";
-import { canonical, validateQuantity } from "./util.js";
+import { canonical } from "./util.js";
 import { find } from "./records.js";
 import { commands } from "./commands.js";
 import { currentBudgets, insertBudget, selected, status } from "./budgets.js";
 import { usageReader } from "./reads.js";
 export type BudgetWriteResult =
   | { outcome: "saved"; budget: Budget }
-  | { outcome: "conflict"; reason: "budget_version" };
+  | { outcome: "conflict"; reason: "budget_version" }
+  | { outcome: "invalid"; field: string; reason: string };
 export type SqliteStore = Store & {
   database: Database.Database;
   close(): void;
@@ -60,7 +62,13 @@ export function createSqliteStore({
     putBudget: (b) =>
       db
         .transaction(() => {
-          if (b.limit) validateQuantity(b.limit);
+          try {
+            validateBudget(b);
+          } catch (error) {
+            if (error instanceof InvalidInput)
+              return { outcome: "invalid", field: error.field, reason: error.reason } as const;
+            throw error;
+          }
           const current = db
             .prepare(
               "SELECT MAX(version) AS version FROM budgets WHERE namespace=? AND budget_id=?",

@@ -29,7 +29,7 @@ const input = () => ({
   scope: { namespace: "local", principal: "local", connection: "c" },
   fundingSource: "byok" as const,
   costOwner: "local",
-  surface: "app" as const,
+  surface: "programmatic" as const,
   source: "cli" as const,
   provider: "example",
   operation: "search",
@@ -148,6 +148,19 @@ test("provider routes never leak plaintext to responses, logs, config or databas
     expect((await request("/providers/connections")).data).toEqual([
       { provider: "example", connectionId: "c" },
     ]);
+    expect(
+      (
+        await request("/providers/connections", "POST", {
+          provider: "example",
+          connectionId: "c",
+          secret: marker,
+          tags: ["prod", "eu"],
+        })
+      ).data,
+    ).toEqual({ provider: "example", connectionId: "c", tags: ["eu", "prod"] });
+    expect((await request("/providers/connections")).data).toEqual([
+      { provider: "example", connectionId: "c", tags: ["eu", "prod"] },
+    ]);
     expect((await request("/providers/connections/c/test", "POST")).data).toMatchObject({
       valid: true,
       method: "format",
@@ -250,6 +263,9 @@ test("provider and budget input errors are safe and locked vault leaves metering
       [],
       { provider: "x", connectionId: "c", secret: "" },
       { provider: "x", connectionId: "c", secret: crypto.randomUUID(), extra: true },
+      { provider: "x", connectionId: "c", secret: crypto.randomUUID(), tags: [] },
+      { provider: "x", connectionId: "c", secret: crypto.randomUUID(), tags: ["Bad"] },
+      { provider: "x", connectionId: "c", secret: crypto.randomUUID(), tags: "prod" },
     ])
       expect((await send("/providers/connections", bad)).status).toBe(400);
     expect(
@@ -295,6 +311,17 @@ test("provider and budget input errors are safe and locked vault leaves metering
     expect(await createRemoteMeter({ baseUrl: s.url, token }).reserve(input())).toMatchObject({
       outcome: "reserved",
     });
+    const hardLimit = { unit: "requests", value: "2", scale: 0 };
+    expect(
+      (await send("/budgets", { ...budget, version: 3, hardLimit }, "PUT")).status,
+      "hardLimit requires allow",
+    ).toBe(400);
+    expect(
+      (await send("/budgets", { ...budget, version: 3, onExceed: "warn", hardLimit }, "PUT"))
+        .status,
+      "warn is accepted as the deprecated alias of allow",
+    ).toBe(200);
+    expect(s.store.listBudgets()).toMatchObject([{ id: "b", version: 3, onExceed: "allow" }]);
   } finally {
     await s.stop();
     await s.stop();

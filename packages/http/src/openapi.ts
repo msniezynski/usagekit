@@ -9,7 +9,10 @@ function jsonSchema(s: any): Record<string, unknown> {
       if (a.type === "integer") out.type = "integer";
       if (a.type === "min_value") out.minimum = a.requirement;
       if (a.type === "max_value") out.maximum = a.requirement;
-      if (a.type === "min_length") out.minLength = a.requirement;
+      if (a.type === "min_length")
+        out[out.type === "array" ? "minItems" : "minLength"] = a.requirement;
+      if (a.type === "max_length")
+        out[out.type === "array" ? "maxItems" : "maxLength"] = a.requirement;
       if (a.type === "iso_timestamp") out.format = "date-time";
       if (a.type === "ends_with") out.pattern = `${a.requirement}$`;
     }
@@ -65,6 +68,12 @@ export function generateOpenApi() {
       : `/v1/operations/${name}`;
     const operation = {
       security: [{ bearerAuth: [] }],
+      ...(read
+        ? {}
+        : {
+            description:
+              "Command route. A handler mounted with commands: false answers 404 here after authentication.",
+          }),
       responses: {
         "200": {
           description: "Typed result",
@@ -73,6 +82,7 @@ export function generateOpenApi() {
         "400": { description: "Invalid schema" },
         "401": { description: "Authentication required" },
         "403": { description: "Forbidden" },
+        ...(read ? {} : { "404": { description: "Commands disabled on this mount" } }),
         "500": { description: "Unexpected failure" },
       },
       ...(read

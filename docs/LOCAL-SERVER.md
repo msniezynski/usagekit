@@ -90,11 +90,15 @@ Every command accepts `--json`. Monetary and quantity integers become decimal st
 Exit codes: 0 success; 1 denied, exceeded or replayed dispatch; 2 usage error; 3 remote unavailable.
 An exceeded result includes `resetsAt`. On transport failure inspect or replay accounting; never repeat the provider call blindly.
 
-Budget scopes: `principal` (default local), `connection`, `group`, `access_credential`, `platform_pool`.
-Use `--scope` with `--connection`, `--group`, `--credential-kind`/`--credential-id`, or `--pool`.
+Budget scopes: `principal` (default local), `connection`, `group`, `tag`, `access_credential`, `platform_pool`.
+Use `--scope` with `--connection`, `--group`, `--tag`, `--credential-kind`/`--credential-id`, or `--pool`.
 Budget windows: `month`; `cycle --epoch <id> --from <UTC> --to <UTC>`; `reset --epoch <id> --from <UTC>`.
-`budget set` creates the next version. `--warn` warns instead of blocking; `--unlimited --unit requests` removes a bound.
+`budget set` creates the next version. `--allow` (alias `--warn`) admits past the limit with a warning; `--unlimited --unit requests` removes a bound.
+`--surface app|programmatic|any` bounds a source group; `--source cli|mcp|api|sdk|proxy|app|worker` bounds exactly one source. CLI reservations are `programmatic` from source `cli`.
+`--hard-limit <amount:unit>` requires `--allow` and denies past that amount. Repeat `--alert <percent>` or `--alert <amount:unit>` for up to eight ascending thresholds; each crossing is returned once per window in `alerts`.
+`provider add` accepts repeatable `--tag <tag>` (lowercase `[a-z0-9][a-z0-9_.:-]*`, up to 16); `report reserve` snapshots the connection's tags into the reservation.
 Usage accepts `--window cycle|reset`, using matching budget windows. Select `--id` when windows differ.
+`--group-by` (alias `--group`) accepts `funding_source` and `tag` next to the other dimensions; tag rows repeat an operation once per tag.
 Use `--cursor` from the previous JSON usage page; cursor snapshots expire after five minutes.
 
 ## Restart and enforcement boundary

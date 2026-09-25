@@ -10,6 +10,8 @@ export function createMemoryStore({ clock, budgets }: { clock: Clock; budgets: B
     clock,
     budgets,
     warnings: new Map(),
+    reserveAlerts: new Map(),
+    alerts: new Set(),
     leaseKinds: new Map(),
     commands: new Map(),
     cursors: new Map(),

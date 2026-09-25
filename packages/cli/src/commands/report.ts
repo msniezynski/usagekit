@@ -2,6 +2,7 @@ import { fromDecimalString } from "@usagekit/core";
 import type { Operation, SettleInput, ReleaseInput } from "@usagekit/core";
 import { type Context, access, string, quantity, UsageError } from "../context.js";
 import { journal } from "../journal.js";
+import type { Connection } from "./provider.js";
 export async function report(c: Context, command?: string) {
   const o = c.options,
     commandId = string(o, "command-id", crypto.randomUUID());
@@ -10,9 +11,19 @@ export async function report(c: Context, command?: string) {
   if (command === "reserve") {
     const leaseTtlMs = Number(string(o, "lease-ms", "60000"));
     if (!Number.isSafeInteger(leaseTtlMs) || leaseTtlMs <= 0) throw new UsageError();
+    const connection = string(o, "connection");
+    // Connection tags are snapshotted into the reservation; later relabeling never rewrites history.
+    const tags = (await c.rest<Connection[]>("/providers/connections")).find(
+      (e) => e.connectionId === connection,
+    )?.tags;
     const i = {
       operationId: string(o, "operation", commandId),
-      scope: { namespace: "local", principal: "local", connection: string(o, "connection") },
+      scope: {
+        namespace: "local",
+        principal: "local",
+        connection,
+        ...(tags?.length ? { tags } : {}),
+      },
       fundingSource: "byok" as const,
       costOwner: "local",
       surface: "programmatic" as const,

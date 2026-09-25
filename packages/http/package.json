@@ -1,6 +1,6 @@
 {
   "name": "@usagekit/http",
-  "version": "0.0.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
@@ -19,8 +19,8 @@
     "prepublishOnly": "node ../../scripts/deny-publish.mjs"
   },
   "dependencies": {
-    "@usagekit/core": "0.1.0",
-    "@usagekit/meter": "0.1.0",
+    "@usagekit/core": "0.2.0",
+    "@usagekit/meter": "0.2.0",
     "valibot": "1.5.0"
   }
 }

@@ -1,13 +1,21 @@
 import type { AdmissionPolicy } from "@usagekit/core";
-import { admission } from "./admission.js";
+import { admission, recordAlerts, reachedBySettlement } from "./admission.js";
 import type { ReserveInput, ReserveResult, Operation } from "@usagekit/core";
-import { copy, key, semantics, validateQuantity, InvalidInput } from "./state.js";
+import {
+  copy,
+  key,
+  semantics,
+  validateQuantity,
+  withNormalizedTags,
+  InvalidInput,
+} from "./state.js";
 import type { State } from "./state.js";
-export function reserve(s: State, i: ReserveInput, policy?: AdmissionPolicy): ReserveResult {
-  validTtl(i.reservationTtlMs ?? 300000, "reservationTtlMs");
-  i.estimate.forEach(validateQuantity);
-  if (new Set(i.estimate.map((q) => q.unit)).size !== i.estimate.length)
+export function reserve(s: State, raw: ReserveInput, policy?: AdmissionPolicy): ReserveResult {
+  validTtl(raw.reservationTtlMs ?? 300000, "reservationTtlMs");
+  raw.estimate.forEach(validateQuantity);
+  if (new Set(raw.estimate.map((q) => q.unit)).size !== raw.estimate.length)
     throw new InvalidInput("estimate", "duplicate unit");
+  const i = withNormalizedTags(raw);
   expireReservations(s, { namespace: i.scope.namespace });
   const k = key(i.scope.namespace, i.operationId),
     existing = s.operations.get(k);
@@ -17,6 +25,7 @@ export function reserve(s: State, i: ReserveInput, policy?: AdmissionPolicy): Re
           outcome: "reserved",
           replayed: true,
           warnings: copy(s.warnings.get(k) ?? []),
+          alerts: copy(s.reserveAlerts.get(k) ?? []),
           operation: copy(existing),
         }
       : { outcome: "conflict", reason: "semantic_mismatch", operation: copy(existing) };
@@ -47,10 +56,13 @@ export function reserve(s: State, i: ReserveInput, policy?: AdmissionPolicy): Re
   s.operations.set(k, operation);
   s.identities.set(k, semantics(i));
   s.warnings.set(k, copy(check.warnings));
+  const alerts = recordAlerts(s, i.scope.namespace, check.alerts);
+  s.reserveAlerts.set(k, copy(alerts));
   return {
     outcome: "reserved",
     replayed: false,
     warnings: copy(check.warnings),
+    alerts: copy(alerts),
     operation: copy(operation),
   };
 }
@@ -217,7 +229,13 @@ export function settle(
       : "settled";
   op.lease = null;
   touch(s, op);
-  const result: SettleResult = { outcome: "settled", replayed: false, operation: copy(op) };
+  const alerts = recordAlerts(s, op.scope.namespace, reachedBySettlement(s, op));
+  const result: SettleResult = {
+    outcome: "settled",
+    replayed: false,
+    operation: copy(op),
+    alerts: copy(alerts),
+  };
   s.commands.set(ck, { identity, result: copy(result) });
   return result;
 }

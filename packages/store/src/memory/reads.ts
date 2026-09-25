@@ -79,43 +79,52 @@ function rows(s: State, q: UsageQuery): UsageRow[] {
           ? op.platformPools
           : [""]
       : [""];
-    for (const pool of pools) {
-      const dimensions: Record<string, string> = {};
-      for (const dimension of q.groupBy) {
-        switch (dimension) {
-          case "principal":
-            dimensions[dimension] = op.scope.principal;
-            break;
-          case "connection":
-            dimensions[dimension] = op.scope.connection;
-            break;
-          case "day":
-            dimensions[dimension] = new Date(receipt.occurredAt).toISOString().slice(0, 10);
-            break;
-          case "access_credential":
-            dimensions[dimension] = op.scope.accessCredential
-              ? canonical([op.scope.accessCredential.kind, op.scope.accessCredential.id])
-              : "";
-            break;
-          case "platform_pool":
-            dimensions[dimension] = pool;
-            break;
-          default:
-            dimensions[dimension] = op[dimension];
+    // Pool and tag rows explode per value; an operation without any contributes one empty row.
+    const tags = q.groupBy.includes("tag") && op.scope.tags?.length ? op.scope.tags : [""];
+    for (const pool of pools)
+      for (const tag of tags) {
+        const dimensions: Record<string, string> = {};
+        for (const dimension of q.groupBy) {
+          switch (dimension) {
+            case "principal":
+              dimensions[dimension] = op.scope.principal;
+              break;
+            case "connection":
+              dimensions[dimension] = op.scope.connection;
+              break;
+            case "day":
+              dimensions[dimension] = new Date(receipt.occurredAt).toISOString().slice(0, 10);
+              break;
+            case "access_credential":
+              dimensions[dimension] = op.scope.accessCredential
+                ? canonical([op.scope.accessCredential.kind, op.scope.accessCredential.id])
+                : "";
+              break;
+            case "platform_pool":
+              dimensions[dimension] = pool;
+              break;
+            case "funding_source":
+              dimensions[dimension] = op.fundingSource;
+              break;
+            case "tag":
+              dimensions[dimension] = tag;
+              break;
+            default:
+              dimensions[dimension] = op[dimension];
+          }
         }
+        const k = canonical([dimensions, op.fundingSource, op.costOwner]),
+          prev = map.get(k),
+          measurements = receipt.measurements.filter((m) => q.units.includes(m.unit));
+        map.set(k, {
+          dimensions,
+          fundingSource: op.fundingSource,
+          costOwner: op.costOwner,
+          measurements: combineMeasurements(prev?.measurements ?? [], measurements),
+          cost: prev ? combineCost(prev.cost, receipt.cost) : copy(receipt.cost),
+          unknownOperations: (prev?.unknownOperations ?? 0n) + (op.state === "pending" ? 1n : 0n),
+        });
       }
-      const k = canonical([dimensions, op.fundingSource, op.costOwner]),
-        prev = map.get(k),
-        measurements = receipt.measurements.filter((m) => q.units.includes(m.unit));
-      map.set(k, {
-        dimensions,
-        fundingSource: op.fundingSource,
-        costOwner: op.costOwner,
-        measurements: combineMeasurements(prev?.measurements ?? [], measurements),
-        cost: prev ? combineCost(prev.cost, receipt.cost) : copy(receipt.cost),
-        unknownOperations: (prev?.unknownOperations ?? 0n) + (op.state === "pending" ? 1n : 0n),
-      });
-    }
   }
   return [...map.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([, r]) => r);
 }

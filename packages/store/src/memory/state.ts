@@ -1,9 +1,10 @@
 import type { DispatchGrant } from "@usagekit/core";
 import type { UsageRow } from "@usagekit/core";
 import type { SettleResult, ReleaseResult } from "@usagekit/core";
-import type { AllowanceExceeded } from "@usagekit/core";
+import type { AllowanceExceeded, BudgetAlertCrossed } from "@usagekit/core";
 import type { Budget, Operation, ReserveInput, OperationRef, Quantity } from "@usagekit/core";
 import type { Clock } from "../clock.js";
+import { normalizeTags } from "@usagekit/core";
 export class InvalidInput extends Error {
   constructor(
     readonly field: string,
@@ -25,13 +26,23 @@ export function canonical(value: unknown): string {
   return JSON.stringify(value) ?? "null";
 }
 export const key = (namespace: string, id: string) => canonical([namespace, id]);
+/** Reserve identity: diagnostic ids and attribution tags are not semantic. */
 export function semantics(i: ReserveInput): string {
-  const { correlationId: _, parentOperationId: __, ...rest } = i;
+  const { correlationId: _, parentOperationId: __, scope, ...rest } = i;
+  const { tags: ___, ...scopeIdentity } = scope;
   return canonical({
     ...rest,
+    scope: scopeIdentity,
     estimate: [...i.estimate].sort((a, b) => a.unit.localeCompare(b.unit)),
     platformPools: [...(i.platformPools ?? [])].sort(),
   });
+}
+/** Sorted tags on the stored input, or an InvalidInput when the list breaks the tag rules. */
+export function withNormalizedTags(i: ReserveInput): ReserveInput {
+  if (i.scope.tags === undefined) return i;
+  const tags = normalizeTags(i.scope.tags);
+  if (!tags) throw new InvalidInput("scope.tags", "1 to 16 unique tags matching the tag pattern");
+  return { ...i, scope: { ...i.scope, tags } };
 }
 export const maxMoneyUnits = 2n ** 63n - 1n;
 export function validateQuantity(q: Quantity): void {
@@ -61,6 +72,10 @@ export type State = {
   commands: Map<string, { identity: string; result: SettleResult | ReleaseResult | DispatchGrant }>;
   leaseKinds: Map<string, "lease" | "recovery">;
   warnings: Map<string, readonly AllowanceExceeded[]>;
+  /** Crossings each reserve reported, replayed verbatim. */
+  reserveAlerts: Map<string, readonly BudgetAlertCrossed[]>;
+  /** Recorded crossings keyed by namespace, budget id, epoch and threshold. */
+  alerts: Set<string>;
 };
 export function find(s: State, ref: OperationRef): Operation | null {
   const op = s.operations.get(key(ref.namespace, ref.operationId));

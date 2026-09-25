@@ -78,6 +78,45 @@ describe("embedded Meter", () => {
     ])
       expect(await meter.reserve(i)).toMatchObject({ outcome: "invalid" });
   });
+  test("a source outside the declared surface group is rejected before Store", async () => {
+    const spy = vi.spyOn(store, "reserve");
+    expect(await meter.reserve({ ...input(), surface: "app", source: "mcp" })).toEqual({
+      outcome: "invalid",
+      field: "source",
+      reason: "source outside surface group",
+    });
+    expect(
+      await meter.reserve({ ...input(), surface: "programmatic", source: "worker" }),
+    ).toMatchObject({ outcome: "invalid", field: "source" });
+    expect(spy).not.toHaveBeenCalled();
+    expect(
+      await meter.applicableBudgets(access, {
+        scope: input().scope,
+        surface: "app",
+        source: "cli",
+        units: ["requests"],
+      }),
+    ).toMatchObject({ outcome: "invalid", field: "source" });
+    expect(await meter.reserve({ ...input(), surface: "app", source: "worker" })).toMatchObject({
+      outcome: "reserved",
+    });
+  });
+  test("applicable budgets list source bounds only for that source", async () => {
+    budgets.push({
+      ...b({ kind: "principal", namespace: "test", principal: "u1" }),
+      surface: "cli",
+    });
+    const q = { scope: input().scope, surface: "programmatic" as const, units: ["requests"] };
+    expect(await meter.applicableBudgets(access, { ...q, source: "cli" })).toMatchObject({
+      outcome: "ok",
+      value: [{ budget: { surface: "cli" } }],
+    });
+    expect(await meter.applicableBudgets(access, { ...q, source: "api" })).toEqual({
+      outcome: "ok",
+      value: [],
+    });
+    expect(await meter.applicableBudgets(access, q)).toEqual({ outcome: "ok", value: [] });
+  });
   test("read validation rejects reversed time, excess limit and principal grouping", async () => {
     for (const q of [
       { ...query, from: query.to, to: query.from },
@@ -164,7 +203,14 @@ describe("embedded Meter", () => {
       store,
       clock,
       policy: {
-        budgetOrder: ["principal", "platform_pool", "group", "connection", "access_credential"],
+        budgetOrder: [
+          "principal",
+          "platform_pool",
+          "group",
+          "tag",
+          "connection",
+          "access_credential",
+        ],
         requireEstimateForBoundedUnits: true,
       },
     });
@@ -172,6 +218,58 @@ describe("embedded Meter", () => {
       outcome: "exceeded",
       exceeded: { budget: { id: principal.id } },
     });
+  });
+  test("tags are validated and sorted before the Store sees them", async () => {
+    const spy = vi.spyOn(store, "reserve");
+    const i = input();
+    expect(await meter.reserve({ ...i, scope: { ...i.scope, tags: ["Prod"] } })).toMatchObject({
+      outcome: "invalid",
+      field: "scope.tags",
+    });
+    expect(await meter.reserve({ ...i, scope: { ...i.scope, tags: [] } })).toMatchObject({
+      outcome: "invalid",
+      field: "scope.tags",
+    });
+    expect(spy).not.toHaveBeenCalled();
+    expect(await meter.reserve({ ...i, scope: { ...i.scope, tags: ["b", "a"] } })).toMatchObject({
+      outcome: "reserved",
+      operation: { scope: { tags: ["a", "b"] } },
+    });
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({ scope: expect.objectContaining({ tags: ["a", "b"] }) }),
+      expect.anything(),
+    );
+  });
+  test("tag budgets span principals, so their reads need the whole namespace or budget management", async () => {
+    const tag = b({ kind: "tag", namespace: "test", tag: "prod" });
+    budgets.push(tag);
+    const q = {
+      scope: { ...input().scope, tags: ["prod"] },
+      surface: "app" as const,
+      units: ["requests"],
+    };
+    expect(await meter.applicableBudgets(access, q)).toMatchObject({
+      outcome: "ok",
+      value: [
+        { redacted: true, used: null, reserved: null, remaining: null, budget: { limit: null } },
+      ],
+    });
+    expect(await meter.definedBudgets(access, { scope: tag.scope })).toEqual({
+      outcome: "forbidden",
+    });
+    for (const wide of [
+      { ...access, readablePrincipals: "*" as const },
+      { ...access, canManageBudgets: true },
+    ]) {
+      expect(await meter.applicableBudgets(wide, q)).toMatchObject({
+        outcome: "ok",
+        value: [{ budget: { id: tag.id, limit: { value: 0n } }, remaining: { value: 0n } }],
+      });
+      expect(await meter.definedBudgets(wide, { scope: tag.scope })).toMatchObject({
+        outcome: "ok",
+        value: [{ id: tag.id }],
+      });
+    }
   });
   test("getOperation requires principal and billing details authorization", async () => {
     const i = input();

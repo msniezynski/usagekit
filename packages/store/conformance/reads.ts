@@ -1,5 +1,5 @@
 import { beforeEach, afterEach, describe, test, expect } from "vitest";
-import type { UsageQuery, Receipt, BudgetScope } from "@usagekit/core";
+import type { UsageQuery, Receipt, BudgetScope, ReserveInput } from "@usagekit/core";
 import type { StoreFactory, StoreFixture, StoreCapabilities } from "./factory.js";
 import { input, command, receipt, unknownReceipt, budget, quantity, ref } from "./helpers.js";
 export function readsTests(factory: StoreFactory, capabilities: StoreCapabilities) {
@@ -17,7 +17,12 @@ export function readsTests(factory: StoreFactory, capabilities: StoreCapabilitie
       groupBy: ["provider"],
       ...overrides,
     });
-    const settled = async (r: Receipt = receipt(), principal = "u1", provider = "search") => {
+    const settled = async (
+      r: Receipt = receipt(),
+      principal = "u1",
+      provider = "search",
+      overrides: Partial<ReserveInput> = {},
+    ) => {
       const result = await f.store.reserve(
         input({
           scope: {
@@ -26,9 +31,11 @@ export function readsTests(factory: StoreFactory, capabilities: StoreCapabilitie
             connection: "c1",
             group: "g1",
             accessCredential: { kind: "api_key", id: "k1" },
+            tags: ["t1"],
           },
           platformPools: ["p1"],
           provider,
+          ...overrides,
         }),
       );
       if (result.outcome !== "reserved") throw new Error("fixture");
@@ -54,6 +61,8 @@ export function readsTests(factory: StoreFactory, capabilities: StoreCapabilitie
       "day",
       "access_credential",
       "platform_pool",
+      "funding_source",
+      "tag",
     ] as const)("group by %s uses only requested dimensions", async (dim) => {
       await settled();
       const page = await f.store.aggregate(query({ groupBy: [dim] }));
@@ -61,6 +70,71 @@ export function readsTests(factory: StoreFactory, capabilities: StoreCapabilitie
       expect(Object.keys(page.rows[0]!.dimensions)).toEqual([dim]);
       expect(page.rows[0]!.measurements[0]!.quantity?.value).toBe(1n);
     });
+    const cost = (units: bigint): Receipt =>
+      receipt({ cost: { certainty: "measured", money: { units, currency: "USD" } } });
+    const tagged = (tags: readonly string[] | undefined) => ({
+      scope: {
+        namespace: "test",
+        principal: "u1",
+        connection: "c1",
+        ...(tags ? { tags } : {}),
+      },
+    });
+    test("funding source totals equal the sum of their operations", async () => {
+      await settled(cost(1n));
+      await settled(cost(2n));
+      await settled(cost(4n), "u1", "search", { fundingSource: "platform", costOwner: "platform" });
+      const page = await f.store.aggregate(query({ groupBy: ["funding_source"] }));
+      expect(page.rows).toEqual([
+        expect.objectContaining({
+          dimensions: { funding_source: "byok" },
+          fundingSource: "byok",
+          cost: { certainty: "measured", money: { units: 3n, currency: "USD" } },
+          measurements: [{ unit: "requests", certainty: "measured", quantity: quantity(2n) }],
+        }),
+        expect.objectContaining({
+          dimensions: { funding_source: "platform" },
+          fundingSource: "platform",
+          cost: { certainty: "measured", money: { units: 4n, currency: "USD" } },
+        }),
+      ]);
+    });
+    test("tag rows count a two-tag operation twice, so they are not additive across tags", async () => {
+      await settled(cost(3n), "u1", "search", tagged(["a", "b"]));
+      await settled(cost(5n), "u1", "search", tagged(undefined));
+      const page = await f.store.aggregate(query({ groupBy: ["tag"] }));
+      expect(page.rows.map((r) => [r.dimensions.tag, r.cost.money?.units])).toEqual([
+        ["", 5n],
+        ["a", 3n],
+        ["b", 3n],
+      ]);
+      expect((await f.store.aggregate(query({ groupBy: ["provider"] }))).rows[0]).toMatchObject({
+        cost: { money: { units: 8n } },
+      });
+    });
+    test.each(["funding_source", "tag"] as const)(
+      "cursor pagination is stable when grouping by %s",
+      async (dim) => {
+        await settled(cost(1n), "u1", "search", tagged(["a", "b"]));
+        await settled(cost(2n), "u1", "search", {
+          ...tagged(["c"]),
+          fundingSource: "platform",
+          costOwner: "platform",
+        });
+        const all = await f.store.aggregate(query({ groupBy: [dim, "connection"] }));
+        const pages = [];
+        let cursor: string | undefined;
+        do {
+          const page = await f.store.aggregate(
+            query({ groupBy: [dim, "connection"], limit: 1, ...(cursor ? { cursor } : {}) }),
+          );
+          pages.push(...page.rows);
+          cursor = page.nextCursor;
+        } while (cursor);
+        expect(pages).toEqual(all.rows);
+        expect(pages.length).toBe(dim === "tag" ? 3 : 2);
+      },
+    );
     test("late receipt groups by occurrence; corrected history is not double-counted", async () => {
       const r = receipt({ occurredAt: "2026-09-02T10:00:00.000Z" });
       const op = await settled(r);
@@ -140,6 +214,7 @@ export function readsTests(factory: StoreFactory, capabilities: StoreCapabilitie
         accessCredential: { kind: "api_key", id: "k1" },
       },
       { kind: "platform_pool", namespace: "test", poolId: "p1" },
+      { kind: "tag", namespace: "test", tag: "t1" },
     ];
     test.each(scopes)("defined budgets are exact: $kind", async (scope) => {
       const b = budget({ scope });

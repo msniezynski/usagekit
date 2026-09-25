@@ -11,4 +11,13 @@ export {
 export { aggregate, definedBudgets, applicableBudgets } from "./memory/reads.js";
 export { copy, find, key, canonical, InvalidInput } from "./memory/state.js";
 export type { State } from "./memory/state.js";
-export { plus, effective, currentBudgets } from "./memory/admission.js";
+export {
+  plus,
+  effective,
+  currentBudgets,
+  validateBudget,
+  crossing,
+  reachedAlerts,
+  alertKey,
+  alertThreshold,
+} from "./memory/admission.js";

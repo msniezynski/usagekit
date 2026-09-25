@@ -18,7 +18,11 @@ test("migrations are idempotent and reject downgrade/newer schema", () => {
       { version: 1 },
       { version: 2 },
       { version: 3 },
+      { version: 4 },
     ]);
+    expect(
+      db.prepare("SELECT name FROM sqlite_master WHERE name='budget_alerts'").get(),
+    ).toBeTruthy();
     expect(() => migrate(db, 0)).toThrow("Downgrade");
     db.prepare("INSERT INTO migrations(version) VALUES (99)").run();
     expect(() => migrate(db)).toThrow("Downgrade");
@@ -130,8 +134,8 @@ test("version-one operations, receipts and command replays survive migration", a
       expect(
         await s.getOperation({ namespace: "test", principal: "u", operationId: "op" }),
       ).toEqual(op);
-      expect(await s.reserve(input)).toMatchObject({ replayed: true });
-      expect(await s.settle(command)).toEqual({ ...result, replayed: true });
+      expect(await s.reserve(input)).toMatchObject({ replayed: true, alerts: [] });
+      expect(await s.settle(command)).toEqual({ ...result, replayed: true, alerts: [] });
       expect(
         (
           await s.aggregate({

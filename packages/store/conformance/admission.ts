@@ -19,6 +19,7 @@ export function admissionTests(factory: StoreFactory) {
         accessCredential: { kind: "oauth_client", id: "k1" },
       },
       { kind: "platform_pool", namespace: "test", poolId: "p1" },
+      { kind: "tag", namespace: "test", tag: "t1" },
     ];
     const candidate = () =>
       input({
@@ -28,6 +29,7 @@ export function admissionTests(factory: StoreFactory) {
           group: "g1",
           connection: "c1",
           accessCredential: { kind: "oauth_client", id: "k1" },
+          tags: ["t1"],
         },
         fundingSource: "platform",
         platformPools: ["p1"],
@@ -54,11 +56,64 @@ export function admissionTests(factory: StoreFactory) {
     test("surface exact and any", async () => {
       f.budgets.push(budget({ surface: "programmatic", limit: quantity(0n) }));
       expect(await f.store.reserve(candidate())).toMatchObject({ outcome: "reserved" });
-      expect(await f.store.reserve({ ...candidate(), surface: "programmatic" })).toMatchObject({
-        outcome: "exceeded",
-      });
+      expect(await f.store.reserve(programmatic("api"))).toMatchObject({ outcome: "exceeded" });
       f.budgets[0]!.surface = "any";
       expect(await f.store.reserve(candidate())).toMatchObject({ outcome: "exceeded" });
+    });
+    const programmatic = (source: "api" | "cli" | "mcp" | "sdk" | "proxy") => ({
+      ...candidate(),
+      surface: "programmatic" as const,
+      source,
+    });
+    test("source budgets on one connection admit independently", async () => {
+      const connection = { kind: "connection", namespace: "test", connection: "c1" } as const;
+      const cli = budget({ scope: connection, surface: "cli", limit: quantity(1n) }),
+        api = budget({ scope: connection, surface: "api", limit: quantity(1n) });
+      f.budgets.push(cli, api);
+      expect(await f.store.reserve(programmatic("cli"))).toMatchObject({ outcome: "reserved" });
+      expect(await f.store.reserve(programmatic("cli"))).toMatchObject({
+        outcome: "exceeded",
+        exceeded: { budget: { id: cli.id } },
+      });
+      expect(await f.store.reserve(programmatic("api"))).toMatchObject({ outcome: "reserved" });
+      expect(await f.store.reserve(programmatic("api"))).toMatchObject({
+        outcome: "exceeded",
+        exceeded: { budget: { id: api.id } },
+      });
+      expect(await f.store.reserve(programmatic("mcp"))).toMatchObject({ outcome: "reserved" });
+    });
+    test("surface budget covers its source group and ignores other sources", async () => {
+      f.budgets.push(budget({ surface: "app", limit: quantity(0n) }));
+      expect(await f.store.reserve(programmatic("api"))).toMatchObject({ outcome: "reserved" });
+      expect(await f.store.reserve(candidate())).toMatchObject({ outcome: "exceeded" });
+      expect(await f.store.reserve({ ...candidate(), source: "worker" })).toMatchObject({
+        outcome: "exceeded",
+      });
+    });
+    test("source and surface budgets stack; the first exceeded in default order is reported", async () => {
+      const principal = budget({ surface: "programmatic", limit: quantity(1n) }),
+        connection = budget({
+          scope: { kind: "connection", namespace: "test", connection: "c1" },
+          surface: "cli",
+          limit: quantity(1n),
+        });
+      f.budgets.push(connection, principal);
+      const first = await f.store.reserve(programmatic("cli"));
+      expect(first).toMatchObject({ outcome: "reserved" });
+      if (first.outcome !== "reserved") throw new Error("fixture");
+      expect(first.operation.budgetEpochs.map((e) => e.budgetId).sort()).toEqual(
+        [principal.id, connection.id].sort(),
+      );
+      expect(await f.store.reserve(programmatic("cli"))).toMatchObject({
+        outcome: "exceeded",
+        exceeded: { budget: { id: principal.id } },
+      });
+      principal.limit = quantity(5n);
+      expect(await f.store.reserve(programmatic("cli"))).toMatchObject({
+        outcome: "exceeded",
+        exceeded: { budget: { id: connection.id } },
+      });
+      expect(await f.store.reserve(programmatic("sdk"))).toMatchObject({ outcome: "reserved" });
     });
     for (const scope of scopes)
       for (const n of [2, 5, 20])
@@ -79,13 +134,57 @@ export function admissionTests(factory: StoreFactory) {
         exceeded: { budget: { id: pool.id } },
       });
     });
-    test("warn admits and reports warnings", async () => {
-      const b = budget({ onExceed: "warn", limit: quantity(0n) });
+    test("allow admits and reports warnings at the soft limit", async () => {
+      const b = budget({ onExceed: "allow", limit: quantity(0n) });
       f.budgets.push(b);
       expect(await f.store.reserve(candidate())).toMatchObject({
         outcome: "reserved",
-        warnings: [{ budget: { id: b.id } }],
+        warnings: [{ budget: { id: b.id }, boundary: "limit", used: quantity(0n) }],
       });
+    });
+    test("soft budget warns past limit and blocks past hardLimit", async () => {
+      const b = budget({ onExceed: "allow", limit: quantity(1n), hardLimit: quantity(2n) });
+      f.budgets.push(b);
+      expect(await f.store.reserve(candidate())).toMatchObject({
+        outcome: "reserved",
+        warnings: [],
+      });
+      expect(await f.store.reserve(candidate())).toMatchObject({
+        outcome: "reserved",
+        warnings: [{ budget: { id: b.id }, boundary: "limit", reserved: quantity(1n) }],
+      });
+      const blocked = await f.store.reserve(candidate());
+      expect(blocked).toMatchObject({
+        outcome: "exceeded",
+        exceeded: { budget: { id: b.id }, boundary: "hardLimit", reserved: quantity(2n) },
+      });
+      expect(await f.store.reserve({ ...candidate(), estimate: [quantity(0n)] })).toMatchObject({
+        outcome: "reserved",
+        warnings: [{ boundary: "limit" }],
+      });
+    });
+    test.each([
+      { name: "hardLimit below limit", onExceed: "allow", limit: 2n, hardLimit: quantity(1n) },
+      { name: "hardLimit equal to limit", onExceed: "allow", limit: 2n, hardLimit: quantity(2n) },
+      { name: "block with hardLimit", onExceed: "block", limit: 1n, hardLimit: quantity(2n) },
+      {
+        name: "hardLimit in another unit",
+        onExceed: "allow",
+        limit: 1n,
+        hardLimit: quantity(2n, "tokens"),
+      },
+      { name: "hardLimit without limit", onExceed: "allow", limit: null, hardLimit: quantity(2n) },
+    ] as const)("invalid budget definition is a validation failure: $name", async (c) => {
+      f.budgets.push(
+        budget({
+          onExceed: c.onExceed,
+          limit: c.limit === null ? null : quantity(c.limit),
+          hardLimit: c.hardLimit,
+        }),
+      );
+      const i = candidate();
+      await expect(f.store.reserve(i)).rejects.toThrow("InvalidInput");
+      expect(await f.store.getOperation(ref(i))).toBeNull();
     });
     test("current version only; epochs immutable; unbounded still snapshotted", async () => {
       const b = budget({ limit: null });

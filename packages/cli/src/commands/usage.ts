@@ -28,7 +28,11 @@ export async function usage(c: Context) {
       to = now.toISOString();
     }
   }
-  const groupBy = string(o, "group", "provider").split(",") as UsageQuery["groupBy"];
+  // `--group-by` is the documented spelling; `--group` stays accepted for existing scripts.
+  if (o["group-by"] !== undefined && o.group !== undefined) throw new UsageError();
+  const groupBy = string(o, "group-by", string(o, "group", "provider")).split(
+    ",",
+  ) as UsageQuery["groupBy"];
   if (
     groupBy.some(
       (g) =>
@@ -41,6 +45,8 @@ export async function usage(c: Context) {
           "day",
           "access_credential",
           "platform_pool",
+          "funding_source",
+          "tag",
         ].includes(g),
     )
   )

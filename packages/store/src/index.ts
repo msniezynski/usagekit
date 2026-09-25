@@ -55,3 +55,4 @@ export { createMemoryStore } from "./memory/memory-store.js";
 export { createManualClock } from "./clock.js";
 export type { Clock, ManualClock } from "./clock.js";
 export { InvalidInput } from "./memory/state.js";
+export { validateBudget, reachedAlerts, alertKey } from "./memory/admission.js";

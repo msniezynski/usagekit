@@ -24,6 +24,23 @@ The local server schedules cleanup every thirty seconds.
 Expired dispatch leases require evidence recovery; never redispatch or release uncertain exposure.
 Reconcile external credit holds through their authoritative ledger.
 
+## Budget alerts
+
+A budget may declare up to eight ascending `alerts`, each a percent of `limit` or a quantity in the budget unit.
+The reserve, settle or correct whose admitted or settled figures first reach a threshold returns it in `alerts`
+with the budget id, version, epoch, threshold and the figures at that moment. The store records the crossing
+atomically with the command, so concurrent commands report it once in total, a replay returns the stored
+crossings, and a new epoch reports the threshold again. Soft budgets (`onExceed: "allow"`) still warn past
+`limit` and deny past `hardLimit`; alerts never change admission.
+
+## Read-only HTTP mount
+
+`createUsageHandlers({ meter, authenticate, commands: false })` serves only the read routes. Every POST under
+`/v1/operations/`, including `expire`, answers 404 after authentication and before any authorization or body
+parsing. An embedded host mounts it on one authenticated route, maps its own sessions or API keys to
+`AccessContext` in `authenticate`, and an external dashboard consumes it through `createRemoteMeter`, whose
+command methods then reject with `RemoteHttpError` 404. Operations stay created in process.
+
 ## Adapter conformance
 
 Runtime imports use @usagekit/store. The reference implementation is also exported at /reference.

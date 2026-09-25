@@ -18,12 +18,21 @@ export function canRead(access: AccessContext, scope: UsageScope): boolean {
       return access.canManageBudgets || includes(access.readablePools, scope.poolId);
   }
 }
+/** Pools and tags span principals: their figures are shared, so unreadable ones are redacted, not forbidden. */
+export const isShared = (scope: BudgetScope) =>
+  scope.kind === "platform_pool" || scope.kind === "tag";
+export function canReadShared(access: AccessContext, scope: BudgetScope): boolean {
+  if (access.namespace !== scope.namespace) return false;
+  if (scope.kind === "platform_pool") return canRead(access, scope);
+  return access.canManageBudgets || access.readablePrincipals === "*";
+}
 export async function canReadBudget(
   resolveOwnership: OwnershipResolver | undefined,
   access: AccessContext,
   scope: BudgetScope,
 ): Promise<boolean> {
   if (access.namespace !== scope.namespace) return false;
+  if (isShared(scope)) return canReadShared(access, scope);
   if (scope.kind !== "connection" && scope.kind !== "access_credential")
     return canRead(access, scope);
   const owner = await resolveOwnership?.(scope);

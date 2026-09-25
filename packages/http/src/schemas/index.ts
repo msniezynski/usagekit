@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import { tagPattern } from "@usagekit/core";
 const text = v.pipe(v.string(), v.minLength(1));
 const integer = v.pipe(v.number(), v.integer(), v.minValue(0));
 const decimal = v.pipe(v.string(), v.regex(/^-?\d+$/));
@@ -15,6 +16,9 @@ export const Scope = obj({
   connection: text,
   accessCredential: v.optional(credential),
   providerCredentialVersion: v.optional(text),
+  tags: v.optional(
+    v.pipe(v.array(v.pipe(v.string(), v.regex(tagPattern))), v.minLength(1), v.maxLength(16)),
+  ),
 });
 const surface = v.picklist(["app", "programmatic"]);
 const source = v.picklist(["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]);
@@ -25,12 +29,17 @@ export const BudgetScope = v.variant("kind", [
   obj({ kind: v.literal("connection"), namespace: text, connection: text }),
   obj({ kind: v.literal("access_credential"), namespace: text, accessCredential: credential }),
   obj({ kind: v.literal("platform_pool"), namespace: text, poolId: text }),
+  obj({ kind: v.literal("tag"), namespace: text, tag: v.pipe(v.string(), v.regex(tagPattern)) }),
 ]);
 export const UsageScope = v.variant("kind", [
   obj({ kind: v.literal("principal"), namespace: text, principal: text }),
   obj({ kind: v.literal("group"), namespace: text, group: text }),
   obj({ kind: v.literal("namespace"), namespace: text }),
   obj({ kind: v.literal("platform_pool"), namespace: text, poolId: text }),
+]);
+const alertAt = v.union([
+  obj({ percent: v.pipe(integer, v.minValue(1), v.maxValue(100)) }),
+  Quantity,
 ]);
 const window = v.variant("kind", [
   obj({ kind: v.literal("calendar_month"), timezone: v.literal("UTC") }),
@@ -42,11 +51,22 @@ export const Budget = obj({
   id: text,
   version: integer,
   scope: BudgetScope,
-  surface: v.picklist(["app", "programmatic", "any"]),
+  surface: v.picklist(["app", "programmatic", "any", ...source.options]),
   unit: text,
   limit: v.nullable(Quantity),
   window,
-  onExceed: v.picklist(["block", "warn"]),
+  /** warn is a deprecated wire alias of allow. */
+  onExceed: v.picklist(["block", "allow", "warn"]),
+  hardLimit: v.optional(Quantity),
+  alerts: v.optional(v.pipe(v.array(obj({ at: alertAt })), v.maxLength(8))),
+});
+const AlertCrossed = obj({
+  budgetId: text,
+  budgetVersion: integer,
+  epoch: text,
+  at: alertAt,
+  used: Quantity,
+  reserved: Quantity,
 });
 const Measurement = v.variant("certainty", [
   obj({ certainty: v.literal("unknown"), unit: text, quantity: v.null() }),
@@ -140,6 +160,8 @@ export const UsageQuery = obj({
       "day",
       "access_credential",
       "platform_pool",
+      "funding_source",
+      "tag",
     ]),
   ),
   cursor: v.optional(text),
@@ -179,6 +201,7 @@ export const schemas = {
   applicable: obj({
     scope: Scope,
     surface,
+    source: v.optional(source),
     units: v.array(text),
     platformPools: v.optional(v.array(text)),
   }),
@@ -189,6 +212,7 @@ const invalid = obj({ outcome: v.literal("invalid"), field: text, reason: text }
 const exceeded = obj({
   code: v.literal("allowance_exceeded"),
   budget: Budget,
+  boundary: v.picklist(["limit", "hardLimit"]),
   used: Quantity,
   reserved: Quantity,
   resetsAt: v.nullable(timestamp),
@@ -200,7 +224,12 @@ const read = <T extends v.GenericSchema>(schema: T) =>
     invalid,
   ]);
 const settleResult = v.union([
-  obj({ outcome: v.literal("settled"), replayed: v.boolean(), operation: Operation }),
+  obj({
+    outcome: v.literal("settled"),
+    replayed: v.boolean(),
+    operation: Operation,
+    alerts: v.array(AlertCrossed),
+  }),
   obj({
     outcome: v.literal("rejected"),
     reason: v.picklist([
@@ -225,6 +254,7 @@ export const responses = {
       replayed: v.boolean(),
       operation: Operation,
       warnings: v.array(exceeded),
+      alerts: v.array(AlertCrossed),
     }),
     obj({ outcome: v.literal("exceeded"), exceeded, operation: v.null() }),
     obj({

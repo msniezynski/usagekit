@@ -1,7 +1,8 @@
-import { type Context, string, UsageError } from "../context.js";
+import { type Context, string, strings, UsageError } from "../context.js";
+export type Connection = { provider: string; connectionId: string; tags?: string[] };
 export async function provider(c: Context, command?: string, name?: string) {
   const o = c.options;
-  if (command === "list") return c.rest("/providers/connections");
+  if (command === "list") return c.rest<Connection[]>("/providers/connections");
   const id = string(o, "connection"),
     path = "/providers/connections/" + encodeURIComponent(id);
   if (command === "remove") return c.rest(path, "DELETE");
@@ -17,5 +18,11 @@ export async function provider(c: Context, command?: string, name?: string) {
       .replace(/\r?\n$/, "");
   }
   if (!secret?.trim()) throw new UsageError();
-  return c.rest("/providers/connections", "POST", { provider: name, connectionId: id, secret });
+  const tags = strings(o, "tag");
+  return c.rest("/providers/connections", "POST", {
+    provider: name,
+    connectionId: id,
+    secret,
+    ...(tags ? { tags } : {}),
+  });
 }

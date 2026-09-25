@@ -2,13 +2,13 @@ import { readFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import type Database from "better-sqlite3";
 import { hash } from "./util.js";
-export function migrate(db: Database.Database, target = 3): void {
+export function migrate(db: Database.Database, target = 4): void {
   db.transaction(() => {
     db.exec("CREATE TABLE IF NOT EXISTS migrations(version INTEGER PRIMARY KEY)");
     const versions = (
       db.prepare("SELECT version FROM migrations").all() as { version: number | bigint }[]
     ).map((r) => Number(r.version));
-    if (![1, 2, 3].includes(target) || versions.some((v) => v > target))
+    if (![1, 2, 3, 4].includes(target) || versions.some((v) => v > target))
       throw new Error("Downgrade or unsupported schema version");
     if (!versions.includes(1)) {
       db.exec(readFileSync(new URL("./schema.sql", import.meta.url), "utf8"));
@@ -47,6 +47,12 @@ export function migrate(db: Database.Database, target = 3): void {
       CREATE INDEX reservation_expiry ON operations(namespace,state,reservation_expires_at,operation_pk);
       UPDATE commands SET result_json=json_set(result_json,'$.operation.reservationExpiresAt',(SELECT reservation_expires_at FROM operations o WHERE o.operation_pk=commands.operation_pk));
       INSERT INTO migrations VALUES(3);`);
+    }
+    if (target >= 4 && !versions.includes(4)) {
+      db.exec(`CREATE TABLE budget_alerts(namespace TEXT NOT NULL,budget_id TEXT NOT NULL,epoch TEXT NOT NULL,threshold_key TEXT NOT NULL,crossed_at TEXT NOT NULL,PRIMARY KEY(namespace,budget_id,epoch,threshold_key));
+      ALTER TABLE operations ADD COLUMN alerts_json TEXT NOT NULL DEFAULT '[]';
+      UPDATE commands SET result_json=json_set(result_json,'$.alerts',json('[]')) WHERE kind IN ('settle','correct') AND json_extract(result_json,'$.outcome')='settled';
+      INSERT INTO migrations VALUES(4);`);
     }
   }).immediate();
 }

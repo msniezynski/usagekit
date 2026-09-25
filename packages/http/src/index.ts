@@ -8,12 +8,20 @@ import { dispatchRead } from "./routes/reads.js";
 export { encodeWire, decodeWire } from "./wire.js";
 export type { WireInputs, RouteName } from "./schemas/index.js";
 export { Budget as BudgetSchema } from "./schemas/index.js";
+/**
+ * Web-standard handler for the Meter routes. Access comes from authenticate, never the request.
+ * commands: false mounts the read side only: every POST under /v1/operations/ answers 404
+ * after authentication and before any authorization or body parsing, so an embedded host can
+ * expose usage to an external dashboard while operations stay created in process.
+ */
 export function createUsageHandlers({
   meter,
   authenticate,
+  commands = true,
 }: {
   meter: Meter;
   authenticate: (request: Request) => Promise<AccessContext | null>;
+  commands?: boolean;
 }): (request: Request) => Promise<Response> {
   return async (request) => {
     try {
@@ -23,6 +31,7 @@ export function createUsageHandlers({
       let name: RouteName | undefined,
         write = false;
       if (request.method === "POST" && url.pathname.startsWith("/v1/operations/")) {
+        if (!commands) return problem(404);
         const route = url.pathname.slice("/v1/operations/".length);
         if (
           [

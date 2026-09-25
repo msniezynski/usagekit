@@ -23,11 +23,11 @@
     "prepublishOnly": "node ../../scripts/deny-publish.mjs"
   },
   "dependencies": {
-    "@usagekit/core": "0.1.0",
-    "@usagekit/store": "0.1.0",
-    "@usagekit/meter": "0.1.0",
+    "@usagekit/core": "0.2.0",
+    "@usagekit/store": "0.2.0",
+    "@usagekit/meter": "0.2.0",
     "@usagekit/store-sqlite": "0.0.0",
-    "@usagekit/http": "0.0.0",
+    "@usagekit/http": "0.2.0",
     "hono": "4.13.8",
     "@hono/node-server": "2.1.1"
   }

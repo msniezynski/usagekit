@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { normalizeTags } from "@usagekit/core";
 import type { Quantity, ReserveInput, Receipt, Operation } from "@usagekit/core";
 import { InvalidInput } from "@usagekit/store";
 import { integer } from "./serialize.js";
@@ -15,16 +16,25 @@ export function canonical(v: unknown): string {
 }
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 export const key = (ns: string, id: string) => canonical([ns, id]);
+/** Reserve identity: diagnostic ids and attribution tags are not semantic. */
 export const identity = (i: ReserveInput) => {
-  const { correlationId: _, parentOperationId: __, ...rest } = i;
+  const { correlationId: _, parentOperationId: __, scope, ...rest } = i;
+  const { tags: ___, ...scopeIdentity } = scope;
   return hash(
     canonical({
       ...rest,
+      scope: scopeIdentity,
       estimate: [...i.estimate].sort((a, b) => a.unit.localeCompare(b.unit)),
       platformPools: [...(i.platformPools ?? [])].sort(),
     }),
   );
 };
+export function withNormalizedTags(i: ReserveInput): ReserveInput {
+  if (i.scope.tags === undefined) return i;
+  const tags = normalizeTags(i.scope.tags);
+  if (!tags) throw new InvalidInput("scope.tags", "1 to 16 unique tags matching the tag pattern");
+  return { ...i, scope: { ...i.scope, tags } };
+}
 export const plus = (a: Quantity, b: Quantity): Quantity => {
   const scale = Math.max(a.scale, b.scale);
   return {

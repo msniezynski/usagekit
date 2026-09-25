@@ -61,10 +61,20 @@ test("CLI provider, budgets, reporting, usage and rotation work over HTTP", asyn
   };
   try {
     const secret = crypto.randomUUID();
-    expect(await json(["provider", "add", "example", "--connection", "c"], secret + "\n")).toEqual({
-      provider: "example",
-      connectionId: "c",
-    });
+    expect(
+      await json(
+        ["provider", "add", "example", "--connection", "c", "--tag", "prod", "--tag", "eu"],
+        secret + "\n",
+      ),
+    ).toEqual({ provider: "example", connectionId: "c", tags: ["eu", "prod"] });
+    expect(
+      (
+        await cli(
+          ["provider", "add", "example", "--connection", "c2", "--tag", "Bad Tag", "--json"],
+          secret,
+        )
+      ).code,
+    ).toBe(1);
     const conflict = await cli(
       ["provider", "add", "other", "--connection", "c", "--json"],
       crypto.randomUUID(),
@@ -86,6 +96,55 @@ test("CLI provider, budgets, reporting, usage and rotation work over HTTP", asyn
       version: 1,
     });
     expect(await json(["budget", "list"])).toHaveLength(1);
+    expect(
+      await json([
+        "budget",
+        "set",
+        "--id",
+        "soft",
+        "--limit",
+        "10:requests",
+        "--allow",
+        "--hard-limit",
+        "20:requests",
+        "--alert",
+        "50",
+        "--alert",
+        "12:requests",
+      ]),
+    ).toMatchObject({
+      id: "soft",
+      onExceed: "allow",
+      hardLimit: { value: "20", scale: 0, unit: "requests" },
+      alerts: [{ at: { percent: 50 } }, { at: { value: "12", scale: 0, unit: "requests" } }],
+    });
+    expect(
+      await json(["budget", "set", "--id", "cli-only", "--source", "cli", "--limit", "5:requests"]),
+    ).toMatchObject({ id: "cli-only", surface: "cli" });
+    expect(
+      await json([
+        "budget",
+        "set",
+        "--id",
+        "prod-tag",
+        "--scope",
+        "tag",
+        "--tag",
+        "prod",
+        "--limit",
+        "5:requests",
+      ]),
+    ).toMatchObject({ scope: { kind: "tag", namespace: "local", tag: "prod" } });
+    for (const bad of [
+      ["--id", "x", "--limit", "1:requests", "--hard-limit", "2:requests"],
+      ["--id", "x", "--limit", "1:requests", "--allow", "--hard-limit", "1:requests"],
+      ["--id", "x", "--limit", "1:requests", "--alert", "0"],
+      ["--id", "x", "--limit", "1:requests", "--alert", "12.5"],
+      ["--id", "x", "--limit", "1:requests", "--source", "web"],
+      ["--id", "x", "--scope", "tag", "--tag", "Prod", "--limit", "1:requests"],
+    ])
+      expect((await cli(["budget", "set", ...bad, "--json"])).code, bad.join(" ")).not.toBe(0);
+    expect(await json(["budget", "list"])).toHaveLength(4);
     const reserve = [
       "report",
       "reserve",
@@ -100,7 +159,17 @@ test("CLI provider, budgets, reporting, usage and rotation work over HTTP", asyn
     ];
     expect(await json(reserve)).toMatchObject({
       granted: true,
-      operation: { operationId: "op1", state: "dispatch_intended" },
+      operation: {
+        operationId: "op1",
+        state: "dispatch_intended",
+        scope: { tags: ["eu", "prod"] },
+        budgetEpochs: [
+          { budgetId: "b" },
+          { budgetId: "cli-only" },
+          { budgetId: "soft" },
+          { budgetId: "prod-tag" },
+        ],
+      },
     });
     expect((await cli([...reserve, "--json"])).code).toBe(1);
     const settle = [
@@ -151,11 +220,22 @@ test("CLI provider, budgets, reporting, usage and rotation work over HTTP", asyn
       value: { rows: [{ measurements: [{ quantity: { value: "1" } }] }] },
     });
     expect((await cli(["usage"])).out).toContain("example");
+    expect(await json(["usage", "--group-by", "funding_source,tag"])).toMatchObject({
+      value: {
+        rows: [
+          { dimensions: { funding_source: "byok", tag: "eu" } },
+          { dimensions: { funding_source: "byok", tag: "prod" } },
+        ],
+      },
+    });
+    expect(await json(["usage", "--group", "tag"])).toMatchObject({
+      value: { rows: [{ dimensions: { tag: "eu" } }, { dimensions: { tag: "prod" } }] },
+    });
     expect(await json(["provider", "remove", "--connection", "c"])).toEqual({ removed: true });
     expect(await json(["token", "show-path"])).toHaveProperty("path");
     const rotated = await json(["token", "rotate"]);
     token = rotated.token;
-    expect(await json(["budget", "list"])).toHaveLength(1);
+    expect(await json(["budget", "list"])).toHaveLength(4);
   } finally {
     await server.stop();
   }
@@ -176,7 +256,7 @@ test("CLI release uses stable command payloads; errors have documented exit code
       scope: { namespace: "local", principal: "local", connection: "c" },
       fundingSource: "byok",
       costOwner: "local",
-      surface: "app",
+      surface: "programmatic",
       source: "cli",
       provider: "example",
       operation: "search",

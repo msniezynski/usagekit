@@ -1,15 +1,22 @@
 import { existsSync, readFileSync } from "node:fs";
 import { randomBytes, scryptSync, createCipheriv, createDecipheriv } from "node:crypto";
 import { writePrivate } from "./config.js";
-type Entry = { provider: string; connectionId: string; secret: string };
+/** tags are connection labels the CLI snapshots into each reservation scope; never secret. */
+type Listed = { provider: string; connectionId: string; tags?: readonly string[] };
+type Entry = Listed & { secret: string };
 type Envelope = {
   version: 1;
   salt: string;
   iv: string;
   tag: string;
   ciphertext: string;
-  index: { provider: string; connectionId: string }[];
+  index: Listed[];
 };
+const listed = ({ provider, connectionId, tags }: Entry): Listed => ({
+  provider,
+  connectionId,
+  ...(tags ? { tags } : {}),
+});
 export function createVault(path: string) {
   let key: Buffer | null = null,
     salt: Buffer | null = null,
@@ -30,7 +37,7 @@ export function createVault(path: string) {
       iv: iv.toString("base64"),
       tag: cipher.getAuthTag().toString("base64"),
       ciphertext: ciphertext.toString("base64"),
-      index: entries.map(({ provider, connectionId }) => ({ provider, connectionId })),
+      index: entries.map(listed),
     };
     writePrivate(path, JSON.stringify(envelope));
   };
@@ -68,7 +75,7 @@ export function createVault(path: string) {
         throw new Error("VaultUnlockFailed");
       }
     },
-    put(provider: string, connectionId: string, secret: string) {
+    put(provider: string, connectionId: string, secret: string, tags?: readonly string[]) {
       requireKey();
       if (!provider.trim() || !connectionId.trim() || !secret.trim())
         throw new Error("InvalidConnection");
@@ -76,7 +83,7 @@ export function createVault(path: string) {
         throw new Error("ConnectionProviderMismatch");
       entries = [
         ...entries.filter((e) => e.connectionId !== connectionId),
-        { provider, connectionId, secret },
+        { provider, connectionId, secret, ...(tags ? { tags } : {}) },
       ];
       save();
     },
@@ -86,10 +93,8 @@ export function createVault(path: string) {
       if (!entry) throw new Error("ConnectionNotFound");
       return entry.secret;
     },
-    list() {
-      return key
-        ? entries.map(({ provider, connectionId }) => ({ provider, connectionId }))
-        : (read()?.index ?? []);
+    list(): Listed[] {
+      return key ? entries.map(listed) : (read()?.index ?? []);
     },
     remove(connectionId: string) {
       requireKey();

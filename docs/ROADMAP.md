@@ -65,6 +65,17 @@ Access to N providers per user is the connection list under the principal, filte
 provider allowlist the host configures (section 9). Each connection has its own budgets per
 surface; the principal can have an overall cap on top.
 
+A connection is one account at one provider. Several accounts at the same provider, for a user
+or for the platform, are several connections with their own budgets, plans, probes and
+operations; nothing in the core limits accounts per provider. Grouping across connections is
+by `groupBy` (`provider`, `connection`, `platform_pool`, and from P4 `funding_source` and
+`tag`). Tags are free labels the host or user puts on a connection ("production", "eu",
+"team-x"); they are snapshotted into the operation scope at reservation so later relabeling
+never rewrites history. A `tag` budget scope bounds every connection carrying the tag, which
+covers "all accounts at provider X", "all production accounts" or "region EU" with one
+mechanism. Descriptors name the provider-side account identity (an account e-mail or login from
+the balance probe) so a host can detect the same account connected twice.
+
 ## 4. Backend only, or UI too
 
 Backend only is a complete product. A host that already has an admin panel and a settings page
@@ -87,6 +98,13 @@ UI is layered so a host takes exactly as much as fits:
    primitives. A host with its own design system reads the block and rebinds primitives or
    writes its own component over the view model.
 4. **Pages.** Always the host's: authentication, authorization, audit, routing, translations.
+
+An external dashboard needs no extra layer. The host mounts the read side of `@usagekit/http`
+on one route with its own authentication mapped to `AccessContext`; the dashboard uses
+`createRemoteMeter` and the same view models, or the generated OpenAPI from another language.
+Command routes stay off in embedded hosts, where operations are created in process. Until a
+host is authoritative, such a dashboard shows the metering ledger, not the host's billing
+numbers; the host's comparison page shows the difference.
 
 Personal access, meaning one person seeing their usage across every application that uses
 usagekit, is a hosted service and stays out of scope until the embedded and local modes are
@@ -160,6 +178,12 @@ These were missing from the plan and are now owned by a stage.
   History is never rewritten.
 - **Two ledgers during cutover (P8).** Own-key spend and platform-funded spend touch different
   credit authorities. Coordination rules must be written per funding source before cutover.
+- **Platform pool identity (P8, earlier if a second platform account appears).** A pool is one
+  platform key on one provider account. Its identity is the platform connection's id, the same
+  kind of row a user key has, with the platform as owner; rotation changes the credential
+  version, not the pool. Two accounts at one provider are two pools, two budgets, two probes,
+  and the host routes each call to one of them before reserving. The shadow fallback
+  `hosted:<provider>` is valid only while there is one platform account per provider.
 - **Header status (P4).** A compact view model: remaining, of what, reset time, warning
   threshold, per visible bound. Refreshed in the same request that settles an operation, not by
   polling.
@@ -172,6 +196,19 @@ These were missing from the plan and are now owned by a stage.
   reserves, dispatches through the descriptor and settles. Direct provider client calls are a
   lint error. Which operations exist, how their cost is estimated and how the receipt is
   extracted is descriptor data, not host code.
+- **Read API for external dashboards (P4).** Done in the contract: `createUsageHandlers` takes
+  `commands: false` and every command route answers 404 after authentication; host A mounts it on one authenticated route; the P4
+  reference dashboard consumes it through `createRemoteMeter`, which makes the host the first
+  remote consumer outside the local server and the conformance suite. The mount is never
+  anonymous: `authenticate` maps the host's existing sessions, API keys and personal tokens to
+  `AccessContext`, instance admins get the wide context, users get their principal and groups,
+  `canManageBudgets` stays false. The host requires an explicit key scope for metering reads,
+  audits reads like the admin page, and applies its API rate limit to the route.
+- **Many accounts per provider and grouped statistics (P4 contract and UI, P5 catalog).**
+  Contract done: connection tags snapshotted into scope, `groupBy` gains `funding_source` and `tag`, a `tag`
+  budget scope; still open: an account label field in every view model, and a provider-side account
+  identity in descriptors for duplicate detection. Host A's one-connection-per-provider rule is
+  a host decision and can be lifted without a metering migration.
 - **Per-actor budgets (P4 contract note, P8 decision).** Team-owned hosts need a member limit
   under a team principal. Either an `actor` budget scope or a documented host-side rule.
 - **Throughput of the event commit-order lock (before P8).** The Postgres adapter serializes
@@ -181,8 +218,8 @@ These were missing from the plan and are now owned by a stage.
   pruning for replay keys and events past a horizon while keeping financial evidence.
 - **Host token cleanup (P3 follow-up).** Packages are public; remove the read-only registry
   token wiring from host A's CI, deployment and developer docs after one token-free install.
-- **Budgets per source, not only per surface (P4 contract, first item).** Today a budget
-  matches `app`, `programmatic` or `any`. Users need separate limits for web, API, CLI and MCP,
+- **Budgets per source, not only per surface (P4 contract, first item).** Done: `Budget.surface`
+  accepts a source value on every adapter and the wire. Users need separate limits for web, API, CLI and MCP,
   as many as they want, stacked with principal, group, connection and token limits.
   `Budget.surface` widens to `Surface | Source | "any"`: a surface value matches its source
   group, a source value matches exactly that source. The host sets both surface and source at
@@ -190,8 +227,8 @@ These were missing from the plan and are now owned by a stage.
   are deferred; two budgets express "CLI and SDK together, MCP apart". Change touches the
   core type, the reference matcher, both SQL adapters, wire schemas and conformance tests.
   No migration: adapters store the field as text.
-- **Hard and soft limits (P4 contract, P5 catalog).** One budget with `limit`, `onExceed`
-  `block` or `allow`, optional `hardLimit` and `alerts` recorded once per epoch; overage price
+- **Hard and soft limits (P4 contract, P5 catalog).** Contract done: one budget with `limit`, `onExceed`
+  `block` or `allow`, optional `hardLimit` and `alerts` recorded once per epoch; still open in P5: overage price
   rows apply past the allowance; descriptor plans declare `allowanceMode`. See section 9.
 - **Tracking policy per operation (P5 contract, P6 proxy, P4 coverage view).** A connection
   chooses `metered` or `passthrough` per catalog operation; unknown paths are `unpriced`.
@@ -321,7 +358,11 @@ prices: [
 ```
 
 The connection carries `plan`, chosen by the user when connecting or read from the balance
-probe when the provider reports it. Estimate resolution matches operation, plan and options
+probe when the provider reports it. Two accounts at one provider may sit on different plans;
+each connection resolves its own price, allowance and cycle. Aggregates across connections sum
+units and sum receipt costs; they never multiply grouped units by a price, because there is no
+single price above the connection. A tag or provider budget in money is bounded by receipts,
+while its headroom estimate depends on which connection the host routes the next call to. Estimate resolution matches operation, plan and options
 against the table. A plan-priced descriptor with no plan on the connection resolves to
 `unknown`, never to a default plan.
 

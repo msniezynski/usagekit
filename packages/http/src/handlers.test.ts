@@ -216,6 +216,46 @@ test("malformed JSON and base64url fail without echoing input", async () => {
   ).toBe(400);
 });
 
+test("a read-only mount answers 404 for every command after authentication and serves reads", async () => {
+  const clock = createManualClock(),
+    meter = createMeter({ store: createMemoryStore({ clock, budgets: [] }), clock }),
+    spy = vi.spyOn(meter, "expireReservations");
+  const handler = createUsageHandlers({
+    meter,
+    commands: false,
+    authenticate: async (r) =>
+      r.headers.get("Authorization") === "Bearer valid"
+        ? { ...access, canManageBudgets: false }
+        : null,
+  });
+  const send = (path: string, body: unknown, token = "valid") =>
+    handler(
+      new Request(`http://local.test${path}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+    );
+  for (const [path, body] of routes.filter(([p]) => p !== "/v1/usage/query")) {
+    expect((await send(path, body)).status, path).toBe(404);
+    expect((await send(path, body, "missing")).status, path).toBe(401);
+  }
+  expect((await send("/v1/operations/unknown", {})).status).toBe(404);
+  expect(spy).not.toHaveBeenCalled();
+  expect((await send("/v1/usage/query", query)).status).toBe(200);
+  expect(
+    (
+      await handler(
+        new Request(`http://local.test/v1/usage?q=${b64(query)}`, {
+          headers: { Authorization: "Bearer valid" },
+        }),
+      )
+    ).status,
+  ).toBe(200);
+});
+test("the default mount keeps commands enabled", async () => {
+  expect((await post("/v1/operations/reserve", reserve)).status).toBe(200);
+});
 test("expiry maintenance requires budget administration, not readable principals", async () => {
   const clock = createManualClock(),
     meter = createMeter({ store: createMemoryStore({ clock, budgets: [] }), clock });

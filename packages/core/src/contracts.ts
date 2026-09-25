@@ -30,6 +30,12 @@ export type Scope = {
   accessCredential?: AccessCredential;
   /** Which provider secret version was used. Rotation identity, not caller identity. */
   providerCredentialVersion?: string;
+  /**
+   * Connection labels snapshotted at reservation: 1..16 unique entries, each 1..64 characters
+   * matching [a-z0-9][a-z0-9_.:-]*, sorted before storage. Attribution only: excluded from
+   * reserve identity, so a replay keeps the first reservation's tags.
+   */
+  tags?: readonly string[];
 };
 
 export type FundingSource = "byok" | "platform";
@@ -47,6 +53,7 @@ export type BudgetWindow =
  * Each variant names one constraint in a namespace.
  * A platform_pool bounds spend shared by many principals and applies to operations
  * naming that pool in ReserveInput. It is not the platform principal's own budget.
+ * A tag bounds every operation whose scope.tags contains it, across principals.
  * A wallet is not a budget: the host ledger owns balances, holds and charges,
  * coordinated through the host credit bridge. A wallet-level monthly cap may still
  * be a principal Budget because the cap is a constraint, not a balance.
@@ -56,17 +63,45 @@ export type BudgetScope =
   | { kind: "group"; namespace: string; group: string }
   | { kind: "connection"; namespace: string; connection: string }
   | { kind: "access_credential"; namespace: string; accessCredential: AccessCredential }
-  | { kind: "platform_pool"; namespace: string; poolId: string };
+  | { kind: "platform_pool"; namespace: string; poolId: string }
+  | { kind: "tag"; namespace: string; tag: string };
 
+/**
+ * surface selects the traffic a budget bounds: "any" matches every operation, a Surface
+ * matches operations whose source belongs to that surface group (see sourcesOf), and a
+ * Source matches exactly that source. Hosts set surface and source at authentication.
+ */
 export type Budget = {
   id: string;
   version: number;
   scope: BudgetScope;
-  surface: Surface | "any";
+  surface: Surface | Source | "any";
   unit: string;
   limit: Quantity | null;
   window: BudgetWindow;
-  onExceed: "block" | "warn";
+  /** block denies past limit. allow admits with a warning; wire and stored rows may still say the deprecated alias for allow. */
+  onExceed: "block" | "allow";
+  /** Only with onExceed allow: same unit as limit and greater than it. Exceeding it denies admission. */
+  hardLimit?: Quantity;
+  /** At most eight thresholds in ascending order; each crossing is reported once per epoch. */
+  alerts?: readonly BudgetAlert[];
+};
+
+/** percent is an integer 1..100 of limit; a Quantity threshold is in the budget unit. */
+export type BudgetAlert = { at: { percent: number } | Quantity };
+
+/**
+ * Reported by the command whose admitted or settled figures first reach the threshold.
+ * The store records each crossing atomically per budget id, epoch and threshold, so a
+ * replay returns the stored crossings and no later command reports the same one again.
+ */
+export type BudgetAlertCrossed = {
+  budgetId: string;
+  budgetVersion: number;
+  epoch: string;
+  at: BudgetAlert["at"];
+  used: Quantity;
+  reserved: Quantity;
 };
 
 export type LifecycleState = "reserved" | "dispatch_intended" | "pending" | "settled" | "released";
@@ -104,14 +139,14 @@ export type Receipt = {
  * Store selects all applying budgets atomically inside reserve; Meter's pre-resolution
  * is advisory and never sufficient for admission.
  * Match namespace and the bound: principal, group, connection, accessCredential by
- * kind and id, or poolId listed in platformPools. Match surface or "any".
+ * kind and id, or poolId listed in platformPools. Match "any", the surface or the source.
  * Each applicable budget's unit must appear in estimate. A missing bounded unit is
  * a Meter validation error, not permission to bypass the bound. Store re-checks this
  * against current budgets. Units without budgets are recorded without a bound.
  * Use the current budget version at reservation time; snapshot its resolved epoch
  * and version into budgetEpochs. Check every applying budget in one atomic command.
- * Return the first exceeded bound in deterministic host-policy order; default:
- * platform_pool, principal, group, connection, access_credential.
+ * Return the first exceeded bound in deterministic host-policy order; the default
+ * is defaultBudgetOrder: platform_pool, principal, group, tag, connection, access_credential.
  * A guest session is actor, not budget owner. The platform or a dedicated guest
  * principal owns the operation; its pool and host-enforced session limit both apply.
  */
@@ -171,12 +206,14 @@ export type ReserveResult =
       replayed: false;
       operation: Operation;
       warnings: readonly AllowanceExceeded[];
+      alerts: readonly BudgetAlertCrossed[];
     }
   | {
       outcome: "reserved";
       replayed: true;
       operation: Operation;
       warnings: readonly AllowanceExceeded[];
+      alerts: readonly BudgetAlertCrossed[];
     }
   | { outcome: "exceeded"; exceeded: AllowanceExceeded; operation: null }
   | { outcome: "conflict"; reason: "semantic_mismatch"; operation: Operation };
@@ -286,7 +323,12 @@ export type CorrectionInput = OperationCommand & {
  */
 export type SettleResult =
   | ValidationFailure
-  | { outcome: "settled"; replayed: boolean; operation: Operation }
+  | {
+      outcome: "settled";
+      replayed: boolean;
+      operation: Operation;
+      alerts: readonly BudgetAlertCrossed[];
+    }
   | {
       outcome: "rejected";
       reason:
@@ -333,7 +375,11 @@ export type AccessContext = {
   canManageBudgets: boolean;
 };
 
-/** groupBy: "principal" is allowed only for group or namespace scope. */
+/**
+ * groupBy: "principal" is allowed only for group or namespace scope.
+ * "platform_pool" and "tag" explode one row per pool or tag of an operation, with an
+ * empty dimension when the operation has none; those rows are not additive across tags.
+ */
 export type UsageQuery = {
   scope: UsageScope;
   from: string;
@@ -350,6 +396,8 @@ export type UsageQuery = {
     | "day"
     | "access_credential"
     | "platform_pool"
+    | "funding_source"
+    | "tag"
   )[];
   cursor?: string;
   limit?: number;
@@ -380,6 +428,8 @@ export type DefinedBudgetsQuery = { scope: BudgetScope };
 export type ApplicableBudgetsQuery = {
   scope: Scope;
   surface: Surface;
+  /** Include budgets bound to exactly this source. Omitted lists surface and any budgets only. */
+  source?: Source;
   units: readonly string[];
   platformPools?: readonly string[];
 };
@@ -400,10 +450,12 @@ export type ReadResult<T> =
   | { outcome: "ok"; value: T }
   | { outcome: "forbidden" };
 
-/** Data-only budget denial. A P1 implementation may wrap it in a runtime error class. */
+/** Data-only budget denial or warning. A P1 implementation may wrap it in a runtime error class. */
 export interface AllowanceExceeded {
   readonly code: "allowance_exceeded";
   readonly budget: Budget;
+  /** Which bound was crossed: limit warns on allow budgets and denies on block budgets; hardLimit always denies. */
+  readonly boundary: "limit" | "hardLimit";
   readonly used: Quantity;
   readonly reserved: Quantity;
   readonly resetsAt: string | null;

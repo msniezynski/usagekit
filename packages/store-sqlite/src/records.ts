@@ -18,6 +18,7 @@ export type OperationRow = {
   updated_at: string;
   semantic_json: string;
   warnings_json: string;
+  alerts_json: string;
 };
 export const operationRow = (db: Database.Database, namespace: string, id: string) =>
   db.prepare("SELECT * FROM operations WHERE operation_pk=?").get(key(namespace, id)) as

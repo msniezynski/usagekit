@@ -157,14 +157,15 @@ export function propertyTests(factory: StoreFactory) {
         { numRuns, verbose: 2 },
       );
     });
-    test("many operations never over-admit any blocking budget", async () => {
+    test("many operations never over-admit any blocking budget or hard limit", async () => {
       await fc.assert(
         fc.asyncProperty(
           fc.array(
             fc.record({
               kind: fc.constantFrom("principal", "connection", "platform_pool"),
               limit: fc.integer({ min: 0, max: 30 }),
-              warn: fc.boolean(),
+              allow: fc.boolean(),
+              headroom: fc.option(fc.integer({ min: 1, max: 10 }), { nil: undefined }),
             }),
             { minLength: 1, maxLength: 4 },
           ),
@@ -189,7 +190,10 @@ export function propertyTests(factory: StoreFactory) {
                           ? { kind: "connection", namespace: "test", connection: "c1" }
                           : { kind: "platform_pool", namespace: "test", poolId: "pool" },
                     limit: quantity(BigInt(spec.limit)),
-                    onExceed: spec.warn ? "warn" : "block",
+                    onExceed: spec.allow ? "allow" : "block",
+                    ...(spec.allow && spec.headroom !== undefined
+                      ? { hardLimit: quantity(BigInt(spec.limit + spec.headroom)) }
+                      : {}),
                   }),
                 );
               const accepted: Operation[] = [];
@@ -224,11 +228,13 @@ export function propertyTests(factory: StoreFactory) {
                     });
                   }
                 }
-                for (const b of f.budgets.filter((b) => b.onExceed === "block")) {
+                for (const b of f.budgets) {
+                  const ceiling = b.onExceed === "block" ? b.limit : (b.hardLimit ?? null);
+                  if (!ceiling) continue;
                   const total = accepted
                     .filter((op) => op.budgetEpochs.some((e) => e.budgetId === b.id))
                     .reduce((n, op) => n + op.estimate[0]!.value, 0n);
-                  expect(total).toBeLessThanOrEqual(b.limit!.value);
+                  expect(total).toBeLessThanOrEqual(ceiling.value);
                 }
               }
             } finally {

@@ -25,9 +25,10 @@ import {
   validateQuantity,
   validateReceipt,
   validTtl,
+  withNormalizedTags,
 } from "./util.js";
 import { operationRow, hydrate, find, appendReceipt, event, updateOperation } from "./records.js";
-import { admission, updateUsage } from "./budgets.js";
+import { admission, updateUsage, recordAlerts, reachedBySettlement } from "./budgets.js";
 export function commands(
   db: Database.Database,
   clock: Clock,
@@ -143,7 +144,8 @@ export function commands(
     touch(op);
     appendReceipt(db, op, receipt);
     mutate(before, op, null, true);
-    const result: SettleResult = { outcome: "settled", replayed: false, operation: op };
+    const alerts = recordAlerts(db, op.scope.namespace, reachedBySettlement(db, op), clock.now());
+    const result: SettleResult = { outcome: "settled", replayed: false, operation: op, alerts };
     log(i, kind, result);
     return result;
   };
@@ -192,12 +194,13 @@ export function commands(
   return {
     expireReservations: async (i) =>
       write(() => expire(i)) as { outcome: "expired"; count: number; hasMore: boolean },
-    reserve: async (i, p) =>
+    reserve: async (raw, p) =>
       write(() => {
-        validTtl(i.reservationTtlMs ?? 300000, "reservationTtlMs");
-        i.estimate.forEach(validateQuantity);
-        if (new Set(i.estimate.map((q) => q.unit)).size !== i.estimate.length)
+        validTtl(raw.reservationTtlMs ?? 300000, "reservationTtlMs");
+        raw.estimate.forEach(validateQuantity);
+        if (new Set(raw.estimate.map((q) => q.unit)).size !== raw.estimate.length)
           throw new InvalidInput("estimate", "duplicate unit");
+        const i = withNormalizedTags(raw);
         expire({ namespace: i.scope.namespace });
         const existing = operationRow(db, i.scope.namespace, i.operationId);
         if (existing) {
@@ -208,6 +211,7 @@ export function commands(
                 replayed: true,
                 operation: op,
                 warnings: decode(existing.warnings_json),
+                alerts: decode(existing.alerts_json),
               }
             : { outcome: "conflict", reason: "semantic_mismatch", operation: op };
         }
@@ -235,8 +239,9 @@ export function commands(
             receipts: [],
             lease: null,
           };
+        const alerts = recordAlerts(db, i.scope.namespace, check.alerts, clock.now());
         db.prepare(
-          "INSERT INTO operations(operation_pk,namespace,principal,operation_id,state,version,semantic_json,budget_epochs_json,created_at,updated_at,operation_json,warnings_json,reservation_expires_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+          "INSERT INTO operations(operation_pk,namespace,principal,operation_id,state,version,semantic_json,budget_epochs_json,created_at,updated_at,operation_json,warnings_json,reservation_expires_at,alerts_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         ).run(
           key(i.scope.namespace, i.operationId),
           i.scope.namespace,
@@ -251,11 +256,18 @@ export function commands(
           encode(i),
           encode(check.warnings),
           op.reservationExpiresAt,
+          encode(alerts),
         );
         hook?.();
         updateUsage(db, null, op);
         event(db, op);
-        return { outcome: "reserved", replayed: false, operation: op, warnings: check.warnings };
+        return {
+          outcome: "reserved",
+          replayed: false,
+          operation: op,
+          warnings: check.warnings,
+          alerts,
+        };
       }) as ReserveResult,
     markDispatchIntent: async (i) =>
       write(() => {

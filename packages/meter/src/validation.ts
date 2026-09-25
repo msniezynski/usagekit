@@ -1,4 +1,10 @@
-import type { ValidationFailure, ReserveInput, UsageQuery } from "@usagekit/core";
+import { sourcesOf, normalizeTags } from "@usagekit/core";
+import type {
+  ValidationFailure,
+  ReserveInput,
+  UsageQuery,
+  ApplicableBudgetsQuery,
+} from "@usagekit/core";
 export function validate(value: unknown, field = "input"): ValidationFailure | null {
   const fail = (reason: string): ValidationFailure => ({ outcome: "invalid", field, reason });
   if (typeof value === "string" && !value.trim()) return fail("empty string");
@@ -19,9 +25,23 @@ export function validate(value: unknown, field = "input"): ValidationFailure | n
   }
   return null;
 }
+/** The host sets both fields at authentication; a source outside its surface group is a forgery or a bug. */
+export function sourceValidation(
+  i: Pick<ApplicableBudgetsQuery, "surface" | "source">,
+): ValidationFailure | null {
+  if (i.source !== undefined && !sourcesOf(i.surface)?.includes(i.source))
+    return { outcome: "invalid", field: "source", reason: "source outside surface group" };
+  return null;
+}
 export function reserveValidation(i: ReserveInput): ValidationFailure | null {
-  const error = validate(i);
+  const error = validate(i) ?? sourceValidation(i);
   if (error) return error;
+  if (i.scope.tags !== undefined && !normalizeTags(i.scope.tags))
+    return {
+      outcome: "invalid",
+      field: "scope.tags",
+      reason: "1 to 16 unique tags matching the tag pattern",
+    };
   if (new Set(i.estimate.map((q) => q.unit)).size !== i.estimate.length)
     return { outcome: "invalid", field: "estimate", reason: "duplicate unit" };
   return null;

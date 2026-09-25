@@ -8,10 +8,17 @@ export class UsageError extends Error {
     super("Invalid arguments or conflicting retry payload");
   }
 }
-export type Options = Record<string, string | boolean | undefined>;
+export type Options = Record<string, string | boolean | string[] | undefined>;
 export const string = (o: Options, name: string, fallback?: string): string => {
   const v = o[name] ?? fallback;
   if (typeof v !== "string" || !v) throw new UsageError();
+  return v;
+};
+/** Repeatable flag values; absent means undefined, not an empty list. */
+export const strings = (o: Options, name: string): string[] | undefined => {
+  const v = o[name];
+  if (v === undefined) return undefined;
+  if (!Array.isArray(v) || !v.every((x) => typeof x === "string" && x)) throw new UsageError();
   return v;
 };
 export function quantity(text: string): Quantity {

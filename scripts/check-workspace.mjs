@@ -48,7 +48,7 @@ for (const project of workspace.projects) {
     (released ? manifest.private === true : manifest.private !== true) ||
     manifest.license !== "Apache-2.0" ||
     (released &&
-      (manifest.version !== "0.1.0" ||
+      (manifest.version !== "0.2.0" ||
         manifest.publishConfig?.access !== "restricted" ||
         manifest.sideEffects !== false))
   ) {

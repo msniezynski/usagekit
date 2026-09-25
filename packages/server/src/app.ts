@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { createUsageHandlers, parseBudget, encodeWire } from "@usagekit/http";
+import { normalizeTags } from "@usagekit/core";
 import type { Meter } from "@usagekit/core";
 import type { SqliteStore } from "@usagekit/store-sqlite";
 import type { createAuth } from "./auth.js";
@@ -57,14 +58,20 @@ export function createApp({
       return c.json({ error: "invalid_request" }, 400);
     const b = body as Record<string, unknown>;
     if (
-      Object.keys(b).some((k) => !["provider", "connectionId", "secret"].includes(k)) ||
+      Object.keys(b).some((k) => !["provider", "connectionId", "secret", "tags"].includes(k)) ||
       ![b.provider, b.connectionId, b.secret].every(
         (x) => typeof x === "string" && x.trim().length > 0,
       )
     )
       return c.json({ error: "invalid_request" }, 400);
-    vault.put(b.provider as string, b.connectionId as string, b.secret as string);
-    return c.json({ provider: b.provider, connectionId: b.connectionId });
+    const tags = b.tags === undefined ? undefined : normalizeTags(b.tags as readonly string[]);
+    if (tags === null) return c.json({ error: "invalid_request" }, 400);
+    vault.put(b.provider as string, b.connectionId as string, b.secret as string, tags);
+    return c.json({
+      provider: b.provider,
+      connectionId: b.connectionId,
+      ...(tags ? { tags } : {}),
+    });
   });
   app.delete("/providers/connections/:id", (c) => {
     vault.remove(c.req.param("id"));
@@ -103,6 +110,7 @@ export function createApp({
     if (b.limit && (b.limit.value < 0n || b.limit.unit !== b.unit))
       return c.json({ error: "invalid_budget" }, 400);
     const saved = store.putBudget(b);
+    if (saved.outcome === "invalid") return c.json({ error: "invalid_budget" }, 400);
     if (saved.outcome === "conflict") return c.json(saved, 409);
     return new Response(encodeWire(b), { headers: { "Content-Type": "application/json" } });
   });

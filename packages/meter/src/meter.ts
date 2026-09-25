@@ -3,8 +3,9 @@ import { InvalidInput } from "@usagekit/store";
 import type { Store, Clock } from "@usagekit/store";
 import { defaultPolicy } from "./policy.js";
 import type { MeterPolicy } from "./policy.js";
-import { validate, reserveValidation, usageValidation } from "./validation.js";
-import { canRead, canReadBudget } from "./access.js";
+import { validate, reserveValidation, usageValidation, sourceValidation } from "./validation.js";
+import { canRead, canReadBudget, canReadShared, isShared } from "./access.js";
+import { defaultBudgetOrder, normalizeTags } from "@usagekit/core";
 export function createMeter({
   store,
   policy = defaultPolicy,
@@ -18,9 +19,9 @@ export function createMeter({
 }): Meter {
   if (!Number.isFinite(clock.now().getTime())) throw new Error("InvalidInput: clock");
   if (
-    policy.budgetOrder.length !== 5 ||
-    new Set(policy.budgetOrder).size !== 5 ||
-    policy.budgetOrder.some((k) => !defaultPolicy.budgetOrder.includes(k))
+    policy.budgetOrder.length !== defaultBudgetOrder.length ||
+    new Set(policy.budgetOrder).size !== defaultBudgetOrder.length ||
+    policy.budgetOrder.some((k) => !defaultBudgetOrder.includes(k))
   )
     throw new Error("InvalidInput: budgetOrder");
   async function safely<T>(fn: () => Promise<T>): Promise<T | ValidationFailure> {
@@ -45,9 +46,12 @@ export function createMeter({
     safely(async () => ({ outcome: "ok" as const, value: await fn() }));
   return {
     expireReservations: (i) => command(i, () => store.expireReservations(i)),
-    reserve: async (i) => {
-      const invalid = reserveValidation(i);
+    reserve: async (raw) => {
+      const invalid = reserveValidation(raw);
       if (invalid) return invalid;
+      // Tags are attribution: sorted here so every adapter stores one canonical order.
+      const tags = raw.scope.tags === undefined ? undefined : normalizeTags(raw.scope.tags),
+        i = tags ? { ...raw, scope: { ...raw.scope, tags } } : raw;
       return safely(async () => {
         const existing = await store.getOperation({
           namespace: i.scope.namespace,
@@ -58,6 +62,7 @@ export function createMeter({
         const statuses = await store.applicableBudgets({
           scope: i.scope,
           surface: i.surface,
+          source: i.source,
           units: i.estimate.map((q) => q.unit),
           ...(i.platformPools ? { platformPools: i.platformPools } : {}),
         });
@@ -103,7 +108,7 @@ export function createMeter({
       return read(() => store.definedBudgets(q));
     },
     applicableBudgets: async (access, q) => {
-      const invalid = validate(q);
+      const invalid = validate(q) ?? sourceValidation(q);
       if (invalid) return invalid;
       if (
         !canRead(access, {
@@ -117,7 +122,7 @@ export function createMeter({
         const rows = await store.applicableBudgets(q);
         for (const status of rows) {
           if (
-            status.budget.scope.kind !== "platform_pool" &&
+            !isShared(status.budget.scope) &&
             !(await canReadBudget(resolveOwnership, access, status.budget.scope))
           )
             return { outcome: "forbidden" as const };
@@ -125,7 +130,7 @@ export function createMeter({
         return {
           outcome: "ok" as const,
           value: rows.map((s) =>
-            s.budget.scope.kind === "platform_pool" && !canRead(access, s.budget.scope)
+            isShared(s.budget.scope) && !canReadShared(access, s.budget.scope)
               ? {
                   ...s,
                   budget: { ...s.budget, limit: null },
