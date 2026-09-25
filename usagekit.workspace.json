@@ -61,7 +61,10 @@
         "@usagekit/store",
         "@usagekit/meter",
         "@usagekit/store-sqlite",
-        "@usagekit/http"
+        "@usagekit/http",
+        "@usagekit/client",
+        "@usagekit/views",
+        "@usagekit/react"
       ],
       "purpose": "server local server capability.",
       "runtime": "node"
@@ -72,6 +75,30 @@
       "phase": "local-server",
       "allows": ["@usagekit/core", "@usagekit/client", "@usagekit/server"],
       "purpose": "cli local server capability.",
+      "runtime": "node"
+    },
+    {
+      "name": "@usagekit/views",
+      "path": "packages/views",
+      "phase": "ui",
+      "allows": ["@usagekit/core"],
+      "purpose": "Pure view models over the Meter for usage, budgets, header status, coverage and exceptions.",
+      "runtime": "web"
+    },
+    {
+      "name": "@usagekit/react",
+      "path": "packages/react",
+      "phase": "ui",
+      "allows": ["@usagekit/core", "@usagekit/views"],
+      "purpose": "React hooks and a Meter provider over the view models.",
+      "runtime": "web"
+    },
+    {
+      "name": "@usagekit/registry",
+      "path": "packages/registry",
+      "phase": "ui",
+      "allows": ["@usagekit/core", "@usagekit/views", "@usagekit/react"],
+      "purpose": "shadcn registry blocks for Radix and Base UI, their build and consumer tests. Blocks are web code; the package tooling runs on Node.",
       "runtime": "node"
     }
   ],
@@ -84,7 +111,10 @@
     "@usagekit/http",
     "@usagekit/client",
     "@usagekit/server",
-    "@usagekit/store-sqlite"
+    "@usagekit/store-sqlite",
+    "@testing-library/react",
+    "react",
+    "ajv"
   ],
   "publishable": ["@usagekit/core", "@usagekit/store", "@usagekit/meter"]
 }

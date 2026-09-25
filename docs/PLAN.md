@@ -9,7 +9,7 @@ This file keeps the contract, constraints and exit gates.
 The owner agreed to own metering with admin composition and existing host ledgers as credit authorities.
 Optional downstream export remains part of that direction.
 The admin must show usage, provider costs and application credit information.
-`@usagekit/core`, `store` and `meter` 0.1.0 are published publicly on npm under Apache-2.0. Deployment remains outside this work.
+`@usagekit/core`, `store` and `meter` are published publicly on npm under Apache-2.0; see the README for the current version. Deployment remains outside this work.
 
 | Mode         | Execution                                                | Boundary                                                                |
 | ------------ | -------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -110,7 +110,8 @@ Admin composes `meter.usage` with authorized host balances. Read methods return 
   Cache reads do not create provider usage. HTTP success does not prove business success or billing.
   Chain order for future companions: cache lookup, rate limit, reservation. Non-operation outcomes are counted per state, never reserved.
 - Store commands are atomic: `reserve`, `markDispatchIntent`, `renewLease`, `claimForRecovery`, `settle`, `releaseUndispatched`, `expireReservations` and `correct`.
-  Store reads are `getOperation`, `aggregate`, `definedBudgets` and `applicableBudgets`. Every adapter proves mutation atomicity independently.
+  Store reads are `getOperation`, `aggregate`, `listOperations`, `definedBudgets` and `applicableBudgets`. Every adapter proves mutation atomicity independently.
+  `listOperations` lists operations by `createdAt` window, lifecycle states, scope and connection, with the access rules of `usage`; pages mirror `aggregate` (the first page fixes membership at its watermark).
   Admission includes settled use and outstanding reservations across applicable owner, platform, connection and credential bounds.
   Connection locks alone cannot enforce a shared principal or platform limit.
 - `BudgetScope` names one principal, group, connection, access credential or shared platform pool constraint.
@@ -241,7 +242,7 @@ The reserve or settlement that first reaches 800 requests returns one `alerts` e
 
 ## 4. Package grid
 
-Eight workspace directories exist. Add future packages when their first real implementation exists.
+Eleven workspace directories exist. Add future packages when their first real implementation exists.
 Host schema mappings live in host repositories. Shared Prisma code provides mechanics only.
 
 | Package        | Exists | Runtime | Responsibility                                                 |
@@ -255,12 +256,14 @@ Host schema mappings live in host repositories. Shared Prisma code provides mech
 | `store-d1`     | no     | web     | Cloudflare storage and atomicity proof                         |
 | `http`         | yes    | web     | Authenticated write/read handlers and wire validation          |
 | `client`       | yes    | web     | Remote implementation of the core Meter interface              |
-| `react`        | no     | web     | Headless usage, balance and budget views                       |
+| `views`        | yes    | web     | Pure view models over the Meter; amounts as exact text         |
+| `react`        | yes    | web     | Hooks and a Meter provider over the view models                |
+| `registry`     | yes    | node    | shadcn blocks for Radix and Base UI, build and consumer tests  |
 | `proxy`        | no     | node    | Local provider routes, key injection and admission             |
 | `wallet`       | no     | web     | Optional ledger primitives after host stabilization            |
 | `ratelimit`    | no     | web     | Later: request rate limits before reservation, own state port  |
 | `cache`        | no     | web     | Later: response cache before rate limit, own storage, counted  |
-| `server`       | yes    | node    | Local API, SQLite, vault and explicit recovery commands        |
+| `server`       | yes    | node    | Local API, SQLite, vault, recovery and the UI on the registry  |
 | `cli`          | yes    | node    | Local server commands and usage reads                          |
 
 Web projects extend `tsconfig.base.json`. Node projects extend `tsconfig.node.json`.

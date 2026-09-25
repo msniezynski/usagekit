@@ -8,7 +8,7 @@ export {
   release,
   expireReservations,
 } from "./memory/commands.js";
-export { aggregate, definedBudgets, applicableBudgets } from "./memory/reads.js";
+export { aggregate, definedBudgets, applicableBudgets, listOperations } from "./memory/reads.js";
 export { copy, find, key, canonical, InvalidInput } from "./memory/state.js";
 export type { State } from "./memory/state.js";
 export {

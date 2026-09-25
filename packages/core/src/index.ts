@@ -39,6 +39,8 @@ export type {
   UsageQuery,
   UsageRow,
   UsagePage,
+  OperationsQuery,
+  OperationsPage,
   DefinedBudgetsQuery,
   ApplicableBudgetsQuery,
   BudgetStatus,
@@ -51,11 +53,17 @@ export type { ResolvedWindow } from "./windows.js";
 export {
   fromDecimalString,
   toDecimalString,
+  formatMoney,
   add as addMoney,
   sub as subtractMoney,
   compare as compareMoney,
 } from "./money.js";
-export { normalizeScale, add as addQuantity, compare as compareQuantity } from "./quantity.js";
+export {
+  normalizeScale,
+  add as addQuantity,
+  compare as compareQuantity,
+  format as formatQuantity,
+} from "./quantity.js";
 
 export type { ValidationFailure, AdmissionPolicy, BudgetOwner } from "./contracts.js";
 export {

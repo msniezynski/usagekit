@@ -23,6 +23,8 @@ import type {
   SettleResult,
   UsagePage,
   UsageQuery,
+  OperationsQuery,
+  OperationsPage,
 } from "@usagekit/core";
 
 /**
@@ -47,6 +49,7 @@ export interface Store {
   releaseUndispatched(input: ReleaseInput): Promise<ReleaseResult>;
   getOperation(input: OperationRef): Promise<Operation | null>;
   aggregate(query: UsageQuery): Promise<UsagePage>;
+  listOperations(query: OperationsQuery): Promise<OperationsPage>;
   definedBudgets(query: DefinedBudgetsQuery): Promise<readonly Budget[]>;
   applicableBudgets(query: ApplicableBudgetsQuery): Promise<readonly BudgetStatus[]>;
 }

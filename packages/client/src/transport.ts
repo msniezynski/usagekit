@@ -36,7 +36,9 @@ export function transport({ baseUrl, token, fetch: fetcher = globalThis.fetch }:
         ? `/v1/operations/${encodeURIComponent(String(raw.operationId))}`
         : name === "usage"
           ? "/v1/usage"
-          : `/v1/budgets/${name}`
+          : name === "operations"
+            ? "/v1/operations"
+            : `/v1/budgets/${name}`
       : `/v1/operations/${name}`;
     const query = read
       ? "?q=" +

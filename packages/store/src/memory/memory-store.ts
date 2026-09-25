@@ -1,4 +1,4 @@
-import { aggregate, definedBudgets, applicableBudgets } from "./reads.js";
+import { aggregate, definedBudgets, applicableBudgets, listOperations } from "./reads.js";
 import type { Budget } from "@usagekit/core";
 import type { Store } from "../index.js";
 import type { Clock } from "../clock.js";
@@ -29,6 +29,7 @@ export function createMemoryStore({ clock, budgets }: { clock: Clock; budgets: B
     correct: async (i) => settle(state, i, true),
     releaseUndispatched: async (i) => release(state, i),
     aggregate: async (q) => aggregate(state, q),
+    listOperations: async (q) => listOperations(state, q),
     definedBudgets: async (q) => definedBudgets(state, q),
     applicableBudgets: async (q) => applicableBudgets(state, q),
   };

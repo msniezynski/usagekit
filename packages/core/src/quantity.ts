@@ -17,3 +17,12 @@ export function compare(a: Quantity, b: Quantity): -1 | 0 | 1 {
   const [x, y] = pair(a, b);
   return x.value < y.value ? -1 : x.value > y.value ? 1 : 0;
 }
+/** Exact decimal text of value * 10^-scale, trailing fractional zeros trimmed, no trailing dot. */
+export function format(q: Quantity): string {
+  const negative = q.value < 0n,
+    digits = (negative ? -q.value : q.value).toString().padStart(q.scale + 1, "0"),
+    whole = digits.slice(0, digits.length - q.scale),
+    fraction = digits.slice(digits.length - q.scale).replace(/0+$/, "");
+  const text = fraction ? `${whole}.${fraction}` : whole;
+  return negative && text !== "0" ? `-${text}` : text;
+}

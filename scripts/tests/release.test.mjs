@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { validatePackFiles, validateReleaseIdentity } from "../lib/release.mjs";
+import { publishArgs, validatePackFiles, validateReleaseIdentity } from "../lib/release.mjs";
 
 test("release requires reviewed main and its annotated version tag", () => {
   const valid = { branch: "main", head: "a", tagCommit: "a", tagType: "tag" };
@@ -31,4 +31,30 @@ test("tarball audit rejects source, test files, maps, missing notices and privat
     [],
     true,
   );
+});
+test("release publishes the allow-listed packages with public access", () => {
+  const args = publishArgs();
+  assert.deepEqual(args.slice(0, 7), [
+    "publish",
+    "--workspace",
+    "@usagekit/core",
+    "--workspace",
+    "@usagekit/store",
+    "--workspace",
+    "@usagekit/meter",
+  ]);
+  assert.equal(args[args.indexOf("--access") + 1], "public");
+  assert.equal(args.includes("restricted"), false);
+  assert.equal(args[args.indexOf("--registry") + 1], "https://registry.npmjs.org/");
+});
+test("the contract release is 0.3.0 for every changed package and the new view packages", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { releaseVersion } = await import("../lib/release.mjs");
+  assert.equal(releaseVersion, "0.3.0");
+  for (const name of ["core", "store", "meter", "http", "client", "views", "react"]) {
+    const manifest = JSON.parse(
+      readFileSync(new URL(`../../packages/${name}/package.json`, import.meta.url), "utf8"),
+    );
+    assert.equal(manifest.version, releaseVersion, name);
+  }
 });

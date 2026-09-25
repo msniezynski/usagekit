@@ -366,3 +366,44 @@ test("absent ownership resolver fails closed and foreign namespace owners are re
     }).definedBudgets(access, q),
   ).toEqual({ outcome: "forbidden" });
 });
+test("listOperations validates states and window and follows the usage access rules", async () => {
+  const clock = createManualClock(),
+    meter = createMeter({ store: createMemoryStore({ clock, budgets: [] }), clock });
+  expect(await meter.reserve(input())).toMatchObject({ outcome: "reserved" });
+  const list = {
+    scope: { kind: "principal" as const, namespace: "test", principal: "u1" },
+    from: "2026-09-01T00:00:00Z",
+    to: "2026-10-01T00:00:00Z",
+  };
+  expect(await meter.listOperations(access, { ...list, states: ["reserved"] })).toMatchObject({
+    outcome: "ok",
+    value: { operations: [{ state: "reserved" }] },
+  });
+  expect(await meter.listOperations(access, { ...list, states: [] })).toMatchObject({
+    outcome: "invalid",
+    field: "states",
+  });
+  expect(
+    await meter.listOperations(access, { ...list, states: ["archived" as "settled"] }),
+  ).toMatchObject({ outcome: "invalid", field: "states" });
+  expect(
+    await meter.listOperations(access, { ...list, from: list.to, to: list.from }),
+  ).toMatchObject({ outcome: "invalid", field: "window" });
+  expect(await meter.listOperations(access, { ...list, limit: 1001 })).toMatchObject({
+    outcome: "invalid",
+    field: "limit",
+  });
+  expect(
+    await meter.listOperations(access, {
+      ...list,
+      scope: { kind: "namespace", namespace: "test" },
+    }),
+  ).toEqual({ outcome: "forbidden" });
+  expect(await meter.listOperations({ ...access, canReadBillingDetail: false }, list)).toEqual({
+    outcome: "forbidden",
+  });
+  expect(await meter.listOperations(access, { ...list, cursor: "unknown" })).toMatchObject({
+    outcome: "invalid",
+    field: "cursor",
+  });
+});

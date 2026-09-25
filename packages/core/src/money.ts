@@ -18,3 +18,5 @@ export const add = (a: Money, b: Money): Money => ({ currency: "USD", units: a.u
 export const sub = (a: Money, b: Money): Money => ({ currency: "USD", units: a.units - b.units });
 export const compare = (a: Money, b: Money): -1 | 0 | 1 =>
   a.units < b.units ? -1 : a.units > b.units ? 1 : 0;
+/** Exact cents text with four fractional digits; a named alias of toDecimalString for views. */
+export const formatMoney: (m: Money) => string = toDecimalString;

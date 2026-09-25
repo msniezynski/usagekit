@@ -65,6 +65,11 @@ export type State = {
     string,
     { query: string; rows: UsageRow[]; asOf: string; watermark: string; offset: number }
   >;
+  /** Operation listing snapshots: membership and order fixed by the first page. */
+  operationCursors?: Map<
+    string,
+    { query: string; keys: string[]; asOf: string; watermark: string; offset: number }
+  >;
   clock: Clock;
   budgets: Budget[];
   operations: Map<string, Operation>;

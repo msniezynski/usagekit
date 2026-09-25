@@ -1,5 +1,19 @@
 export const publishable = ["@usagekit/core", "@usagekit/store", "@usagekit/meter"];
 export const registry = "https://registry.npmjs.org/";
+/** Version of the publishable packages on this branch; the workspace check enforces it. */
+export const releaseVersion = "0.3.0";
+
+/** The packages are public. CLI flags take precedence over each manifest's publishConfig. */
+export function publishArgs() {
+  return [
+    "publish",
+    ...publishable.flatMap((p) => ["--workspace", p]),
+    "--access",
+    "public",
+    "--registry",
+    registry,
+  ];
+}
 
 export function validateReleaseIdentity({ branch, head, tagCommit, tagType }) {
   if (branch !== "main" || tagCommit !== head || tagType !== "tag")

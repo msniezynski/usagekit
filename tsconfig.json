@@ -24,6 +24,15 @@
     },
     {
       "path": "./packages/cli"
+    },
+    {
+      "path": "./packages/views"
+    },
+    {
+      "path": "./packages/react"
+    },
+    {
+      "path": "./packages/registry"
     }
   ]
 }

@@ -29,14 +29,15 @@ See [local server operation](docs/LOCAL-SERVER.md) for tokens, the vault, budget
 `npm ci` installs local hooks through `prepare`. Use `npm run setup` if scripts were disabled.
 Hooks prefer the pinned NVM binary. Otherwise PATH must satisfy the supported range.
 
-| Command             | Purpose                                                                          |
-| ------------------- | -------------------------------------------------------------------------------- |
-| `npm run check`     | Runtime, workspace/privacy checks, formatting, TypeScript, unit and policy tests |
-| `npm run format`    | Format source and documentation, excluding local ADRs                            |
-| `npm run typecheck` | Check references and emit declarations into ignored `dist/`                      |
-| `npm run build`     | Build the eight existing workspaces                                              |
-| `npm test`          | Policy tests in disposable local repositories                                    |
-| `npm run setup`     | Install repository-local hooks and Git defaults                                  |
+| Command                  | Purpose                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------- |
+| `npm run check`          | Runtime, workspace/privacy checks, formatting, TypeScript, unit and policy tests |
+| `npm run format`         | Format source and documentation, excluding local ADRs                            |
+| `npm run typecheck`      | Check references and emit declarations into ignored `dist/`                      |
+| `npm run build`          | Build every workspace and the local server UI                                    |
+| `npm run registry:build` | Build the shadcn registry into `packages/registry/dist/r`                        |
+| `npm test`               | Policy tests in disposable local repositories                                    |
+| `npm run setup`          | Install repository-local hooks and Git defaults                                  |
 
 ## Working agreement
 
@@ -99,7 +100,7 @@ Pre-commit permits partial staging and untracked files. It does not run policy t
 It checks current files; the privacy guard also scans indexed content. Review staged changes independently.
 Full tests run through `npm run check` and during approved main promotion.
 `npm run test:unit` runs Vitest; `npm run test:unit:watch` watches changes.
-`npx vitest run --coverage` enforces 90% lines for reference Store and Meter, and 85% for SQLite, HTTP, client and server.
+`npx vitest run --coverage` enforces 90% lines for reference Store and Meter, and 85% for SQLite, HTTP, client, server, views and react.
 Conformance runs unchanged against memory, embedded Meter, SQLite and the remote Meter over HTTP.
 The adapter converts typed validation failures to Store exceptions; other outcomes stay unchanged.
 Memory and remote-memory skip `durable` and `rollingWindows`. SQLite skips only `rollingWindows`. Each run reports its skips.
@@ -117,8 +118,11 @@ There is no pre-push hook. The release allow-list and publish guard restrict pub
 | `packages/store-sqlite` | Durable transactions, migrations and admission projection       |
 | `packages/http`         | Web handlers, strict Valibot wire schemas and generated OpenAPI |
 | `packages/client`       | Remote Meter with explicit accounting retries                   |
-| `packages/server`       | Loopback API, token authentication and encrypted local vault    |
+| `packages/server`       | Loopback API, token auth, encrypted vault and the UI at `/`     |
 | `packages/cli`          | Serve, provider, budget, reporting and usage commands           |
+| `packages/views`        | View models over the Meter: usage, budgets, header, coverage    |
+| `packages/react`        | React hooks and `MeterProvider` over the view models            |
+| `packages/registry`     | shadcn blocks for Radix and Base UI, see [UI](docs/UI.md)       |
 
 Future packages are listed in the [plan](docs/PLAN.md#4-package-grid), without placeholder directories.
 Host schema mappings stay in host repositories. Shared adapters provide mechanics only.

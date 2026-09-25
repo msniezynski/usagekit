@@ -1,0 +1,26 @@
+{
+  "name": "usagekit-consumer-base",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Minimal host used to test the registry blocks against base primitives.",
+  "dependencies": {
+    "@base-ui/react": "*",
+    "@usagekit/core": "*",
+    "@usagekit/react": "*",
+    "@usagekit/views": "*",
+    "class-variance-authority": "*",
+    "clsx": "*",
+    "lucide-react": "*",
+    "react": "*",
+    "react-dom": "*",
+    "tailwind-merge": "*",
+    "tw-animate-css": "*"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "*",
+    "tailwindcss": "*",
+    "typescript": "*",
+    "vite": "*"
+  }
+}

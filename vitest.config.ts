@@ -1,5 +1,29 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { defineConfig } from "vitest/config";
+import type { Plugin } from "vitest/config";
+
+/**
+ * Registry consumer tests import blocks from host copies whose "@/" alias points at the host
+ * root: the nearest directory with a components.json above the importing file.
+ */
+const hostAlias: Plugin = {
+  name: "usagekit-host-alias",
+  enforce: "pre",
+  resolveId(source, importer) {
+    if (!source.startsWith("@/") || !importer) return null;
+    let dir = dirname(importer);
+    while (!existsSync(join(dir, "components.json"))) {
+      if (dirname(dir) === dir) return null;
+      dir = dirname(dir);
+    }
+    const base = join(dir, source.slice(2));
+    const file = [".tsx", ".ts", "/index.tsx", "/index.ts", ""]
+      .map((ext) => base + ext)
+      .find((candidate) => existsSync(candidate) && statSync(candidate).isFile());
+    return file ?? null;
+  },
+};
 
 const names = JSON.parse(
   readFileSync(new URL("./usagekit.workspace.json", import.meta.url), "utf8"),
@@ -12,6 +36,7 @@ export default defineConfig({
     include: ["packages/*/src/**/*.test.ts", "packages/*/conformance/**/*.test.ts"],
     projects: names.map((name: string) => ({
       extends: false,
+      plugins: ["registry", "server"].includes(name) ? [hostAlias] : [],
       resolve: {
         alias: [
           {
@@ -34,7 +59,7 @@ export default defineConfig({
         exclude: ["packages/store/conformance/!(memory.conformance).test.ts"],
         testTimeout: 60000,
         hookTimeout: 60000,
-        environment: "node",
+        environment: ["react", "registry"].includes(name) ? "jsdom" : "node",
         include: [`packages/${name}/src/**/*.test.ts`, `packages/${name}/conformance/**/*.test.ts`],
       },
     })),
@@ -44,7 +69,7 @@ export default defineConfig({
       include: [
         "packages/store/src/memory/**/*.ts",
         "packages/meter/src/**/*.ts",
-        ...["store-sqlite", "http", "client", "server"].map(
+        ...["store-sqlite", "http", "client", "server", "views", "react"].map(
           (name) => `packages/${name}/src/**/*.ts`,
         ),
       ],
@@ -52,7 +77,7 @@ export default defineConfig({
       thresholds: {
         lines: 85,
         ...Object.fromEntries(
-          ["store-sqlite", "http", "client", "server"].map((name) => [
+          ["store-sqlite", "http", "client", "server", "views", "react"].map((name) => [
             `packages/${name}/src/**`,
             { lines: 85 },
           ]),

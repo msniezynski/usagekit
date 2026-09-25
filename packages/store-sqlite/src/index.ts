@@ -9,6 +9,7 @@ import { find } from "./records.js";
 import { commands } from "./commands.js";
 import { currentBudgets, insertBudget, selected, status } from "./budgets.js";
 import { usageReader } from "./reads.js";
+import { operationsReader } from "./operations.js";
 export type BudgetWriteResult =
   | { outcome: "saved"; budget: Budget }
   | { outcome: "conflict"; reason: "budget_version" }
@@ -52,7 +53,8 @@ export function createSqliteStore({
   db.transaction(() => {
     for (const b of budgets) insertBudget(db, b);
   }).immediate();
-  const aggregate = usageReader(db, clock, cursorTtlMs);
+  const aggregate = usageReader(db, clock, cursorTtlMs),
+    listOperations = operationsReader(db, clock, cursorTtlMs);
   return {
     ...commands(db, clock, testHooks?.afterOperationWrite),
     database: db,
@@ -83,6 +85,7 @@ export function createSqliteStore({
     listBudgets: () => read(() => currentBudgets(db)),
     getOperation: async (ref) => read(() => find(db, ref)?.op ?? null),
     aggregate: async (q) => aggregate(q),
+    listOperations: async (q) => listOperations(q),
     definedBudgets: async (q) =>
       read(() => currentBudgets(db, q.scope.namespace, [canonical(q.scope)])),
     applicableBudgets: async (q) =>

@@ -1,0 +1,1 @@
+../../radix/coverage-summary/coverage-summary.tsx

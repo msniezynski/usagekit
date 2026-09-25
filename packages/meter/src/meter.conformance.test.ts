@@ -59,6 +59,8 @@ runStoreConformance(
       releaseUndispatched: async (i) => commandResult(await meter.releaseUndispatched(i)),
       getOperation: async (i) => readResult(await meter.getOperation(access(i.namespace), i)),
       aggregate: async (q) => readResult(await meter.usage(access(q.scope.namespace), q)),
+      listOperations: async (q) =>
+        readResult(await meter.listOperations(access(q.scope.namespace), q)),
       definedBudgets: async (q) =>
         readResult(await meter.definedBudgets(access(q.scope.namespace), q)),
       applicableBudgets: async (q) =>

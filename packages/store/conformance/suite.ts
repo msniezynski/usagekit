@@ -9,6 +9,7 @@ import { dispatchTests } from "./dispatch.js";
 import { authorityTests } from "./authority.js";
 import { recoveryTests } from "./recovery.js";
 import { readsTests } from "./reads.js";
+import { operationsTests } from "./operations.js";
 import { propertyTests } from "./properties.js";
 import { capabilityTests } from "./capabilities.js";
 export function runStoreConformance(factory: StoreFactory, capabilities: StoreCapabilities) {
@@ -22,6 +23,7 @@ export function runStoreConformance(factory: StoreFactory, capabilities: StoreCa
     authorityTests(factory);
     recoveryTests(factory);
     readsTests(factory, capabilities);
+    operationsTests(factory);
     propertyTests(factory);
     capabilityTests(factory, capabilities);
     afterAll(() =>

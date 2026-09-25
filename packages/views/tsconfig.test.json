@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "rootDir": "../..",
+    "paths": {
+      "@usagekit/core": ["../core/src/index.ts"],
+      "@usagekit/store": ["../store/src/index.ts"],
+      "@usagekit/meter": ["../meter/src/index.ts"],
+      "@usagekit/store-sqlite": ["../store-sqlite/src/index.ts"],
+      "@usagekit/http": ["../http/src/index.ts"],
+      "@usagekit/client": ["../client/src/index.ts"],
+      "@usagekit/server": ["../server/src/index.ts"],
+      "@usagekit/cli": ["../cli/src/index.ts"],
+      "@usagekit/views": ["../views/src/index.ts"],
+      "@usagekit/store/conformance": ["../store/conformance/index.ts"],
+      "@usagekit/store/reference": ["../store/src/reference.ts"]
+    },
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*.ts", "conformance/**/*.ts"],
+  "exclude": []
+}

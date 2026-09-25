@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { assertClean, git, run } from "./lib/git.mjs";
-import { publishable, registry, validateReleaseIdentity } from "./lib/release.mjs";
+import { publishArgs, publishable, registry, validateReleaseIdentity } from "./lib/release.mjs";
 import { checkPackages } from "./check-packages.mjs";
 
 const { values } = parseArgs({ options: { "dry-run": { type: "boolean" } } });
@@ -46,18 +46,10 @@ if (values["dry-run"]) {
     mode: 0o600,
   });
   try {
-    run(
-      "npm",
-      [
-        "publish",
-        ...publishable.flatMap((p) => ["--workspace", p]),
-        "--access",
-        "restricted",
-        "--registry",
-        registry,
-      ],
-      { stdio: "inherit", env: { ...process.env, USAGEKIT_RELEASE_NONCE: nonce } },
-    );
+    run("npm", publishArgs(), {
+      stdio: "inherit",
+      env: { ...process.env, USAGEKIT_RELEASE_NONCE: nonce },
+    });
   } finally {
     rmSync(file, { force: true });
   }

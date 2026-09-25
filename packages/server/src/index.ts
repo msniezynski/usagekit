@@ -8,6 +8,7 @@ import { loadConfig, defaultConfigDir } from "./config.js";
 import { createAuth } from "./auth.js";
 import { createVault } from "./vault.js";
 import { createApp } from "./app.js";
+import { defaultUiRoot } from "./ui.js";
 export type ServerConfig = {
   configDir?: string;
   port?: number;
@@ -16,6 +17,8 @@ export type ServerConfig = {
   passphrase?: string;
   clock?: Clock;
   onToken?: (token: string) => void;
+  /** Directory of the built UI; defaults to dist/ui next to the server. */
+  uiRoot?: string;
 };
 export async function startServer(options: ServerConfig = {}) {
   const host = options.host ?? "127.0.0.1";
@@ -40,7 +43,14 @@ export async function startServer(options: ServerConfig = {}) {
           ? { kind: "principal", namespace: "local", principal: "local" }
           : null,
     }),
-    app = createApp({ meter, store, auth, vault, configPath: loaded.path });
+    app = createApp({
+      meter,
+      store,
+      auth,
+      vault,
+      configPath: loaded.path,
+      uiRoot: options.uiRoot ?? defaultUiRoot,
+    });
   let maintenance: Promise<void> | undefined;
   const expireReservations = () =>
     (maintenance ??= (async () => {

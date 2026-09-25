@@ -76,6 +76,8 @@ runStoreConformance(
         readResult(await client(i.namespace).getOperation(access(i.namespace), i)),
       aggregate: async (q) =>
         readResult(await client(q.scope.namespace).usage(access(q.scope.namespace), q)),
+      listOperations: async (q) =>
+        readResult(await client(q.scope.namespace).listOperations(access(q.scope.namespace), q)),
       definedBudgets: async (q) =>
         readResult(await client(q.scope.namespace).definedBudgets(access(q.scope.namespace), q)),
       applicableBudgets: async (q) =>
@@ -129,6 +131,14 @@ test("a read-only mount serves reads to the remote Meter and rejects every comma
       groupBy: ["provider"],
     }),
   ).toMatchObject({ outcome: "ok", value: { rows: [] } });
+  const listed = await remote.listOperations(access("test"), {
+    scope: { kind: "namespace", namespace: "test" },
+    from: "2026-09-01T00:00:00.000Z",
+    to: "2026-10-01T00:00:00.000Z",
+    states: ["reserved"],
+  });
+  expect(listed).toMatchObject({ outcome: "ok", value: { operations: [{ operationId: "op" }] } });
+  if (listed.outcome === "ok") expect(listed.value.operations[0]!.estimate[0]!.value).toBe(1n);
   expect(
     await remote.definedBudgets(access("test"), {
       scope: { kind: "principal", namespace: "test", principal: "u1" },

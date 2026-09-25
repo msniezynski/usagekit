@@ -3,7 +3,13 @@ import { InvalidInput } from "@usagekit/store";
 import type { Store, Clock } from "@usagekit/store";
 import { defaultPolicy } from "./policy.js";
 import type { MeterPolicy } from "./policy.js";
-import { validate, reserveValidation, usageValidation, sourceValidation } from "./validation.js";
+import {
+  validate,
+  reserveValidation,
+  usageValidation,
+  operationsValidation,
+  sourceValidation,
+} from "./validation.js";
 import { canRead, canReadBudget, canReadShared, isShared } from "./access.js";
 import { defaultBudgetOrder, normalizeTags } from "@usagekit/core";
 export function createMeter({
@@ -99,6 +105,13 @@ export function createMeter({
       if (!access.canReadBillingDetail || !canRead(access, q.scope))
         return { outcome: "forbidden" };
       return read(() => store.aggregate(q));
+    },
+    listOperations: async (access, q) => {
+      const invalid = operationsValidation(q);
+      if (invalid) return invalid;
+      if (!access.canReadBillingDetail || !canRead(access, q.scope))
+        return { outcome: "forbidden" };
+      return read(() => store.listOperations(q));
     },
     definedBudgets: async (access, q) => {
       const invalid = validate(q);

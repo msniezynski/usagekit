@@ -5,7 +5,7 @@ import { git } from "./lib/git.mjs";
 import { filesUnder, readJson, validateGraph, validateImports } from "./lib/workspace.mjs";
 import { satisfiesRuntimeRange } from "./lib/runtime.mjs";
 import { checkPrivateTerms } from "./lib/private-terms.mjs";
-import { publishable } from "./lib/release.mjs";
+import { publishable, releaseVersion } from "./lib/release.mjs";
 import { checkPackages } from "./check-packages.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -48,7 +48,7 @@ for (const project of workspace.projects) {
     (released ? manifest.private === true : manifest.private !== true) ||
     manifest.license !== "Apache-2.0" ||
     (released &&
-      (manifest.version !== "0.2.0" ||
+      (manifest.version !== releaseVersion ||
         manifest.publishConfig?.access !== "restricted" ||
         manifest.sideEffects !== false))
   ) {

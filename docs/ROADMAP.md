@@ -141,7 +141,7 @@ maintain and a registry to test against both.
 | P3 host A embedded shadow            | Complete on a host branch: Postgres adapter passes conformance, shadow on own and hosted paths, admin comparison page. Awaiting rebase onto the host's moved `main` and a draft PR. |
 | Repository hosting                   | No remote yet. Sources exist only locally.                                                                                                                                          |
 | Provider catalog                     | Does not exist. Host A keeps its own catalog and price resolver.                                                                                                                    |
-| UI layer                             | Does not exist. Host A's admin page is hand-written on its own table component.                                                                                                     |
+| UI layer                             | On a task branch: view models, React hooks, a shadcn registry for Radix and Base UI, and the local server UI. See [UI](UI.md). Host A's admin page is still hand-written.           |
 
 ## 7. Order of work
 
@@ -184,10 +184,10 @@ These were missing from the plan and are now owned by a stage.
   version, not the pool. Two accounts at one provider are two pools, two budgets, two probes,
   and the host routes each call to one of them before reserving. The shadow fallback
   `hosted:<provider>` is valid only while there is one platform account per provider.
-- **Header status (P4).** A compact view model: remaining, of what, reset time, warning
+- **Header status (P4).** Done: `loadHeaderStatus` and `useHeaderStatus` merge the last command's crossings. A compact view model: remaining, of what, reset time, warning
   threshold, per visible bound. Refreshed in the same request that settles an operation, not by
   polling.
-- **End-user views (P4 models, P8 live).** Connect a provider from the host's allowlist, see
+- **End-user views (P4 models, P8 live).** P4 part done: usage, budgets, header, coverage, exceptions and connection view models with registry blocks. Connect a provider from the host's allowlist, see
   own usage per connection and surface, see budgets and headroom, switch funding where the host
   offers it. Today the plan only describes the operator and the machine.
 - **Provider catalog with host allowlist (P5).** Hosts decide which descriptors are active.
@@ -196,7 +196,7 @@ These were missing from the plan and are now owned by a stage.
   reserves, dispatches through the descriptor and settles. Direct provider client calls are a
   lint error. Which operations exist, how their cost is estimated and how the receipt is
   extracted is descriptor data, not host code.
-- **Read API for external dashboards (P4).** Done in the contract: `createUsageHandlers` takes
+- **Read API for external dashboards (P4).** Done, including `GET /v1/operations` for `listOperations`; the contract: `createUsageHandlers` takes
   `commands: false` and every command route answers 404 after authentication; host A mounts it on one authenticated route; the P4
   reference dashboard consumes it through `createRemoteMeter`, which makes the host the first
   remote consumer outside the local server and the conformance suite. The mount is never
@@ -230,7 +230,7 @@ These were missing from the plan and are now owned by a stage.
 - **Hard and soft limits (P4 contract, P5 catalog).** Contract done: one budget with `limit`, `onExceed`
   `block` or `allow`, optional `hardLimit` and `alerts` recorded once per epoch; still open in P5: overage price
   rows apply past the allowance; descriptor plans declare `allowanceMode`. See section 9.
-- **Tracking policy per operation (P5 contract, P6 proxy, P4 coverage view).** A connection
+- **Tracking policy per operation (P5 contract, P6 proxy, P4 coverage view).** P4 part done: `loadCoverageView` with the `CoverageSource` port. A connection
   chooses `metered` or `passthrough` per catalog operation; unknown paths are `unpriced`.
   Counts are kept in every state; cost is kept only for metered. See section 9.
 - **Plan-dependent prices (P5 catalog, P4 UI).** List prices vary by provider plan and by call

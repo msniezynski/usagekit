@@ -1,0 +1,119 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "usagekit",
+  "homepage": "https://www.npmjs.com/org/usagekit",
+  "items": [
+    {
+      "name": "usage-table",
+      "type": "registry:block",
+      "title": "Usage table",
+      "description": "Usage rows from a UsageView with unit and cost columns, certainty badges and cursor pagination.",
+      "registryDependencies": ["table", "badge", "button"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/usage-table/usage-table.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-table.tsx"
+        }
+      ],
+      "docs": "Rebind for hosts without shadcn: @/components/ui/table (Table, TableHeader, TableBody, TableRow, TableHead, TableCell); @/components/ui/badge (Badge); @/components/ui/button (Button). Data comes from @usagekit/views; the Panel export reads it with @usagekit/react inside a MeterProvider."
+    },
+    {
+      "name": "budget-card",
+      "type": "registry:block",
+      "title": "Budget card",
+      "description": "One budget: used and reserved bar, hard limit marker, alert ticks, remaining, reset time and the redacted state.",
+      "registryDependencies": ["card", "badge", "tooltip"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/budget-card/budget-card.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/budget-card.tsx"
+        }
+      ],
+      "docs": "Rebind for hosts without shadcn: @/components/ui/card (Card, CardHeader, CardTitle, CardDescription, CardContent); @/components/ui/badge (Badge); @/components/ui/tooltip (TooltipProvider, Tooltip, TooltipTrigger, TooltipContent). Data comes from @usagekit/views; the Panel export reads it with @usagekit/react inside a MeterProvider."
+    },
+    {
+      "name": "header-status",
+      "type": "registry:block",
+      "title": "Header status",
+      "description": "Compact inline status for a header: one pill per visible bound, level colors by token.",
+      "registryDependencies": ["badge", "tooltip"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/header-status/header-status.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/header-status.tsx"
+        }
+      ],
+      "docs": "Rebind for hosts without shadcn: @/components/ui/badge (Badge); @/components/ui/tooltip (TooltipProvider, Tooltip, TooltipTrigger, TooltipContent). Data comes from @usagekit/views; the Panel export reads it with @usagekit/react inside a MeterProvider."
+    },
+    {
+      "name": "coverage-summary",
+      "type": "registry:block",
+      "title": "Coverage summary",
+      "description": "Metered, passthrough, unpriced, cached and rate limited counts with shares, and the note that cost excludes untracked requests.",
+      "registryDependencies": ["card"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/coverage-summary/coverage-summary.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/coverage-summary.tsx"
+        }
+      ],
+      "docs": "Rebind for hosts without shadcn: @/components/ui/card (Card, CardHeader, CardTitle, CardDescription, CardContent). Data comes from @usagekit/views; the Panel export reads it with @usagekit/react inside a MeterProvider."
+    },
+    {
+      "name": "exceptions-list",
+      "type": "registry:block",
+      "title": "Exceptions list",
+      "description": "Expired reservations, expired dispatch leases and pending operations with state and age.",
+      "registryDependencies": ["table", "badge"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/exceptions-list/exceptions-list.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/exceptions-list.tsx"
+        }
+      ],
+      "docs": "Rebind for hosts without shadcn: @/components/ui/table (Table, TableHeader, TableBody, TableRow, TableHead, TableCell); @/components/ui/badge (Badge). Data comes from @usagekit/views; the Panel export reads it with @usagekit/react inside a MeterProvider."
+    },
+    {
+      "name": "usage-filters",
+      "type": "registry:block",
+      "title": "Usage filters",
+      "description": "Period and scope controls on the host select.",
+      "registryDependencies": ["select"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/usage-filters/usage-filters.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-filters.tsx"
+        }
+      ],
+      "docs": "Rebind for hosts without shadcn: @/components/ui/select (Select, SelectTrigger, SelectValue, SelectContent, SelectItem). Data comes from @usagekit/views; the Panel export reads it with @usagekit/react inside a MeterProvider."
+    },
+    {
+      "name": "connection-list",
+      "type": "registry:block",
+      "title": "Connection list",
+      "description": "Connections with label, provider, funding badge, tags and plan.",
+      "registryDependencies": ["table", "badge"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/connection-list/connection-list.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/connection-list.tsx"
+        }
+      ],
+      "docs": "Rebind for hosts without shadcn: @/components/ui/table (Table, TableHeader, TableBody, TableRow, TableHead, TableCell); @/components/ui/badge (Badge). Data comes from @usagekit/views; the Panel export reads it with @usagekit/react inside a MeterProvider."
+    }
+  ]
+}

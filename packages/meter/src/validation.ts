@@ -4,6 +4,7 @@ import type {
   ReserveInput,
   UsageQuery,
   ApplicableBudgetsQuery,
+  OperationsQuery,
 } from "@usagekit/core";
 export function validate(value: unknown, field = "input"): ValidationFailure | null {
   const fail = (reason: string): ValidationFailure => ({ outcome: "invalid", field, reason });
@@ -46,9 +47,8 @@ export function reserveValidation(i: ReserveInput): ValidationFailure | null {
     return { outcome: "invalid", field: "estimate", reason: "duplicate unit" };
   return null;
 }
-export function usageValidation(q: UsageQuery): ValidationFailure | null {
-  const error = validate(q);
-  if (error) return error;
+const lifecycle = ["reserved", "dispatch_intended", "pending", "settled", "released"];
+function windowValidation(q: Pick<UsageQuery, "from" | "to" | "limit">): ValidationFailure | null {
   if (
     !Number.isFinite(Date.parse(q.from)) ||
     !Number.isFinite(Date.parse(q.to)) ||
@@ -57,6 +57,21 @@ export function usageValidation(q: UsageQuery): ValidationFailure | null {
     return { outcome: "invalid", field: "window", reason: "invalid time interval" };
   if (q.limit !== undefined && (q.limit < 1 || q.limit > 1000))
     return { outcome: "invalid", field: "limit", reason: "must be between 1 and 1000" };
+  return null;
+}
+export function operationsValidation(q: OperationsQuery): ValidationFailure | null {
+  const error = validate(q) ?? windowValidation(q);
+  if (error) return error;
+  if (
+    q.states !== undefined &&
+    (q.states.length < 1 || q.states.some((state) => !lifecycle.includes(state)))
+  )
+    return { outcome: "invalid", field: "states", reason: "one or more lifecycle states" };
+  return null;
+}
+export function usageValidation(q: UsageQuery): ValidationFailure | null {
+  const error = validate(q) ?? windowValidation(q);
+  if (error) return error;
   if (q.groupBy.includes("principal") && !["namespace", "group"].includes(q.scope.kind))
     return {
       outcome: "invalid",

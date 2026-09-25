@@ -167,6 +167,22 @@ export const UsageQuery = obj({
   cursor: v.optional(text),
   limit: v.optional(v.pipe(integer, v.minValue(1), v.maxValue(1000))),
 });
+const lifecycle = v.picklist(["reserved", "dispatch_intended", "pending", "settled", "released"]);
+export const OperationsQuery = obj({
+  scope: UsageScope,
+  from: timestamp,
+  to: timestamp,
+  states: v.optional(v.pipe(v.array(lifecycle), v.minLength(1))),
+  connection: v.optional(text),
+  cursor: v.optional(text),
+  limit: v.optional(v.pipe(integer, v.minValue(1), v.maxValue(1000))),
+});
+const OperationsPage = obj({
+  operations: v.array(Operation),
+  asOf: timestamp,
+  watermark: text,
+  nextCursor: v.optional(text),
+});
 const UsagePage = obj({
   rows: v.array(
     obj({
@@ -197,6 +213,7 @@ export const schemas = {
   release: obj({ ...Command, reason: text }),
   operation: obj(Ref),
   usage: UsageQuery,
+  operations: OperationsQuery,
   defined: obj({ scope: BudgetScope }),
   applicable: obj({
     scope: Scope,
@@ -312,6 +329,7 @@ export const responses = {
   ]),
   operation: read(v.nullable(Operation)),
   usage: read(UsagePage),
+  operations: read(OperationsPage),
   defined: read(v.array(Budget)),
   applicable: read(v.array(Status)),
 };

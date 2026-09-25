@@ -22,6 +22,7 @@ export function createRemoteMeter(options: RemoteOptions): Meter {
     releaseUndispatched: (i) => request("release", i),
     getOperation: (_access, i) => request("operation", i, true),
     usage: (_access, q) => request("usage", q, true),
+    listOperations: (_access, q) => request("operations", q, true),
     definedBudgets: (_access, q) => request("defined", q, true),
     applicableBudgets: (_access, q) => request("applicable", q, true),
   };

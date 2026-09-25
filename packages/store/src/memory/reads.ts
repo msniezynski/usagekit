@@ -7,6 +7,8 @@ import type {
   Cost,
   DefinedBudgetsQuery,
   ApplicableBudgetsQuery,
+  OperationsQuery,
+  OperationsPage,
 } from "@usagekit/core";
 import { copy, canonical, InvalidInput } from "./state.js";
 import type { State } from "./state.js";
@@ -14,7 +16,7 @@ import { currentBudgets, applicable, effective, plus } from "./admission.js";
 export const definedBudgets = (s: State, q: DefinedBudgetsQuery) =>
   copy(currentBudgets(s).filter((b) => canonical(b.scope) === canonical(q.scope)));
 export const applicableBudgets = (s: State, q: ApplicableBudgetsQuery) => copy(applicable(s, q));
-function inScope(op: Operation, q: UsageQuery): boolean {
+function inScope(op: Operation, q: Pick<UsageQuery, "scope" | "connection">): boolean {
   if (
     op.scope.namespace !== q.scope.namespace ||
     (q.connection && op.scope.connection !== q.connection)
@@ -153,6 +155,56 @@ export function aggregate(s: State, q: UsageQuery): UsagePage {
   if (end < snapshot.rows.length) {
     page.nextCursor = crypto.randomUUID();
     s.cursors.set(page.nextCursor, { ...snapshot, offset: end });
+  }
+  return page;
+}
+const byCreation = (a: Operation, b: Operation) =>
+  a.createdAt === b.createdAt
+    ? a.operationId < b.operationId
+      ? -1
+      : 1
+    : Date.parse(a.createdAt) - Date.parse(b.createdAt);
+/** Mirrors aggregate: the first page fixes membership and order; pages return current records. */
+export function listOperations(s: State, q: OperationsQuery): OperationsPage {
+  const { cursor, ...query } = q;
+  const identity = canonical(query),
+    cursors = (s.operationCursors ??= new Map());
+  let snapshot;
+  if (cursor) {
+    snapshot = cursors.get(cursor);
+    if (!snapshot || snapshot.query !== identity)
+      throw new InvalidInput("cursor", "unknown cursor or query mismatch");
+  } else {
+    const from = Date.parse(q.from),
+      to = Date.parse(q.to);
+    const members = [...s.operations.values()]
+      .filter((op) => {
+        const created = Date.parse(op.createdAt);
+        return (
+          inScope(op, q) &&
+          created >= from &&
+          created < to &&
+          (q.states === undefined || q.states.includes(op.state))
+        );
+      })
+      .sort(byCreation);
+    snapshot = {
+      query: identity,
+      keys: members.map((op) => canonical([op.scope.namespace, op.operationId])),
+      asOf: s.clock.now().toISOString(),
+      watermark: crypto.randomUUID(),
+      offset: 0,
+    };
+  }
+  const end = snapshot.offset + (q.limit ?? 1000),
+    page: OperationsPage = {
+      operations: snapshot.keys.slice(snapshot.offset, end).map((k) => copy(s.operations.get(k)!)),
+      asOf: snapshot.asOf,
+      watermark: snapshot.watermark,
+    };
+  if (end < snapshot.keys.length) {
+    page.nextCursor = crypto.randomUUID();
+    cursors.set(page.nextCursor, { ...snapshot, offset: end });
   }
   return page;
 }

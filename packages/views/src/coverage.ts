@@ -1,0 +1,176 @@
+import { formatQuantity } from "@usagekit/core";
+import type { AccessContext, Meter, Quantity, UsagePage, UsageScope } from "@usagekit/core";
+import { attempt, failure, plus, share } from "./amount.js";
+import type { Problem, ViewState } from "./amount.js";
+
+export const coverageStates = [
+  "metered",
+  "passthrough",
+  "unpriced",
+  "cached",
+  "rate_limited",
+] as const;
+export type CoverageState = (typeof coverageStates)[number];
+/**
+ * Per-state request counts for a scope and a [from, to) window. The store keeps no per-state
+ * counter yet; the local server fills this port later, and hosts may supply their own.
+ */
+export type CoverageSource = {
+  counts(scope: UsageScope, from: string, to: string): Promise<Record<CoverageState, bigint>>;
+};
+export type CoverageEntry = {
+  state: CoverageState;
+  count: string | "unavailable";
+  /** Percent of the total, truncated to two fractional digits; null without a total. */
+  share: string | null;
+};
+export type CoverageView = {
+  state: ViewState;
+  /** Where the counts came from: a CoverageSource, or the meter's own metered requests only. */
+  origin: "source" | "meter";
+  entries: readonly CoverageEntry[];
+  total: string | null;
+  /** True when some requests were not metered, so cost excludes them; null when unknown. */
+  costExcludesUntracked: boolean | null;
+  problem: Problem | null;
+};
+export type CoverageInput = {
+  scope: UsageScope;
+  from: string;
+  to: string;
+  source?: CoverageSource;
+};
+
+/** In-memory CoverageSource for tests and demos. */
+export function createMemoryCoverageSource() {
+  const entries: {
+    namespace: string;
+    principal: string;
+    group?: string;
+    platformPools?: readonly string[];
+    state: CoverageState;
+    at: string;
+    count: bigint;
+  }[] = [];
+  return {
+    add(entry: {
+      namespace: string;
+      principal: string;
+      group?: string;
+      platformPools?: readonly string[];
+      state: CoverageState;
+      at: string;
+      count?: bigint;
+    }) {
+      entries.push({ ...entry, count: entry.count ?? 1n });
+    },
+    async counts(scope: UsageScope, from: string, to: string) {
+      const totals = Object.fromEntries(coverageStates.map((s) => [s, 0n])) as Record<
+        CoverageState,
+        bigint
+      >;
+      for (const e of entries) {
+        const at = Date.parse(e.at);
+        if (e.namespace !== scope.namespace || at < Date.parse(from) || at >= Date.parse(to))
+          continue;
+        if (scope.kind === "principal" && e.principal !== scope.principal) continue;
+        if (scope.kind === "group" && e.group !== scope.group) continue;
+        if (scope.kind === "platform_pool" && !e.platformPools?.includes(scope.poolId)) continue;
+        totals[e.state] += e.count;
+      }
+      return totals;
+    },
+  } satisfies CoverageSource & { add(entry: unknown): void };
+}
+
+const unavailableEntries = (): CoverageEntry[] =>
+  coverageStates.map((state) => ({ state, count: "unavailable", share: null }));
+
+/** Metered requests from the meter's own usage, paging with groupBy []. Unknown is unavailable. */
+async function meteredRequests(
+  meter: Meter,
+  access: AccessContext,
+  input: CoverageInput,
+  first: UsagePage,
+): Promise<{ total: Quantity | null; rows: number } | Problem> {
+  let page = first,
+    total: Quantity | null = { value: 0n, scale: 0, unit: "requests" },
+    rows = 0;
+  for (;;) {
+    for (const row of page.rows) {
+      rows++;
+      const m = row.measurements.find((x) => x.unit === "requests");
+      if (m?.certainty === "unknown") total = null;
+      else if (m && total) total = plus(total, m.quantity);
+    }
+    if (!page.nextCursor) return { total, rows };
+    const cursor = page.nextCursor;
+    const next = await attempt(() => meter.usage(access, { ...query(input), cursor }));
+    if (next.outcome !== "ok")
+      return next.outcome === "forbidden"
+        ? { kind: "error", message: "forbidden while paging" }
+        : next.problem;
+    page = next.value;
+  }
+}
+const query = (input: CoverageInput) => ({
+  scope: input.scope,
+  from: input.from,
+  to: input.to,
+  units: ["requests"],
+  groupBy: [],
+  limit: 1000,
+});
+
+/**
+ * Coverage of one scope and window. The meter read always runs first: it authorizes the scope
+ * and, without a source, supplies the metered request count.
+ */
+export async function loadCoverageView(
+  meter: Meter,
+  access: AccessContext,
+  input: CoverageInput,
+): Promise<CoverageView> {
+  const origin = input.source ? "source" : "meter";
+  const blank = { origin, entries: [], total: null, costExcludesUntracked: null } as const;
+  const first = await attempt(() => meter.usage(access, query(input)));
+  if (first.outcome === "forbidden") return { ...blank, state: "forbidden", problem: null };
+  if (first.outcome === "unavailable")
+    return { ...blank, state: "unavailable", problem: first.problem };
+  if (!input.source) {
+    const metered = await meteredRequests(meter, access, input, first.value);
+    if ("kind" in metered) return { ...blank, state: "unavailable", problem: metered };
+    const entries = unavailableEntries();
+    entries[0] = {
+      state: "metered",
+      count: metered.total ? formatQuantity(metered.total) : "unavailable",
+      share: null,
+    };
+    return {
+      ...blank,
+      state: metered.rows && metered.total?.value !== 0n ? "ok" : "empty",
+      entries,
+      problem: null,
+    };
+  }
+  let counts: Record<CoverageState, bigint>;
+  try {
+    counts = await input.source.counts(input.scope, input.from, input.to);
+  } catch (error) {
+    return { ...blank, state: "unavailable", problem: failure(error) };
+  }
+  const values = coverageStates.map((state) => counts[state] ?? 0n);
+  const total = values.reduce((a, b) => a + b, 0n);
+  return {
+    origin,
+    state: total === 0n ? "empty" : "ok",
+    entries: coverageStates.map((state, i) => ({
+      state,
+      count: values[i]!.toString(),
+      share: share(values[i]!, total),
+    })),
+    total: total.toString(),
+    costExcludesUntracked: total > values[0]!,
+    problem: null,
+  };
+}

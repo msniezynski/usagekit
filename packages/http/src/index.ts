@@ -52,6 +52,7 @@ export function createUsageHandlers({
       if (request.method === "POST" && url.pathname === "/v1/usage/query") name = "usage";
       if (request.method === "GET") {
         if (url.pathname === "/v1/usage") name = "usage";
+        else if (url.pathname === "/v1/operations") name = "operations";
         else if (url.pathname === "/v1/budgets/defined") name = "defined";
         else if (url.pathname === "/v1/budgets/applicable") name = "applicable";
         else if (/^\/v1\/operations\/[^/]+$/.test(url.pathname)) name = "operation";

@@ -58,13 +58,15 @@ export function generateOpenApi() {
   const paths: Record<string, unknown> = {};
   for (const [name, schema] of Object.entries(schemas)) {
     const response = jsonSchema(responses[name as keyof typeof responses]),
-      read = ["operation", "usage", "defined", "applicable"].includes(name);
+      read = ["operation", "usage", "operations", "defined", "applicable"].includes(name);
     const path = read
       ? name === "operation"
         ? "/v1/operations/{id}"
         : name === "usage"
           ? "/v1/usage"
-          : `/v1/budgets/${name}`
+          : name === "operations"
+            ? "/v1/operations"
+            : `/v1/budgets/${name}`
       : `/v1/operations/${name}`;
     const operation = {
       security: [{ bearerAuth: [] }],

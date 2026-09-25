@@ -12,3 +12,4 @@ coverage/
 packages/*/LICENSE
 packages/*/NOTICE
 packages/store/dist-conformance/
+packages/registry/.work/

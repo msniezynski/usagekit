@@ -5,20 +5,29 @@ import type { Meter } from "@usagekit/core";
 import type { SqliteStore } from "@usagekit/store-sqlite";
 import type { createAuth } from "./auth.js";
 import type { Vault } from "./vault.js";
+import { uiFile } from "./ui.js";
 export function createApp({
   meter,
   store,
   auth,
   vault,
   configPath,
+  uiRoot,
 }: {
   meter: Meter;
   store: SqliteStore;
   auth: ReturnType<typeof createAuth>;
   vault: Vault;
   configPath: string;
+  uiRoot?: string;
 }) {
   const app = new Hono();
+  // The built UI is public static code with no data; every data read still needs the token.
+  if (uiRoot)
+    app.get("*", async (c, next) => {
+      const file = uiFile(uiRoot, c.req.path);
+      return file ? c.body(file.body, 200, file.headers) : next();
+    });
   app.onError((error, c) =>
     c.json(
       {

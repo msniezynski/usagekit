@@ -274,3 +274,48 @@ test("expiry maintenance requires budget administration, not readable principals
     ).status,
   ).toBe(403);
 });
+test("the operations listing is a read route on every mount", async () => {
+  const clock = createManualClock(),
+    store = createMemoryStore({ clock, budgets: [] }),
+    meter = createMeter({ store, clock });
+  await store.reserve({
+    operationId: "op",
+    scope,
+    fundingSource: "byok",
+    costOwner: "u",
+    surface: "app",
+    source: "app",
+    provider: "example",
+    operation: "search",
+    estimate: [{ unit: "requests", value: 1n, scale: 0 }],
+  });
+  const handler = createUsageHandlers({ meter, commands: false, authenticate: async () => access });
+  const q = (body: unknown) =>
+    btoa(JSON.stringify(body)).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+  const listing = {
+    scope: { kind: "namespace", namespace: "test" },
+    from: "2026-09-01T00:00:00Z",
+    to: "2026-10-01T00:00:00Z",
+    states: ["reserved"],
+  };
+  const ok = await handler(new Request(`http://local.test/v1/operations?q=${q(listing)}`));
+  expect(ok.status).toBe(200);
+  const body = decodeWire(await ok.text()) as { value: { operations: { operationId: string }[] } };
+  expect(body.value.operations.map((o) => o.operationId)).toEqual(["op"]);
+  expect(
+    (
+      await handler(
+        new Request(`http://local.test/v1/operations?q=${q({ ...listing, states: [] })}`),
+      )
+    ).status,
+  ).toBe(400);
+  expect(
+    (
+      await handler(
+        new Request(
+          `http://local.test/v1/operations?q=${q({ ...listing, scope: { kind: "namespace", namespace: "other" } })}`,
+        ),
+      )
+    ).status,
+  ).toBe(403);
+});

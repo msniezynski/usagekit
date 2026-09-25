@@ -8877,6 +8877,627 @@
         }
       }
     },
+    "/v1/operations": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "const": "ok"
+                        },
+                        "value": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "operations": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "operationId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "reservationTtlMs": {
+                                    "type": "number",
+                                    "minimum": 1,
+                                    "maximum": 86400000
+                                  },
+                                  "scope": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "namespace": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "principal": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "actor": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "group": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "connection": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "accessCredential": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        },
+                                        "required": ["kind", "id"]
+                                      },
+                                      "providerCredentialVersion": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "tags": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                        },
+                                        "minItems": 1,
+                                        "maxItems": 16
+                                      }
+                                    },
+                                    "required": ["namespace", "principal", "connection"]
+                                  },
+                                  "fundingSource": {
+                                    "enum": ["byok", "platform"]
+                                  },
+                                  "platformPools": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    }
+                                  },
+                                  "costOwner": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "creditAccountRef": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "customerPriceVersion": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "surface": {
+                                    "enum": ["app", "programmatic"]
+                                  },
+                                  "source": {
+                                    "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                                  },
+                                  "provider": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "operation": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "estimate": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "value": {
+                                          "type": "string",
+                                          "pattern": "^-?\\d+$"
+                                        },
+                                        "scale": {
+                                          "type": "number",
+                                          "maximum": 18
+                                        },
+                                        "unit": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "required": ["value", "scale", "unit"]
+                                    }
+                                  },
+                                  "correlationId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "parentOperationId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "reservationExpiresAt": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "Z$"
+                                  },
+                                  "state": {
+                                    "enum": [
+                                      "reserved",
+                                      "dispatch_intended",
+                                      "pending",
+                                      "settled",
+                                      "released"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "createdAt": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "Z$"
+                                  },
+                                  "updatedAt": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "Z$"
+                                  },
+                                  "budgetEpochs": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "budgetId": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "budgetVersion": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "epoch": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "startsAt": {
+                                          "type": "string",
+                                          "format": "date-time",
+                                          "pattern": "Z$"
+                                        },
+                                        "endsAt": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "format": "date-time",
+                                              "pattern": "Z$"
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "budgetId",
+                                        "budgetVersion",
+                                        "epoch",
+                                        "startsAt",
+                                        "endsAt"
+                                      ]
+                                    }
+                                  },
+                                  "receipts": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "supersedes": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "measurements": {
+                                          "type": "array",
+                                          "items": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "additionalProperties": false,
+                                                "properties": {
+                                                  "certainty": {
+                                                    "const": "unknown"
+                                                  },
+                                                  "unit": {
+                                                    "type": "string",
+                                                    "minLength": 1
+                                                  },
+                                                  "quantity": {
+                                                    "type": "null"
+                                                  }
+                                                },
+                                                "required": ["certainty", "unit", "quantity"]
+                                              },
+                                              {
+                                                "type": "object",
+                                                "additionalProperties": false,
+                                                "properties": {
+                                                  "certainty": {
+                                                    "enum": ["measured", "estimated"]
+                                                  },
+                                                  "unit": {
+                                                    "type": "string",
+                                                    "minLength": 1
+                                                  },
+                                                  "quantity": {
+                                                    "type": "object",
+                                                    "additionalProperties": false,
+                                                    "properties": {
+                                                      "value": {
+                                                        "type": "string",
+                                                        "pattern": "^-?\\d+$"
+                                                      },
+                                                      "scale": {
+                                                        "type": "number",
+                                                        "maximum": 18
+                                                      },
+                                                      "unit": {
+                                                        "type": "string",
+                                                        "minLength": 1
+                                                      }
+                                                    },
+                                                    "required": ["value", "scale", "unit"]
+                                                  }
+                                                },
+                                                "required": ["certainty", "unit", "quantity"]
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "cost": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "certainty": {
+                                                  "const": "unknown"
+                                                },
+                                                "money": {
+                                                  "type": "null"
+                                                }
+                                              },
+                                              "required": ["certainty", "money"]
+                                            },
+                                            {
+                                              "type": "object",
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "certainty": {
+                                                  "enum": ["measured", "estimated"]
+                                                },
+                                                "money": {
+                                                  "type": "object",
+                                                  "additionalProperties": false,
+                                                  "properties": {
+                                                    "units": {
+                                                      "type": "string",
+                                                      "pattern": "^-?\\d+$"
+                                                    },
+                                                    "currency": {
+                                                      "const": "USD"
+                                                    }
+                                                  },
+                                                  "required": ["units", "currency"]
+                                                }
+                                              },
+                                              "required": ["certainty", "money"]
+                                            }
+                                          ]
+                                        },
+                                        "providerRequestId": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "providerPriceVersion": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "evidenceRef": {
+                                          "type": "string"
+                                        },
+                                        "occurredAt": {
+                                          "type": "string",
+                                          "format": "date-time",
+                                          "pattern": "Z$"
+                                        },
+                                        "recordedAt": {
+                                          "type": "string",
+                                          "format": "date-time",
+                                          "pattern": "Z$"
+                                        },
+                                        "cached": {
+                                          "type": "boolean"
+                                        },
+                                        "failed": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "measurements",
+                                        "cost",
+                                        "occurredAt",
+                                        "recordedAt",
+                                        "cached",
+                                        "failed"
+                                      ]
+                                    }
+                                  },
+                                  "lease": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "leaseId": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          },
+                                          "holder": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          },
+                                          "expiresAt": {
+                                            "type": "string",
+                                            "format": "date-time",
+                                            "pattern": "Z$"
+                                          }
+                                        },
+                                        "required": ["leaseId", "holder", "expiresAt"]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "operationId",
+                                  "scope",
+                                  "fundingSource",
+                                  "costOwner",
+                                  "surface",
+                                  "source",
+                                  "provider",
+                                  "operation",
+                                  "estimate",
+                                  "reservationExpiresAt",
+                                  "state",
+                                  "version",
+                                  "createdAt",
+                                  "updatedAt",
+                                  "budgetEpochs",
+                                  "receipts",
+                                  "lease"
+                                ]
+                              }
+                            },
+                            "asOf": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "Z$"
+                            },
+                            "watermark": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "nextCursor": {
+                              "type": "string",
+                              "minLength": 1
+                            }
+                          },
+                          "required": ["operations", "asOf", "watermark"]
+                        }
+                      },
+                      "required": ["outcome", "value"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "const": "forbidden"
+                        }
+                      },
+                      "required": ["outcome"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "const": "invalid"
+                        },
+                        "field": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "reason": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["outcome", "field", "reason"]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid schema"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Unexpected failure"
+          }
+        },
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Base64url-encoded JSON query",
+            "schema": {
+              "type": "string"
+            },
+            "x-decoded-schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "scope": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "const": "principal"
+                        },
+                        "namespace": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "principal": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["kind", "namespace", "principal"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "const": "group"
+                        },
+                        "namespace": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "group": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["kind", "namespace", "group"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "const": "namespace"
+                        },
+                        "namespace": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["kind", "namespace"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "const": "platform_pool"
+                        },
+                        "namespace": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "poolId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["kind", "namespace", "poolId"]
+                    }
+                  ]
+                },
+                "from": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "Z$"
+                },
+                "to": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "Z$"
+                },
+                "states": {
+                  "type": "array",
+                  "items": {
+                    "enum": ["reserved", "dispatch_intended", "pending", "settled", "released"]
+                  },
+                  "minItems": 1
+                },
+                "connection": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "cursor": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "limit": {
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 1000
+                }
+              },
+              "required": ["scope", "from", "to"]
+            }
+          }
+        ]
+      }
+    },
     "/v1/budgets/defined": {
       "get": {
         "security": [

@@ -416,6 +416,27 @@ export type UsagePage = {
   watermark: string;
   nextCursor?: string;
 };
+/**
+ * Operations whose createdAt lies in [from, to), in one lifecycle state of states (all when
+ * omitted), ordered by createdAt then operationId. Same scope and access rules as usage.
+ * Pagination mirrors usage: the first page fixes membership and order at its watermark; later
+ * pages take the cursor with the unchanged query and return each operation as currently stored.
+ */
+export type OperationsQuery = {
+  scope: UsageScope;
+  from: string;
+  to: string;
+  states?: readonly LifecycleState[];
+  connection?: string;
+  cursor?: string;
+  limit?: number;
+};
+export type OperationsPage = {
+  operations: readonly Operation[];
+  asOf: string;
+  watermark: string;
+  nextCursor?: string;
+};
 /** Budgets defined for exactly this scope, regardless of any operation. */
 export type DefinedBudgetsQuery = { scope: BudgetScope };
 
@@ -485,6 +506,10 @@ export interface Meter {
   releaseUndispatched(input: ReleaseInput): Promise<ReleaseResult>;
   getOperation(access: AccessContext, input: OperationRef): Promise<ReadResult<Operation | null>>;
   usage(access: AccessContext, query: UsageQuery): Promise<ReadResult<UsagePage>>;
+  listOperations(
+    access: AccessContext,
+    query: OperationsQuery,
+  ): Promise<ReadResult<OperationsPage>>;
   definedBudgets(
     access: AccessContext,
     query: DefinedBudgetsQuery,

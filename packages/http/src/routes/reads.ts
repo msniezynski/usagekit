@@ -3,6 +3,7 @@ import type {
   AccessContext,
   OperationRef,
   UsageQuery,
+  OperationsQuery,
   DefinedBudgetsQuery,
   ApplicableBudgetsQuery,
 } from "@usagekit/core";
@@ -13,6 +14,8 @@ export function dispatchRead(meter: Meter, access: AccessContext, name: RouteNam
       return meter.getOperation(access, input as OperationRef);
     case "usage":
       return meter.usage(access, input as UsageQuery);
+    case "operations":
+      return meter.listOperations(access, input as OperationsQuery);
     case "defined":
       return meter.definedBudgets(access, input as DefinedBudgetsQuery);
     case "applicable":

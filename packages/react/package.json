@@ -1,0 +1,30 @@
+{
+  "name": "@usagekit/react",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "React hooks over the usagekit view models.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "prepublishOnly": "node ../../scripts/deny-publish.mjs"
+  },
+  "dependencies": {
+    "@usagekit/core": "0.3.0",
+    "@usagekit/views": "0.3.0"
+  },
+  "peerDependencies": {
+    "react": ">=19 <20"
+  },
+  "sideEffects": false
+}
