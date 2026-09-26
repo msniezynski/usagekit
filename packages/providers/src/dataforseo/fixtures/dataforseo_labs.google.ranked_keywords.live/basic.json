@@ -1,0 +1,120 @@
+{
+  "origin": "documentation",
+  "provider": "dataforseo",
+  "operation": "dataforseo_labs.google.ranked_keywords.live",
+  "source": "https://docs.dataforseo.com/v3/dataforseo_labs/google/ranked_keywords/live/",
+  "request": {
+    "method": "POST",
+    "url": "https://api.dataforseo.com/v3/dataforseo_labs/google/ranked_keywords/live",
+    "headers": {
+      "authorization": "[redacted]",
+      "content-type": "application/json"
+    },
+    "body": [
+      {
+        "target": "example.com",
+        "location_code": 2840,
+        "language_code": "en",
+        "limit": 5
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "version": "0.1.20250925",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.4211 sec.",
+      "cost": 0.0126,
+      "tasks_count": 1,
+      "tasks_error": 0,
+      "tasks": [
+        {
+          "id": "09251234-1535-0386-0000-0004a1b2c3d4",
+          "status_code": 20000,
+          "status_message": "Ok.",
+          "time": "0.3102 sec.",
+          "cost": 0.0126,
+          "result_count": 1,
+          "path": ["v3", "dataforseo_labs", "google", "ranked_keywords", "live"],
+          "data": {
+            "api": "dataforseo_labs",
+            "function": "ranked_keywords",
+            "se_type": "google",
+            "target": "example.com",
+            "location_code": 2840,
+            "language_code": "en",
+            "limit": 5
+          },
+          "result": [
+            {
+              "se_type": "google",
+              "location_code": 2840,
+              "language_code": "en",
+              "total_count": 1200,
+              "items_count": 5,
+              "items": [
+                {
+                  "se_type": "google",
+                  "keyword": "item 1"
+                },
+                {
+                  "se_type": "google",
+                  "keyword": "item 2"
+                },
+                {
+                  "se_type": "google",
+                  "keyword": "item 3"
+                },
+                {
+                  "se_type": "google",
+                  "keyword": "item 4"
+                },
+                {
+                  "se_type": "google",
+                  "keyword": "item 5"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "expect": {
+    "requestId": "09251234-1535-0386-0000-0004a1b2c3d4",
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "cents",
+          "quantity": {
+            "value": "12600",
+            "scale": 4,
+            "unit": "cents"
+          },
+          "certainty": "measured"
+        },
+        {
+          "unit": "requests",
+          "quantity": {
+            "value": "1",
+            "scale": 0,
+            "unit": "requests"
+          },
+          "certainty": "measured"
+        }
+      ],
+      "cost": {
+        "certainty": "measured",
+        "money": {
+          "units": "12600",
+          "currency": "USD"
+        }
+      },
+      "providerRequestId": "09251234-1535-0386-0000-0004a1b2c3d4",
+      "cached": false,
+      "failed": false
+    }
+  }
+}

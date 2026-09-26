@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "vitest";
 import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync, symlinkSync } from "node:fs";
+import { mkdtempSync, rmSync, symlinkSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -408,4 +408,134 @@ test("installed symlink executes the CLI entry point", async () => {
   const r = await run(["--help", "--json"], "http://127.0.0.1:4242", "", d, "", binary);
   expect(r.code).toBe(0);
   expect(JSON.parse(r.out)).toHaveProperty("commands");
+});
+
+test("CLI catalog reserve omits estimate, records a fixture and rejects invalid policy", async () => {
+  const d = dir();
+  let token = "",
+    calls = 0;
+  const server = await startServer({
+    configDir: d,
+    port: 0,
+    passphrase: "test-password",
+    onToken: (t) => {
+      token = t;
+    },
+    providerFetch: async () => {
+      calls++;
+      return Response.json({ search_metadata: { id: "recorded", status: "Success" } });
+    },
+  });
+  const cli = (args: string[], stdin = "") => run([...args, "--json"], server.url, token, d, stdin);
+  try {
+    const added = await cli(
+      ["provider", "add", "serpapi", "--connection", "catalog", "--plan", "starter"],
+      "fixture-key",
+    );
+    expect(added.code, added.out).toBe(0);
+    const reservation = await cli([
+      "report",
+      "reserve",
+      "--connection",
+      "catalog",
+      "--provider",
+      "serpapi",
+      "--feature",
+      "search",
+    ]);
+    expect(reservation.code, reservation.out).toBe(0);
+    expect(JSON.parse(reservation.out)).toMatchObject({
+      granted: true,
+      operation: {
+        estimateSource: "list",
+        estimate: [
+          { unit: "units", value: "1" },
+          { unit: "requests", value: "1" },
+        ],
+      },
+    });
+    const manual = await cli(
+      [
+        "provider",
+        "add",
+        "serpapi",
+        "--connection",
+        "catalog",
+        "--price",
+        "search=2.5:units",
+        "--overage",
+        "true",
+      ],
+      "rotated-key",
+    );
+    expect(manual.code, manual.out).toBe(0);
+    expect(JSON.parse(manual.out)).toMatchObject({
+      overage: true,
+      manualPrices: { search: { value: "25", scale: 1, unit: "units" } },
+    });
+    expect(
+      (
+        await cli(
+          ["provider", "add", "serpapi", "--connection", "catalog", "--overage", "maybe"],
+          "key",
+        )
+      ).code,
+    ).toBe(2);
+    const requestFile = join(d, "request.json");
+    writeFileSync(requestFile, JSON.stringify({ method: "GET", url: "/search.json?q=example" }));
+    const recorded = await cli([
+      "provider",
+      "record",
+      "--connection",
+      "catalog",
+      "--feature",
+      "search",
+      "--request",
+      requestFile,
+    ]);
+    expect(recorded.code, recorded.out).toBe(0);
+    expect(calls).toBe(1);
+    expect(JSON.parse(readFileSync(JSON.parse(recorded.out).path, "utf8"))).toMatchObject({
+      origin: "recorded",
+      operation: "search",
+    });
+    expect(
+      (
+        await cli(
+          ["provider", "add", "serpapi", "--connection", "catalog", "--tracking", "search=bad"],
+          "fixture-key",
+        )
+      ).code,
+    ).toBe(1);
+    expect(
+      (
+        await cli(
+          [
+            "provider",
+            "add",
+            "serpapi",
+            "--connection",
+            "catalog",
+            "--tracking",
+            "search=passthrough",
+          ],
+          "fixture-key",
+        )
+      ).code,
+    ).toBe(0);
+    const passthrough = await cli([
+      "report",
+      "reserve",
+      "--connection",
+      "catalog",
+      "--provider",
+      "serpapi",
+      "--feature",
+      "search",
+    ]);
+    expect(passthrough.code).toBe(1);
+    expect(JSON.parse(passthrough.out)).toMatchObject({ outcome: "passthrough" });
+  } finally {
+    await server.stop();
+  }
 });

@@ -1,0 +1,8 @@
+{
+  "origin": "synthetic",
+  "provider": "example",
+  "operation": "files",
+  "request": { "method": "PUT", "url": "https://api.example.com/v1/files/a/b.txt", "body": "text" },
+  "response": { "status": 201, "body": { "id": "f-1" } },
+  "expect": { "requestId": "f-1" }
+}

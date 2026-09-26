@@ -47,7 +47,16 @@ export type {
   ReadResult,
   AllowanceExceeded,
   Meter,
+  MeterReserveInput,
+  EstimateSource,
+  RequestState,
+  CountRequestInput,
+  CountRequestResult,
+  RequestCountsQuery,
+  RequestCountRow,
+  RequestCountsPage,
 } from "./contracts.js";
+export { requestStates } from "./policy.js";
 export { resolveWindow } from "./windows.js";
 export type { ResolvedWindow } from "./windows.js";
 export {
@@ -77,3 +86,26 @@ export {
 export type { ExpireReservationsInput, ExpireReservationsResult } from "./contracts.js";
 
 export { decodeMeterJson } from "./wire.js";
+
+export type {
+  ProviderId,
+  OperationId,
+  ProviderAuth,
+  BillingUnit,
+  ProviderPlan,
+  PriceRow,
+  RequestMatch,
+  ProviderOperation,
+  BalanceProbe,
+  PriceListSource,
+  BillingExport,
+  ProviderDescriptor,
+  BalanceSnapshot,
+  BillingLine,
+  DescriptorProblem,
+  PricingCatalog,
+  ConnectionPolicy,
+  TrackingPolicy,
+  MeasuredPrice,
+} from "./providers.js";
+export { validateDescriptor } from "./providers.js";

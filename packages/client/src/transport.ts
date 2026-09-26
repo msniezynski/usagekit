@@ -18,6 +18,23 @@ export class RemoteHttpError extends Error {
 export const encode = (v: unknown) =>
   JSON.stringify(v, (_, x) => (typeof x === "bigint" ? x.toString() : x));
 export const decode = decodeMeterJson;
+/** Route paths, mirrored from the handler's route table (the client imports only types from it). */
+const paths: Record<Exclude<RouteName, "operation">, string> = {
+  expire: "/v1/operations/expire",
+  reserve: "/v1/operations/reserve",
+  intent: "/v1/operations/intent",
+  renew: "/v1/operations/renew",
+  claim: "/v1/operations/claim",
+  settle: "/v1/operations/settle",
+  correct: "/v1/operations/correct",
+  release: "/v1/operations/release",
+  count: "/v1/requests/count",
+  usage: "/v1/usage",
+  operations: "/v1/operations",
+  defined: "/v1/budgets/defined",
+  applicable: "/v1/budgets/applicable",
+  counts: "/v1/requests/counts",
+};
 export type RemoteOptions = { baseUrl: string; token: string; fetch?: typeof globalThis.fetch };
 export function transport({ baseUrl, token, fetch: fetcher = globalThis.fetch }: RemoteOptions) {
   return async <T>(name: RouteName, input: unknown, read = false): Promise<T> => {
@@ -31,15 +48,10 @@ export function transport({ baseUrl, token, fetch: fetcher = globalThis.fetch }:
     const data = JSON.parse(
       encode(read ? input : { ...raw, commandId: id }),
     ) as WireInputs[typeof name];
-    const path = read
-      ? name === "operation"
+    const path =
+      name === "operation"
         ? `/v1/operations/${encodeURIComponent(String(raw.operationId))}`
-        : name === "usage"
-          ? "/v1/usage"
-          : name === "operations"
-            ? "/v1/operations"
-            : `/v1/budgets/${name}`
-      : `/v1/operations/${name}`;
+        : paths[name];
     const query = read
       ? "?q=" +
         btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(data))))

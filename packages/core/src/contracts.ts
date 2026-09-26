@@ -169,6 +169,10 @@ export type ReserveInput = {
   provider: string;
   operation: string;
   estimate: readonly Quantity[];
+  /** Set by a Meter that resolved the estimate from a catalog; hosts may set it themselves. */
+  estimateSource?: EstimateSource;
+  /** "<provider>:<validFrom>" of the list price row behind the estimate. */
+  providerPriceVersion?: string;
   correlationId?: string;
   parentOperationId?: string;
 };
@@ -216,7 +220,77 @@ export type ReserveResult =
       alerts: readonly BudgetAlertCrossed[];
     }
   | { outcome: "exceeded"; exceeded: AllowanceExceeded; operation: null }
-  | { outcome: "conflict"; reason: "semantic_mismatch"; operation: Operation };
+  | { outcome: "conflict"; reason: "semantic_mismatch"; operation: Operation }
+  /**
+   * The connection's tracking policy is passthrough for this operation, or the catalog marks it
+   * free: counted with state passthrough, never reserved. The caller may forward the call.
+   */
+  | { outcome: "passthrough"; replayed: boolean; operation: null }
+  /**
+   * No estimate was given and the catalog does not know the operation: counted with state
+   * unpriced, never reserved. Host policy decides whether to forward the call.
+   */
+  | { outcome: "unpriced"; replayed: boolean; operation: null };
+
+/** Where a reserve estimate came from, in resolution order. */
+export type EstimateSource = "manual" | "measured" | "list" | "unknown";
+
+/**
+ * Meter reserve input. With a catalog, estimate may be omitted: the Meter resolves it from the
+ * catalog for the connection and the request options. Store always receives a ReserveInput.
+ */
+export type MeterReserveInput = Omit<ReserveInput, "estimate"> & {
+  /** Omitted: the Meter resolves it through its catalog and the connection policy. */
+  estimate?: readonly Quantity[];
+  /** Request options that move the price, read from the request by the descriptor. */
+  options?: Readonly<Record<string, string>>;
+};
+
+/**
+ * Non-operation outcomes, counted per state and never reserved. Metered requests are the
+ * operations themselves and are not counted here.
+ */
+export type RequestState = "passthrough" | "unpriced" | "cached" | "rate_limited";
+/**
+ * One counted request. commandId is the replay key: an identical replay counts once and returns
+ * replayed: true; a changed payload under the same commandId is a conflict. Counts carry no
+ * content and never touch budgets.
+ */
+export type CountRequestInput = {
+  commandId: string;
+  scope: Scope;
+  surface: Surface;
+  source: Source;
+  provider: string;
+  operation: string;
+  state: RequestState;
+  platformPools?: readonly string[];
+};
+export type CountRequestResult =
+  | ValidationFailure
+  | { outcome: "counted"; replayed: boolean }
+  | { outcome: "conflict"; reason: "command_mismatch" };
+/** Requests counted at store time in [from, to), with the scope and access rules of usage. */
+export type RequestCountsQuery = {
+  scope: UsageScope;
+  from: string;
+  to: string;
+  connection?: string;
+  groupBy: readonly ("provider" | "operation" | "connection" | "source" | "day")[];
+  /** Rows per page, 1..1000, default 1000; truncated reports more rows. */
+  limit?: number;
+};
+/** One row per dimension combination and state, ordered by dimensions then state. */
+export type RequestCountRow = {
+  dimensions: Readonly<Record<string, string>>;
+  state: RequestState;
+  count: bigint;
+};
+export type RequestCountsPage = {
+  rows: readonly RequestCountRow[];
+  asOf: string;
+  truncated: boolean;
+};
 
 export type OperationRef = Pick<Scope, "namespace" | "principal"> & { operationId: string };
 export type OperationCommand = OperationRef & {
@@ -497,7 +571,8 @@ export type ExpireReservationsResult =
  */
 export interface Meter {
   expireReservations(input: ExpireReservationsInput): Promise<ExpireReservationsResult>;
-  reserve(input: ReserveInput): Promise<ReserveResult>;
+  reserve(input: MeterReserveInput): Promise<ReserveResult>;
+  countRequest(input: CountRequestInput): Promise<CountRequestResult>;
   markDispatchIntent(input: DispatchIntentInput): Promise<DispatchGrant>;
   renewLease(input: LeaseRenewalInput): Promise<LeaseRenewal>;
   claimForRecovery(input: RecoveryClaimInput): Promise<RecoveryClaim>;
@@ -510,6 +585,10 @@ export interface Meter {
     access: AccessContext,
     query: OperationsQuery,
   ): Promise<ReadResult<OperationsPage>>;
+  requestCounts(
+    access: AccessContext,
+    query: RequestCountsQuery,
+  ): Promise<ReadResult<RequestCountsPage>>;
   definedBudgets(
     access: AccessContext,
     query: DefinedBudgetsQuery,

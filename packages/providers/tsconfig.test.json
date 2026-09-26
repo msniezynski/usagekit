@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "composite": false,
+    "rootDir": "../..",
+    "paths": {
+      "@usagekit/core": ["../core/src/index.ts"],
+      "@usagekit/store": ["../store/src/index.ts"],
+      "@usagekit/meter": ["../meter/src/index.ts"]
+    },
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": []
+}

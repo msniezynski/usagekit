@@ -1,0 +1,78 @@
+{
+  "origin": "documentation",
+  "provider": "serpapi",
+  "operation": "account",
+  "source": "https://serpapi.com/account-api",
+  "description": "Free account endpoint: plan, searches left, renewal date and account identity.",
+  "request": {
+    "method": "GET",
+    "url": "https://serpapi.com/account.json?api_key=[redacted]"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "account_id": "5ac54d6adefb2f1dba1663f5",
+      "api_key": "[redacted]",
+      "account_email": "owner@example.com",
+      "account_status": "Active",
+      "plan_id": "bigdata",
+      "plan_name": "Big Data Plan",
+      "plan_monthly_price": 275,
+      "plan_renewal_date": "2026-10-25",
+      "searches_per_month": 30000,
+      "plan_searches_left": 5958,
+      "extra_credits": 0,
+      "total_searches_left": 5958,
+      "this_month_usage": 24042,
+      "this_hour_searches": 87,
+      "last_hour_searches": 42,
+      "account_rate_limit_per_hour": 6000
+    }
+  },
+  "expect": {
+    "requestId": null,
+    "balance": {
+      "remaining": {
+        "value": "5958",
+        "scale": 0,
+        "unit": "units"
+      },
+      "allowance": {
+        "value": "30000",
+        "scale": 0,
+        "unit": "units"
+      },
+      "used": {
+        "value": "24042",
+        "scale": 0,
+        "unit": "units"
+      },
+      "resetsAt": "2026-10-25T00:00:00.000Z",
+      "plan": "bigdata",
+      "accountIdentity": "owner@example.com",
+      "rateLimitPerHour": 6000
+    },
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "requests",
+          "quantity": {
+            "value": "1",
+            "scale": 0,
+            "unit": "requests"
+          },
+          "certainty": "measured"
+        }
+      ],
+      "cost": {
+        "certainty": "measured",
+        "money": {
+          "units": "0",
+          "currency": "USD"
+        }
+      },
+      "cached": false,
+      "failed": false
+    }
+  }
+}

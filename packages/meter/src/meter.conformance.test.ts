@@ -57,6 +57,9 @@ runStoreConformance(
       settle: async (i) => commandResult(await meter.settle(i)),
       correct: async (i) => commandResult(await meter.correct(i)),
       releaseUndispatched: async (i) => commandResult(await meter.releaseUndispatched(i)),
+      countRequest: async (i) => commandResult(await meter.countRequest(i)),
+      requestCounts: async (q) =>
+        readResult(await meter.requestCounts(access(q.scope.namespace), q)),
       getOperation: async (i) => readResult(await meter.getOperation(access(i.namespace), i)),
       aggregate: async (q) => readResult(await meter.usage(access(q.scope.namespace), q)),
       listOperations: async (q) =>

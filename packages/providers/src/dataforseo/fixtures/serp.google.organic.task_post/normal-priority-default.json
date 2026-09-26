@@ -1,0 +1,62 @@
+{
+  "origin": "documentation",
+  "provider": "dataforseo",
+  "operation": "serp.google.organic.task_post",
+  "source": "https://docs.dataforseo.com/v3/serp/google/organic/task_post/",
+  "description": "No priority field: the documented default is normal priority.",
+  "request": {
+    "method": "POST",
+    "url": "https://api.dataforseo.com/v3/serp/google/organic/task_post",
+    "headers": {
+      "authorization": "[redacted]",
+      "content-type": "application/json"
+    },
+    "body": [
+      {
+        "keyword": "milk frother",
+        "location_code": 2840,
+        "language_code": "en"
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "version": "0.1.20250925",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.4211 sec.",
+      "cost": 0.0006,
+      "tasks_count": 1,
+      "tasks_error": 0,
+      "tasks": [
+        {
+          "id": "09251221-1535-0066-0000-1a2b3c4d5e6f",
+          "status_code": 20100,
+          "status_message": "Task Created.",
+          "time": "0.3102 sec.",
+          "cost": 0.0006,
+          "result_count": 0,
+          "path": ["v3", "serp", "google", "organic", "task_post"],
+          "data": {
+            "api": "serp",
+            "function": "task_post",
+            "se": "google",
+            "se_type": "organic",
+            "keyword": "milk frother",
+            "location_code": 2840,
+            "language_code": "en",
+            "device": "desktop",
+            "os": "windows"
+          },
+          "result": null
+        }
+      ]
+    }
+  },
+  "expect": {
+    "options": {
+      "priority": "normal"
+    }
+  }
+}

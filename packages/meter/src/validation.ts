@@ -1,10 +1,12 @@
 import { sourcesOf, normalizeTags } from "@usagekit/core";
 import type {
+  EstimateSource,
   ValidationFailure,
   ReserveInput,
   UsageQuery,
   ApplicableBudgetsQuery,
   OperationsQuery,
+  RequestCountsQuery,
 } from "@usagekit/core";
 export function validate(value: unknown, field = "input"): ValidationFailure | null {
   const fail = (reason: string): ValidationFailure => ({ outcome: "invalid", field, reason });
@@ -79,4 +81,17 @@ export function usageValidation(q: UsageQuery): ValidationFailure | null {
       reason: "principal requires group or namespace scope",
     };
   return null;
+}
+const estimateSources: readonly EstimateSource[] = ["manual", "measured", "list", "unknown"];
+/** Hosts may name the source; a value outside the catalog order is rejected before Store. */
+export function provenanceValidation(i: { estimateSource?: string }): ValidationFailure | null {
+  if (
+    i.estimateSource !== undefined &&
+    !estimateSources.includes(i.estimateSource as EstimateSource)
+  )
+    return { outcome: "invalid", field: "estimateSource", reason: "unknown estimate source" };
+  return null;
+}
+export function requestCountsValidation(q: RequestCountsQuery): ValidationFailure | null {
+  return validate(q) ?? windowValidation(q);
 }

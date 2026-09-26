@@ -1,4 +1,4 @@
-import type { BudgetScope, Source, Surface } from "./contracts.js";
+import type { BudgetScope, RequestState, Source, Surface } from "./contracts.js";
 /** Single source of the default admission order; hosts may permute it, never shorten it. */
 export const defaultBudgetOrder: readonly BudgetScope["kind"][] = Object.freeze([
   "platform_pool",
@@ -31,3 +31,10 @@ export const surfaceMatches = (
   budgetSurface === "any" ||
   budgetSurface === surface ||
   (source !== undefined && budgetSurface === source);
+/** Every counted request state, in display order. */
+export const requestStates: readonly RequestState[] = Object.freeze([
+  "passthrough",
+  "unpriced",
+  "cached",
+  "rate_limited",
+]);

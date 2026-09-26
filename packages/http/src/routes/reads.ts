@@ -6,6 +6,7 @@ import type {
   OperationsQuery,
   DefinedBudgetsQuery,
   ApplicableBudgetsQuery,
+  RequestCountsQuery,
 } from "@usagekit/core";
 import type { RouteName } from "../schemas/index.js";
 export function dispatchRead(meter: Meter, access: AccessContext, name: RouteName, input: unknown) {
@@ -20,6 +21,8 @@ export function dispatchRead(meter: Meter, access: AccessContext, name: RouteNam
       return meter.definedBudgets(access, input as DefinedBudgetsQuery);
     case "applicable":
       return meter.applicableBudgets(access, input as ApplicableBudgetsQuery);
+    case "counts":
+      return meter.requestCounts(access, input as RequestCountsQuery);
     default:
       throw new Error("Unknown read");
   }

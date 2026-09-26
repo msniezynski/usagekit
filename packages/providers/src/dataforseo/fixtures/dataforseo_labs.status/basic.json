@@ -1,0 +1,83 @@
+{
+  "origin": "documentation",
+  "provider": "dataforseo",
+  "operation": "dataforseo_labs.status",
+  "source": "https://docs.dataforseo.com/v3/dataforseo_labs/status/",
+  "request": {
+    "method": "GET",
+    "url": "https://api.dataforseo.com/v3/dataforseo_labs/status",
+    "headers": {
+      "authorization": "[redacted]",
+      "content-type": "application/json"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "version": "0.1.20250925",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.4211 sec.",
+      "cost": 0,
+      "tasks_count": 1,
+      "tasks_error": 0,
+      "tasks": [
+        {
+          "id": "09251231-1535-0386-0000-0b0b0b0b0b0b",
+          "status_code": 20000,
+          "status_message": "Ok.",
+          "time": "0.3102 sec.",
+          "cost": 0,
+          "result_count": 1,
+          "path": ["v3", "dataforseo_labs", "status"],
+          "data": {
+            "api": "dataforseo_labs",
+            "function": "status"
+          },
+          "result": [
+            {
+              "google": {
+                "date_update": "2026-09-20"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "expect": {
+    "requestId": "09251231-1535-0386-0000-0b0b0b0b0b0b",
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "cents",
+          "quantity": {
+            "value": "0",
+            "scale": 4,
+            "unit": "cents"
+          },
+          "certainty": "measured"
+        },
+        {
+          "unit": "requests",
+          "quantity": {
+            "value": "1",
+            "scale": 0,
+            "unit": "requests"
+          },
+          "certainty": "measured"
+        }
+      ],
+      "cost": {
+        "certainty": "measured",
+        "money": {
+          "units": "0",
+          "currency": "USD"
+        }
+      },
+      "providerRequestId": "09251231-1535-0386-0000-0b0b0b0b0b0b",
+      "cached": false,
+      "failed": false
+    }
+  }
+}

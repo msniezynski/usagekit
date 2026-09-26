@@ -64,7 +64,8 @@
         "@usagekit/http",
         "@usagekit/client",
         "@usagekit/views",
-        "@usagekit/react"
+        "@usagekit/react",
+        "@usagekit/providers"
       ],
       "purpose": "server local server capability.",
       "runtime": "node"
@@ -100,6 +101,14 @@
       "allows": ["@usagekit/core", "@usagekit/views", "@usagekit/react"],
       "purpose": "shadcn registry blocks for Radix and Base UI, their build and consumer tests. Blocks are web code; the package tooling runs on Node.",
       "runtime": "node"
+    },
+    {
+      "name": "@usagekit/providers",
+      "path": "packages/providers",
+      "phase": "catalog",
+      "allows": ["@usagekit/core"],
+      "purpose": "Provider descriptors, catalog, price tables, extractors, fixture harness and balance probes.",
+      "runtime": "web"
     }
   ],
   "testDependencies": [
@@ -114,7 +123,9 @@
     "@usagekit/store-sqlite",
     "@testing-library/react",
     "react",
-    "ajv"
+    "ajv",
+    "eslint",
+    "@usagekit/providers"
   ],
-  "publishable": ["@usagekit/core", "@usagekit/store", "@usagekit/meter"]
+  "publishable": ["@usagekit/core", "@usagekit/store", "@usagekit/meter", "@usagekit/providers"]
 }

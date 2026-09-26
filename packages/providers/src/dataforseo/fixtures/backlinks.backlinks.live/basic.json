@@ -1,0 +1,135 @@
+{
+  "origin": "documentation",
+  "provider": "dataforseo",
+  "operation": "backlinks.backlinks.live",
+  "source": "https://docs.dataforseo.com/v3/backlinks/backlinks/live/",
+  "request": {
+    "method": "POST",
+    "url": "https://api.dataforseo.com/v3/backlinks/backlinks/live",
+    "headers": {
+      "authorization": "[redacted]",
+      "content-type": "application/json"
+    },
+    "body": [
+      {
+        "target": "example.com",
+        "mode": "as_is",
+        "limit": 10
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "version": "0.1.20250925",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.4211 sec.",
+      "cost": 0.02436,
+      "tasks_count": 1,
+      "tasks_error": 0,
+      "tasks": [
+        {
+          "id": "09251252-1535-0450-0000-0002deadbeef",
+          "status_code": 20000,
+          "status_message": "Ok.",
+          "time": "0.3102 sec.",
+          "cost": 0.02436,
+          "result_count": 1,
+          "path": ["v3", "backlinks", "backlinks", "live"],
+          "data": {
+            "api": "backlinks",
+            "function": "backlinks",
+            "target": "example.com",
+            "mode": "as_is",
+            "limit": 10
+          },
+          "result": [
+            {
+              "target": "example.com",
+              "total_count": 10,
+              "items_count": 10,
+              "items": [
+                {
+                  "type": "backlink",
+                  "rank": 0
+                },
+                {
+                  "type": "backlink",
+                  "rank": 1
+                },
+                {
+                  "type": "backlink",
+                  "rank": 2
+                },
+                {
+                  "type": "backlink",
+                  "rank": 3
+                },
+                {
+                  "type": "backlink",
+                  "rank": 4
+                },
+                {
+                  "type": "backlink",
+                  "rank": 5
+                },
+                {
+                  "type": "backlink",
+                  "rank": 6
+                },
+                {
+                  "type": "backlink",
+                  "rank": 7
+                },
+                {
+                  "type": "backlink",
+                  "rank": 8
+                },
+                {
+                  "type": "backlink",
+                  "rank": 9
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "expect": {
+    "requestId": "09251252-1535-0450-0000-0002deadbeef",
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "cents",
+          "quantity": {
+            "value": "24360",
+            "scale": 4,
+            "unit": "cents"
+          },
+          "certainty": "measured"
+        },
+        {
+          "unit": "requests",
+          "quantity": {
+            "value": "1",
+            "scale": 0,
+            "unit": "requests"
+          },
+          "certainty": "measured"
+        }
+      ],
+      "cost": {
+        "certainty": "measured",
+        "money": {
+          "units": "24360",
+          "currency": "USD"
+        }
+      },
+      "providerRequestId": "09251252-1535-0450-0000-0002deadbeef",
+      "cached": false,
+      "failed": false
+    }
+  }
+}

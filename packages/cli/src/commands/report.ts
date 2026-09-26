@@ -1,6 +1,6 @@
 import { fromDecimalString } from "@usagekit/core";
 import type { Operation, SettleInput, ReleaseInput } from "@usagekit/core";
-import { type Context, access, string, quantity, UsageError } from "../context.js";
+import { type Context, access, string, quantity, pairs, UsageError } from "../context.js";
 import { journal } from "../journal.js";
 import type { Connection } from "./provider.js";
 export async function report(c: Context, command?: string) {
@@ -30,7 +30,10 @@ export async function report(c: Context, command?: string) {
       source: "cli" as const,
       provider: string(o, "provider"),
       operation: string(o, "feature", "request"),
-      estimate: string(o, "estimate").split(",").map(quantity),
+      ...(o.estimate === undefined
+        ? {}
+        : { estimate: string(o, "estimate").split(",").map(quantity) }),
+      ...(o.option === undefined ? {} : { options: pairs(o, "option") }),
     };
     const r = await c.meter.reserve(i);
     if (r.outcome !== "reserved" || r.replayed) return { result: r, refused: true };

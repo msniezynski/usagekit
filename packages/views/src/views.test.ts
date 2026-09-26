@@ -466,23 +466,64 @@ describe.each(["embedded", "remote"] as const)("%s meter", (kind) => {
 
   describe("coverage view", () => {
     const coverageScope = { kind: "principal", namespace: "test", principal: "u1" } as const;
-    test("without a source the meter supplies only the metered count", async () => {
+    test("without a source the meter combines usage with persisted request counts", async () => {
       const f = setup(kind);
       for (let n = 0; n < 3; n++) await settle(f);
       const view = await loadCoverageView(f.meter(wide), wide, { scope: coverageScope, ...month });
       expect(view).toMatchObject({
         state: "ok",
         origin: "meter",
-        total: null,
-        costExcludesUntracked: null,
+        total: "3",
+        costExcludesUntracked: false,
       });
       expect(view.entries).toEqual([
-        { state: "metered", count: "3", share: null },
-        { state: "passthrough", count: "unavailable", share: null },
-        { state: "unpriced", count: "unavailable", share: null },
-        { state: "cached", count: "unavailable", share: null },
-        { state: "rate_limited", count: "unavailable", share: null },
+        { state: "metered", count: "3", share: "100" },
+        { state: "passthrough", count: "0", share: "0" },
+        { state: "unpriced", count: "0", share: "0" },
+        { state: "cached", count: "0", share: "0" },
+        { state: "rate_limited", count: "0", share: "0" },
       ]);
+    });
+    test("persistent unpriced and passthrough counts reach coverage and honor authorization", async () => {
+      const f = setup(kind),
+        meter = f.meter(wide);
+      await settle(f);
+      for (const state of ["passthrough", "unpriced"] as const)
+        await f.store.countRequest({
+          commandId: state,
+          scope: { namespace: "test", principal: "u1", connection: "c1" },
+          surface: "programmatic",
+          source: "cli",
+          provider: "search",
+          operation: "query",
+          state,
+        });
+      const view = await loadCoverageView(meter, wide, { scope: coverageScope, ...month });
+      expect(view).toMatchObject({
+        total: "3",
+        costExcludesUntracked: true,
+        entries: [
+          { state: "metered", count: "1", share: "33.33" },
+          { state: "passthrough", count: "1", share: "33.33" },
+          { state: "unpriced", count: "1", share: "33.33" },
+          { state: "cached", count: "0", share: "0" },
+          { state: "rate_limited", count: "0", share: "0" },
+        ],
+      });
+      const denied = { ...meter, requestCounts: async () => ({ outcome: "forbidden" as const }) };
+      expect(
+        await loadCoverageView(denied, wide, { scope: coverageScope, ...month }),
+      ).toMatchObject({ state: "forbidden" });
+      const truncated = {
+        ...meter,
+        requestCounts: async () => ({
+          outcome: "ok" as const,
+          value: { rows: [], truncated: true, asOf: month.from },
+        }),
+      };
+      expect(
+        await loadCoverageView(truncated, wide, { scope: coverageScope, ...month }),
+      ).toMatchObject({ state: "unavailable" });
     });
     test("a coverage source supplies every state with exact shares", async () => {
       const f = setup(kind);

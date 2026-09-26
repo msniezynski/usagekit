@@ -1,0 +1,353 @@
+{
+  "origin": "documentation",
+  "provider": "dataforseo",
+  "operation": "appendix.user_data",
+  "source": "https://docs.dataforseo.com/v3/appendix/user_data/",
+  "description": "Free account endpoint. The price object follows the documented field schema api, function type, function name, priority; the documentation example is truncated before it, so the key layout awaits a recorded fixture.",
+  "request": {
+    "method": "GET",
+    "url": "https://api.dataforseo.com/v3/appendix/user_data",
+    "headers": {
+      "authorization": "[redacted]",
+      "content-type": "application/json"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "version": "0.1.20250925",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.4211 sec.",
+      "cost": 0,
+      "tasks_count": 1,
+      "tasks_error": 0,
+      "tasks": [
+        {
+          "id": "09251230-1535-0509-0000-5a5a5a5a5a5a",
+          "status_code": 20000,
+          "status_message": "Ok.",
+          "time": "0.3102 sec.",
+          "cost": 0,
+          "result_count": 1,
+          "path": ["v3", "appendix", "user_data"],
+          "data": {
+            "api": "appendix",
+            "function": "user_data"
+          },
+          "result": [
+            {
+              "login": "owner@example.com",
+              "timezone": "UTC",
+              "rates": {
+                "limits": {
+                  "day": {
+                    "serp": {
+                      "task_post": 0
+                    }
+                  },
+                  "minute": {
+                    "total": 2000,
+                    "serp": {
+                      "task_post": 2000,
+                      "tasks_ready": 60
+                    },
+                    "appendix": {
+                      "user_data": 6
+                    }
+                  }
+                },
+                "statistics": {
+                  "minute": {
+                    "value": "2026-09-25 12:30",
+                    "total": 3
+                  }
+                }
+              },
+              "money": {
+                "total": 150,
+                "balance": 124.3571,
+                "limits": {
+                  "day": {
+                    "total": 0
+                  },
+                  "minute": {
+                    "total": 0
+                  }
+                },
+                "statistics": {
+                  "day": {
+                    "value": "2026-09-25",
+                    "total": 1.2
+                  }
+                }
+              },
+              "price": {
+                "serp": {
+                  "live": {
+                    "advanced": {
+                      "priority_normal": {
+                        "cost_type": "per_request",
+                        "cost": 0.002
+                      }
+                    }
+                  },
+                  "task_post": {
+                    "organic": {
+                      "priority_normal": {
+                        "cost_type": "per_request",
+                        "cost": 0.0006
+                      },
+                      "priority_high": {
+                        "cost_type": "per_request",
+                        "cost": 0.0012
+                      }
+                    }
+                  },
+                  "task_get": {
+                    "advanced": {
+                      "priority_normal": {
+                        "cost_type": "per_request",
+                        "cost": 0
+                      }
+                    }
+                  }
+                },
+                "dataforseo_labs": {
+                  "live": {
+                    "keyword_ideas": {
+                      "priority_normal": {
+                        "cost_type": "per_request",
+                        "cost": 0.012
+                      }
+                    },
+                    "keyword_suggestions": {
+                      "priority_normal": {
+                        "cost_type": "per_request",
+                        "cost": 0.012
+                      }
+                    },
+                    "related_keywords": {
+                      "priority_normal": {
+                        "cost_type": "per_request",
+                        "cost": 0.012
+                      }
+                    },
+                    "keyword_overview": {
+                      "priority_normal": {
+                        "cost_type": "per_request",
+                        "cost": 0.012
+                      }
+                    },
+                    "ranked_keywords": {
+                      "priority_normal": {
+                        "cost_type": "per_request",
+                        "cost": 0.012
+                      }
+                    },
+                    "domain_rank_overview": {
+                      "priority_normal": {
+                        "cost_type": "per_request",
+                        "cost": 0.012
+                      }
+                    },
+                    "historical_rank_overview": {
+                      "priority_normal": {
+                        "cost_type": "per_request",
+                        "cost": 0.12
+                      }
+                    },
+                    "relevant_pages": {
+                      "priority_normal": {
+                        "cost_type": "per_request",
+                        "cost": 0.012
+                      }
+                    },
+                    "historical_serps": {
+                      "priority_normal": {
+                        "cost_type": "per_result",
+                        "cost": 0.00012
+                      }
+                    }
+                  }
+                },
+                "backlinks": {
+                  "live": {
+                    "summary": {
+                      "priority_normal": {
+                        "cost_type": "per_request",
+                        "cost": 0.024
+                      }
+                    },
+                    "history": {
+                      "priority_normal": {
+                        "cost_type": "per_request",
+                        "cost": 0.024
+                      }
+                    },
+                    "backlinks": {
+                      "priority_normal": {
+                        "cost_type": "per_request",
+                        "cost": 0.024
+                      }
+                    }
+                  }
+                },
+                "merchant": {
+                  "task_post": {
+                    "products": {
+                      "priority_normal": {
+                        "cost_type": "per_request",
+                        "cost": 0.001
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "expect": {
+    "balance": {
+      "remaining": {
+        "value": "124357100",
+        "scale": 4,
+        "unit": "cents"
+      },
+      "used": {
+        "value": "25642900",
+        "scale": 4,
+        "unit": "cents"
+      },
+      "plan": "prepaid",
+      "accountIdentity": "owner@example.com",
+      "rateLimitPerHour": 120000
+    },
+    "priceList": {
+      "checkedAt": "2026-09-25",
+      "rows": [
+        {
+          "validFrom": "2026-09-25",
+          "operation": "serp.google.organic.live.advanced",
+          "unit": "cents",
+          "perUnit": "0.2",
+          "source": "https://docs.dataforseo.com/v3/appendix/user_data/",
+          "checkedAt": "2026-09-25"
+        },
+        {
+          "validFrom": "2026-09-25",
+          "operation": "serp.google.organic.task_post",
+          "option": {
+            "priority": "normal"
+          },
+          "unit": "cents",
+          "perUnit": "0.06",
+          "source": "https://docs.dataforseo.com/v3/appendix/user_data/",
+          "checkedAt": "2026-09-25"
+        },
+        {
+          "validFrom": "2026-09-25",
+          "operation": "serp.google.organic.task_post",
+          "option": {
+            "priority": "high"
+          },
+          "unit": "cents",
+          "perUnit": "0.12",
+          "source": "https://docs.dataforseo.com/v3/appendix/user_data/",
+          "checkedAt": "2026-09-25"
+        },
+        {
+          "validFrom": "2026-09-25",
+          "operation": "dataforseo_labs.google.keyword_ideas.live",
+          "unit": "cents",
+          "perUnit": "1.2",
+          "source": "https://docs.dataforseo.com/v3/appendix/user_data/",
+          "checkedAt": "2026-09-25"
+        },
+        {
+          "validFrom": "2026-09-25",
+          "operation": "dataforseo_labs.google.keyword_suggestions.live",
+          "unit": "cents",
+          "perUnit": "1.2",
+          "source": "https://docs.dataforseo.com/v3/appendix/user_data/",
+          "checkedAt": "2026-09-25"
+        },
+        {
+          "validFrom": "2026-09-25",
+          "operation": "dataforseo_labs.google.related_keywords.live",
+          "unit": "cents",
+          "perUnit": "1.2",
+          "source": "https://docs.dataforseo.com/v3/appendix/user_data/",
+          "checkedAt": "2026-09-25"
+        },
+        {
+          "validFrom": "2026-09-25",
+          "operation": "dataforseo_labs.google.keyword_overview.live",
+          "unit": "cents",
+          "perUnit": "1.2",
+          "source": "https://docs.dataforseo.com/v3/appendix/user_data/",
+          "checkedAt": "2026-09-25"
+        },
+        {
+          "validFrom": "2026-09-25",
+          "operation": "dataforseo_labs.google.ranked_keywords.live",
+          "unit": "cents",
+          "perUnit": "1.2",
+          "source": "https://docs.dataforseo.com/v3/appendix/user_data/",
+          "checkedAt": "2026-09-25"
+        },
+        {
+          "validFrom": "2026-09-25",
+          "operation": "dataforseo_labs.google.domain_rank_overview.live",
+          "unit": "cents",
+          "perUnit": "1.2",
+          "source": "https://docs.dataforseo.com/v3/appendix/user_data/",
+          "checkedAt": "2026-09-25"
+        },
+        {
+          "validFrom": "2026-09-25",
+          "operation": "dataforseo_labs.google.historical_rank_overview.live",
+          "unit": "cents",
+          "perUnit": "12",
+          "source": "https://docs.dataforseo.com/v3/appendix/user_data/",
+          "checkedAt": "2026-09-25"
+        },
+        {
+          "validFrom": "2026-09-25",
+          "operation": "dataforseo_labs.google.relevant_pages.live",
+          "unit": "cents",
+          "perUnit": "1.2",
+          "source": "https://docs.dataforseo.com/v3/appendix/user_data/",
+          "checkedAt": "2026-09-25"
+        },
+        {
+          "validFrom": "2026-09-25",
+          "operation": "backlinks.summary.live",
+          "unit": "cents",
+          "perUnit": "2.4",
+          "source": "https://docs.dataforseo.com/v3/appendix/user_data/",
+          "checkedAt": "2026-09-25"
+        },
+        {
+          "validFrom": "2026-09-25",
+          "operation": "backlinks.history.live",
+          "unit": "cents",
+          "perUnit": "2.4",
+          "source": "https://docs.dataforseo.com/v3/appendix/user_data/",
+          "checkedAt": "2026-09-25"
+        },
+        {
+          "validFrom": "2026-09-25",
+          "operation": "backlinks.backlinks.live",
+          "unit": "cents",
+          "perUnit": "2.4",
+          "source": "https://docs.dataforseo.com/v3/appendix/user_data/",
+          "checkedAt": "2026-09-25"
+        }
+      ]
+    }
+  }
+}

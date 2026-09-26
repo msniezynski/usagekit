@@ -12,8 +12,8 @@ export const coverageStates = [
 ] as const;
 export type CoverageState = (typeof coverageStates)[number];
 /**
- * Per-state request counts for a scope and a [from, to) window. The store keeps no per-state
- * counter yet; the local server fills this port later, and hosts may supply their own.
+ * Optional host-supplied counts. Without this port, coverage combines Meter usage and
+ * its persistent non-operation request counters. Counter windows use whole UTC days.
  */
 export type CoverageSource = {
   counts(scope: UsageScope, from: string, to: string): Promise<Record<CoverageState, bigint>>;
@@ -26,7 +26,7 @@ export type CoverageEntry = {
 };
 export type CoverageView = {
   state: ViewState;
-  /** Where the counts came from: a CoverageSource, or the meter's own metered requests only. */
+  /** Where the counts came from: a CoverageSource, or the meter's usage and persistent counters. */
   origin: "source" | "meter";
   entries: readonly CoverageEntry[];
   total: string | null;
@@ -83,9 +83,6 @@ export function createMemoryCoverageSource() {
   } satisfies CoverageSource & { add(entry: unknown): void };
 }
 
-const unavailableEntries = (): CoverageEntry[] =>
-  coverageStates.map((state) => ({ state, count: "unavailable", share: null }));
-
 /** Metered requests from the meter's own usage, paging with groupBy []. Unknown is unavailable. */
 async function meteredRequests(
   meter: Meter,
@@ -140,16 +137,46 @@ export async function loadCoverageView(
   if (!input.source) {
     const metered = await meteredRequests(meter, access, input, first.value);
     if ("kind" in metered) return { ...blank, state: "unavailable", problem: metered };
-    const entries = unavailableEntries();
-    entries[0] = {
-      state: "metered",
-      count: metered.total ? formatQuantity(metered.total) : "unavailable",
-      share: null,
-    };
+    const counted = await attempt(() =>
+      meter.requestCounts(access, {
+        scope: input.scope,
+        from: input.from,
+        to: input.to,
+        groupBy: [],
+      }),
+    );
+    if (counted.outcome === "forbidden") return { ...blank, state: "forbidden", problem: null };
+    if (counted.outcome === "unavailable")
+      return { ...blank, state: "unavailable", problem: counted.problem };
+    if (counted.value.truncated)
+      return {
+        ...blank,
+        state: "unavailable",
+        problem: { kind: "error", message: "Truncated request counts" },
+      };
+    const extra = Object.fromEntries(coverageStates.slice(1).map((state) => [state, 0n]));
+    for (const row of counted.value.rows) extra[row.state] = (extra[row.state] ?? 0n) + row.count;
+    const scale = metered.total?.scale ?? 0,
+      factor = 10n ** BigInt(scale);
+    const values = [
+      metered.total?.value ?? 0n,
+      ...coverageStates.slice(1).map((state) => (extra[state] ?? 0n) * factor),
+    ];
+    const total = values.reduce((sum, value) => sum + value, 0n),
+      known = metered.total !== null;
     return {
       ...blank,
-      state: metered.rows && metered.total?.value !== 0n ? "ok" : "empty",
-      entries,
+      state: total > 0n || metered.rows > 0 ? "ok" : "empty",
+      entries: coverageStates.map((state, index) => ({
+        state,
+        count:
+          index === 0 && !known
+            ? "unavailable"
+            : formatQuantity({ value: values[index]!, scale, unit: "requests" }),
+        share: known ? share(values[index]!, total) : null,
+      })),
+      total: known ? formatQuantity({ value: total, scale, unit: "requests" }) : null,
+      costExcludesUntracked: known ? total > values[0]! : null,
       problem: null,
     };
   }

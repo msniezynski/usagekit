@@ -1,0 +1,120 @@
+{
+  "origin": "documentation",
+  "provider": "dataforseo",
+  "operation": "serp.google.organic.task_get.advanced",
+  "source": "https://docs.dataforseo.com/v3/serp/google/organic/task_get/advanced/",
+  "description": "Free retrieval: the envelope cost is zero, the task cost is the charge of the posted task. Billing lines resolve the deferred post.",
+  "request": {
+    "method": "GET",
+    "url": "https://api.dataforseo.com/v3/serp/google/organic/task_get/advanced/09251220-1535-0066-0000-8f0635c0dc89",
+    "headers": {
+      "authorization": "[redacted]",
+      "content-type": "application/json"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "version": "0.1.20250925",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.4211 sec.",
+      "cost": 0,
+      "tasks_count": 1,
+      "tasks_error": 0,
+      "tasks": [
+        {
+          "id": "09251220-1535-0066-0000-8f0635c0dc89",
+          "status_code": 20000,
+          "status_message": "Ok.",
+          "time": "0.3102 sec.",
+          "cost": 0.0012,
+          "result_count": 1,
+          "path": [
+            "v3",
+            "serp",
+            "google",
+            "organic",
+            "task_get",
+            "advanced",
+            "09251220-1535-0066-0000-8f0635c0dc89"
+          ],
+          "data": {
+            "api": "serp",
+            "function": "task_get",
+            "se": "google",
+            "se_type": "organic",
+            "keyword": "espresso machine",
+            "location_code": 2840,
+            "language_code": "en",
+            "priority": 2,
+            "tag": "job-7",
+            "device": "desktop",
+            "os": "windows"
+          },
+          "result": [
+            {
+              "keyword": "espresso machine",
+              "type": "organic",
+              "se_domain": "google.com",
+              "location_code": 2840,
+              "language_code": "en",
+              "check_url": "https://www.google.com/search?q=espresso%20machine&num=100&hl=en&gl=US",
+              "datetime": "2026-09-25 12:24:40 +00:00",
+              "item_types": ["organic"],
+              "se_results_count": 2210000,
+              "items_count": 0,
+              "items": []
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "expect": {
+    "requestId": "09251220-1535-0066-0000-8f0635c0dc89",
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "cents",
+          "quantity": {
+            "value": "0",
+            "scale": 4,
+            "unit": "cents"
+          },
+          "certainty": "measured"
+        },
+        {
+          "unit": "requests",
+          "quantity": {
+            "value": "1",
+            "scale": 0,
+            "unit": "requests"
+          },
+          "certainty": "measured"
+        }
+      ],
+      "cost": {
+        "certainty": "measured",
+        "money": {
+          "units": "0",
+          "currency": "USD"
+        }
+      },
+      "providerRequestId": "09251220-1535-0066-0000-8f0635c0dc89",
+      "cached": false,
+      "failed": false
+    },
+    "billingLines": [
+      {
+        "providerRequestId": "09251220-1535-0066-0000-8f0635c0dc89",
+        "operation": "serp.google.organic.task_post",
+        "occurredAt": "2026-09-25T12:24:40.000Z",
+        "cost": {
+          "units": "1200",
+          "currency": "USD"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "origin": "synthetic",
+  "provider": "example",
+  "operation": "items.get",
+  "description": "A billed failure: the provider charges the lookup and answers 404.",
+  "request": { "method": "GET", "url": "https://api.example.com/v1/items/42" },
+  "response": { "status": 404, "body": { "id": "req-3", "cost_cents": "0.1" } },
+  "expect": {
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "requests",
+          "quantity": { "value": "1", "scale": 0, "unit": "requests" },
+          "certainty": "measured"
+        }
+      ],
+      "cost": { "certainty": "measured", "money": { "units": "1000", "currency": "USD" } },
+      "providerRequestId": "req-3",
+      "cached": false,
+      "failed": true
+    }
+  }
+}

@@ -20,6 +20,8 @@ export function createRemoteMeter(options: RemoteOptions): Meter {
     settle: (i) => request("settle", i),
     correct: (i) => request("correct", i),
     releaseUndispatched: (i) => request("release", i),
+    countRequest: (i) => request("count", i),
+    requestCounts: (_access, q) => request("counts", q, true),
     getOperation: (_access, i) => request("operation", i, true),
     usage: (_access, q) => request("usage", q, true),
     listOperations: (_access, q) => request("operations", q, true),

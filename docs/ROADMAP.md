@@ -140,7 +140,7 @@ maintain and a registry to test against both.
 | Packages on npm                      | `@usagekit/core`, `store`, `meter` at 0.1.0, Apache-2.0, **public**. Token setup in older docs is obsolete.                                                                         |
 | P3 host A embedded shadow            | Complete on a host branch: Postgres adapter passes conformance, shadow on own and hosted paths, admin comparison page. Awaiting rebase onto the host's moved `main` and a draft PR. |
 | Repository hosting                   | No remote yet. Sources exist only locally.                                                                                                                                          |
-| Provider catalog                     | Does not exist. Host A keeps its own catalog and price resolver.                                                                                                                    |
+| Provider catalog                     | Implemented on the P5 task branch. A host mapping adapter preserves its existing price resolver.                                                                                    |
 | UI layer                             | On a task branch: view models, React hooks, a shadcn registry for Radix and Base UI, and the local server UI. See [UI](UI.md). Host A's admin page is still hand-written.           |
 
 ## 7. Order of work
@@ -190,7 +190,8 @@ These were missing from the plan and are now owned by a stage.
 - **End-user views (P4 models, P8 live).** P4 part done: usage, budgets, header, coverage, exceptions and connection view models with registry blocks. Connect a provider from the host's allowlist, see
   own usage per connection and surface, see budgets and headroom, switch funding where the host
   offers it. Today the plan only describes the operator and the machine.
-- **Provider catalog with host allowlist (P5).** Hosts decide which descriptors are active.
+- **Provider catalog with host allowlist (P5).** Local implementation complete: the descriptor design is
+  [PROVIDERS.md](PROVIDERS.md). Hosts decide which descriptors are active.
   Users connect only those.
 - **Implementer contract (P5).** The only allowed path for a paid call is the wrapper that
   reserves, dispatches through the descriptor and settles. Direct provider client calls are a
@@ -228,9 +229,9 @@ These were missing from the plan and are now owned by a stage.
   core type, the reference matcher, both SQL adapters, wire schemas and conformance tests.
   No migration: adapters store the field as text.
 - **Hard and soft limits (P4 contract, P5 catalog).** Contract done: one budget with `limit`, `onExceed`
-  `block` or `allow`, optional `hardLimit` and `alerts` recorded once per epoch; still open in P5: overage price
-  rows apply past the allowance; descriptor plans declare `allowanceMode`. See section 9.
-- **Tracking policy per operation (P5 contract, P6 proxy, P4 coverage view).** P4 part done: `loadCoverageView` with the `CoverageSource` port. A connection
+  `block` or `allow`, optional `hardLimit` and `alerts` recorded once per epoch; P5 implements overage price
+  rows selected by the host-confirmed allowance state; descriptor plans declare `allowanceMode`. See section 9.
+- **Tracking policy per operation (P5 contract, P6 proxy, P4 coverage view).** P5 connects persistent counters to `loadCoverageView`; the `CoverageSource` port remains available. A connection
   chooses `metered` or `passthrough` per catalog operation; unknown paths are `unpriced`.
   Counts are kept in every state; cost is kept only for metered. See section 9.
 - **Plan-dependent prices (P5 catalog, P4 UI).** List prices vary by provider plan and by call

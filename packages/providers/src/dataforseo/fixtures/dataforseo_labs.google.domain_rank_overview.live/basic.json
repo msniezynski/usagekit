@@ -1,0 +1,102 @@
+{
+  "origin": "documentation",
+  "provider": "dataforseo",
+  "operation": "dataforseo_labs.google.domain_rank_overview.live",
+  "source": "https://docs.dataforseo.com/v3/dataforseo_labs/google/domain_rank_overview/live/",
+  "request": {
+    "method": "POST",
+    "url": "https://api.dataforseo.com/v3/dataforseo_labs/google/domain_rank_overview/live",
+    "headers": {
+      "authorization": "[redacted]",
+      "content-type": "application/json"
+    },
+    "body": [
+      {
+        "target": "example.com",
+        "location_code": 2840,
+        "language_code": "en"
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "version": "0.1.20250925",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.4211 sec.",
+      "cost": 0.01212,
+      "tasks_count": 1,
+      "tasks_error": 0,
+      "tasks": [
+        {
+          "id": "09251235-1535-0386-0000-0005a1b2c3d4",
+          "status_code": 20000,
+          "status_message": "Ok.",
+          "time": "0.3102 sec.",
+          "cost": 0.01212,
+          "result_count": 1,
+          "path": ["v3", "dataforseo_labs", "google", "domain_rank_overview", "live"],
+          "data": {
+            "api": "dataforseo_labs",
+            "function": "domain_rank_overview",
+            "se_type": "google",
+            "target": "example.com",
+            "location_code": 2840,
+            "language_code": "en"
+          },
+          "result": [
+            {
+              "se_type": "google",
+              "location_code": 2840,
+              "language_code": "en",
+              "total_count": 1200,
+              "items_count": 1,
+              "items": [
+                {
+                  "se_type": "google",
+                  "keyword": "item 1"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "expect": {
+    "requestId": "09251235-1535-0386-0000-0005a1b2c3d4",
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "cents",
+          "quantity": {
+            "value": "12120",
+            "scale": 4,
+            "unit": "cents"
+          },
+          "certainty": "measured"
+        },
+        {
+          "unit": "requests",
+          "quantity": {
+            "value": "1",
+            "scale": 0,
+            "unit": "requests"
+          },
+          "certainty": "measured"
+        }
+      ],
+      "cost": {
+        "certainty": "measured",
+        "money": {
+          "units": "12120",
+          "currency": "USD"
+        }
+      },
+      "providerRequestId": "09251235-1535-0386-0000-0005a1b2c3d4",
+      "cached": false,
+      "failed": false
+    }
+  }
+}

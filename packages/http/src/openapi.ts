@@ -1,4 +1,4 @@
-import { schemas, responses } from "./schemas/index.js";
+import { schemas, responses, routes } from "./schemas/index.js";
 /** Translate the Valibot schema graph, including strict object and decimal validation. */
 function jsonSchema(s: any): Record<string, unknown> {
   if (s.pipe) {
@@ -58,16 +58,7 @@ export function generateOpenApi() {
   const paths: Record<string, unknown> = {};
   for (const [name, schema] of Object.entries(schemas)) {
     const response = jsonSchema(responses[name as keyof typeof responses]),
-      read = ["operation", "usage", "operations", "defined", "applicable"].includes(name);
-    const path = read
-      ? name === "operation"
-        ? "/v1/operations/{id}"
-        : name === "usage"
-          ? "/v1/usage"
-          : name === "operations"
-            ? "/v1/operations"
-            : `/v1/budgets/${name}`
-      : `/v1/operations/${name}`;
+      { read, path } = routes[name as keyof typeof routes];
     const operation = {
       security: [{ bearerAuth: [] }],
       ...(read

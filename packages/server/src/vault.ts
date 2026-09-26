@@ -2,7 +2,17 @@ import { existsSync, readFileSync } from "node:fs";
 import { randomBytes, scryptSync, createCipheriv, createDecipheriv } from "node:crypto";
 import { writePrivate } from "./config.js";
 /** tags are connection labels the CLI snapshots into each reservation scope; never secret. */
-type Listed = { provider: string; connectionId: string; tags?: readonly string[] };
+export type ConnectionMetadata = {
+  plan?: string;
+  manualPrices?: Readonly<Record<string, { unit: string; value: string; scale: number }>>;
+  overage?: boolean;
+  tracking?: Readonly<Record<string, "metered" | "passthrough">>;
+};
+type Listed = ConnectionMetadata & {
+  provider: string;
+  connectionId: string;
+  tags?: readonly string[];
+};
 type Entry = Listed & { secret: string };
 type Envelope = {
   version: 1;
@@ -12,7 +22,19 @@ type Envelope = {
   ciphertext: string;
   index: Listed[];
 };
-const listed = ({ provider, connectionId, tags }: Entry): Listed => ({
+const listed = ({
+  provider,
+  connectionId,
+  tags,
+  plan,
+  tracking,
+  manualPrices,
+  overage,
+}: Entry): Listed => ({
+  ...(plan ? { plan } : {}),
+  ...(tracking ? { tracking } : {}),
+  ...(manualPrices ? { manualPrices } : {}),
+  ...(overage === undefined ? {} : { overage }),
   provider,
   connectionId,
   ...(tags ? { tags } : {}),
@@ -75,7 +97,13 @@ export function createVault(path: string) {
         throw new Error("VaultUnlockFailed");
       }
     },
-    put(provider: string, connectionId: string, secret: string, tags?: readonly string[]) {
+    put(
+      provider: string,
+      connectionId: string,
+      secret: string,
+      tags?: readonly string[],
+      metadata: ConnectionMetadata = {},
+    ) {
       requireKey();
       if (!provider.trim() || !connectionId.trim() || !secret.trim())
         throw new Error("InvalidConnection");
@@ -83,7 +111,14 @@ export function createVault(path: string) {
         throw new Error("ConnectionProviderMismatch");
       entries = [
         ...entries.filter((e) => e.connectionId !== connectionId),
-        { provider, connectionId, secret, ...(tags ? { tags } : {}) },
+        {
+          ...entries.find((e) => e.connectionId === connectionId),
+          provider,
+          connectionId,
+          secret,
+          ...(tags ? { tags } : {}),
+          ...metadata,
+        },
       ];
       save();
     },

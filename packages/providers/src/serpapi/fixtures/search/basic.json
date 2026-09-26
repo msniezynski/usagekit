@@ -1,0 +1,86 @@
+{
+  "origin": "documentation",
+  "provider": "serpapi",
+  "operation": "search",
+  "source": "https://serpapi.com/search-api",
+  "description": "No per-call cost: one plan unit, estimated, with zero marginal money inside the plan.",
+  "request": {
+    "method": "GET",
+    "url": "https://serpapi.com/search.json?engine=google&q=coffee&location=Austin%2C+Texas&hl=en&gl=us&api_key=[redacted]"
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "search_metadata": {
+        "id": "66f3e1a2b4c5d6e7f8a9b0c1",
+        "status": "Success",
+        "json_endpoint": "https://serpapi.com/searches/2d8c1e6f/66f3e1a2b4c5d6e7f8a9b0c1.json",
+        "created_at": "2026-09-25 12:40:02 UTC",
+        "processed_at": "2026-09-25 12:40:02 UTC",
+        "google_url": "https://www.google.com/search?q=coffee&oq=coffee&uule=w+CAIQICIYQXVzdGluLFRleGFzLFVuaXRlZCBTdGF0ZXM&hl=en&gl=us",
+        "total_time_taken": 1.42
+      },
+      "search_parameters": {
+        "engine": "google",
+        "q": "coffee",
+        "location_requested": "Austin, Texas",
+        "location_used": "Austin,Texas,United States",
+        "google_domain": "google.com",
+        "hl": "en",
+        "gl": "us",
+        "device": "desktop"
+      },
+      "search_information": {
+        "query_displayed": "coffee",
+        "total_results": 2380000000,
+        "time_taken_displayed": 0.44,
+        "organic_results_state": "Results for exact spelling"
+      },
+      "organic_results": [
+        {
+          "position": 1,
+          "title": "Coffee shops in Austin",
+          "link": "https://www.example.com/austin-coffee",
+          "displayed_link": "www.example.com",
+          "snippet": "The best coffee in town."
+        }
+      ]
+    }
+  },
+  "expect": {
+    "options": {},
+    "requestId": "66f3e1a2b4c5d6e7f8a9b0c1",
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "units",
+          "quantity": {
+            "value": "1",
+            "scale": 0,
+            "unit": "units"
+          },
+          "certainty": "estimated"
+        },
+        {
+          "unit": "requests",
+          "quantity": {
+            "value": "1",
+            "scale": 0,
+            "unit": "requests"
+          },
+          "certainty": "measured"
+        }
+      ],
+      "cost": {
+        "certainty": "estimated",
+        "money": {
+          "units": "0",
+          "currency": "USD"
+        }
+      },
+      "providerRequestId": "66f3e1a2b4c5d6e7f8a9b0c1",
+      "cached": false,
+      "failed": false
+    }
+  }
+}

@@ -1,4 +1,6 @@
-import type { Meter, ReadResult, ValidationFailure } from "@usagekit/core";
+import type { Meter, PricingCatalog, ReadResult, ValidationFailure } from "@usagekit/core";
+import { resolveReserve } from "./catalog.js";
+import type { ConnectionResolver } from "./catalog.js";
 import { InvalidInput } from "@usagekit/store";
 import type { Store, Clock } from "@usagekit/store";
 import { defaultPolicy } from "./policy.js";
@@ -9,6 +11,8 @@ import {
   usageValidation,
   operationsValidation,
   sourceValidation,
+  provenanceValidation,
+  requestCountsValidation,
 } from "./validation.js";
 import { canRead, canReadBudget, canReadShared, isShared } from "./access.js";
 import { defaultBudgetOrder, normalizeTags } from "@usagekit/core";
@@ -17,11 +21,16 @@ export function createMeter({
   policy = defaultPolicy,
   clock,
   resolveOwnership,
+  catalog,
+  resolveConnection,
 }: {
   store: Store;
   policy?: MeterPolicy;
   clock: Clock;
   resolveOwnership?: import("./access.js").OwnershipResolver;
+  /** With resolveConnection, lets reserve omit estimate and applies tracking policy. */
+  catalog?: PricingCatalog;
+  resolveConnection?: ConnectionResolver;
 }): Meter {
   if (!Number.isFinite(clock.now().getTime())) throw new Error("InvalidInput: clock");
   if (
@@ -52,18 +61,47 @@ export function createMeter({
     safely(async () => ({ outcome: "ok" as const, value: await fn() }));
   return {
     expireReservations: (i) => command(i, () => store.expireReservations(i)),
-    reserve: async (raw) => {
-      const invalid = reserveValidation(raw);
-      if (invalid) return invalid;
-      // Tags are attribution: sorted here so every adapter stores one canonical order.
-      const tags = raw.scope.tags === undefined ? undefined : normalizeTags(raw.scope.tags),
-        i = tags ? { ...raw, scope: { ...raw.scope, tags } } : raw;
+    reserve: async (requested) => {
+      const early =
+        validate({ ...requested, estimate: requested.estimate ?? [] }) ??
+        sourceValidation(requested) ??
+        provenanceValidation(requested);
+      if (early) return early;
       return safely(async () => {
         const existing = await store.getOperation({
-          namespace: i.scope.namespace,
-          principal: i.scope.principal,
-          operationId: i.operationId,
+          namespace: requested.scope.namespace,
+          principal: requested.scope.principal,
+          operationId: requested.operationId,
         });
+        const resolution = await resolveReserve(requested, existing, catalog, resolveConnection);
+        if (resolution.kind === "invalid") return resolution.failure;
+        if (resolution.kind === "count") {
+          const { scope, surface, source, provider, operation, platformPools } = requested;
+          const counted = await store.countRequest({
+            commandId: requested.operationId,
+            scope,
+            surface,
+            source,
+            provider,
+            operation,
+            state: resolution.state,
+            ...(platformPools ? { platformPools } : {}),
+          });
+          if (counted.outcome === "conflict")
+            return {
+              outcome: "invalid" as const,
+              field: "operationId",
+              reason: "reused for a different counted request",
+            };
+          if (counted.outcome === "invalid") return counted;
+          return { outcome: resolution.state, replayed: counted.replayed, operation: null };
+        }
+        const raw = resolution.input,
+          invalid = reserveValidation(raw);
+        if (invalid) return invalid;
+        // Tags are attribution: sorted here so every adapter stores one canonical order.
+        const tags = raw.scope.tags === undefined ? undefined : normalizeTags(raw.scope.tags),
+          i = tags ? { ...raw, scope: { ...raw.scope, tags } } : raw;
         if (existing) return store.reserve(i, { budgetOrder: policy.budgetOrder });
         const statuses = await store.applicableBudgets({
           scope: i.scope,
@@ -89,6 +127,17 @@ export function createMeter({
     settle: (i) => command(i, () => store.settle(i)),
     correct: (i) => command(i, () => store.correct(i)),
     releaseUndispatched: (i) => command(i, () => store.releaseUndispatched(i)),
+    countRequest: (i) => {
+      const invalid = validate(i) ?? sourceValidation(i);
+      return invalid ? Promise.resolve(invalid) : safely(() => store.countRequest(i));
+    },
+    requestCounts: async (access, q) => {
+      const invalid = requestCountsValidation(q);
+      if (invalid) return invalid;
+      if (!access.canReadBillingDetail || !canRead(access, q.scope))
+        return { outcome: "forbidden" };
+      return read(() => store.requestCounts(q));
+    },
     getOperation: async (access, i) => {
       const invalid = validate(i);
       if (invalid) return invalid;

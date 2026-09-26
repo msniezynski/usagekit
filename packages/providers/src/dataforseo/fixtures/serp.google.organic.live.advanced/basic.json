@@ -1,0 +1,118 @@
+{
+  "origin": "documentation",
+  "provider": "dataforseo",
+  "operation": "serp.google.organic.live.advanced",
+  "source": "https://docs.dataforseo.com/v3/serp/google/organic/live/advanced/",
+  "request": {
+    "method": "POST",
+    "url": "https://api.dataforseo.com/v3/serp/google/organic/live/advanced",
+    "headers": {
+      "authorization": "[redacted]",
+      "content-type": "application/json"
+    },
+    "body": [
+      {
+        "keyword": "coffee grinder",
+        "location_code": 2840,
+        "language_code": "en",
+        "device": "desktop",
+        "depth": 10
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "version": "0.1.20250925",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.4211 sec.",
+      "cost": 0.002,
+      "tasks_count": 1,
+      "tasks_error": 0,
+      "tasks": [
+        {
+          "id": "09251212-1535-0139-0000-4b1c3a0f1d21",
+          "status_code": 20000,
+          "status_message": "Ok.",
+          "time": "0.3102 sec.",
+          "cost": 0.002,
+          "result_count": 1,
+          "path": ["v3", "serp", "google", "organic", "live", "advanced"],
+          "data": {
+            "api": "serp",
+            "function": "live",
+            "se": "google",
+            "se_type": "organic",
+            "keyword": "coffee grinder",
+            "location_code": 2840,
+            "language_code": "en",
+            "device": "desktop",
+            "depth": 10,
+            "os": "windows"
+          },
+          "result": [
+            {
+              "keyword": "coffee grinder",
+              "type": "organic",
+              "se_domain": "google.com",
+              "location_code": 2840,
+              "language_code": "en",
+              "check_url": "https://www.google.com/search?q=coffee%20grinder&num=100&hl=en&gl=US",
+              "datetime": "2026-09-25 12:12:03 +00:00",
+              "item_types": ["organic"],
+              "se_results_count": 1480000,
+              "items_count": 1,
+              "items": [
+                {
+                  "type": "organic",
+                  "rank_group": 1,
+                  "rank_absolute": 1,
+                  "domain": "www.example.com",
+                  "title": "Coffee grinders",
+                  "url": "https://www.example.com/grinders"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "expect": {
+    "options": {},
+    "requestId": "09251212-1535-0139-0000-4b1c3a0f1d21",
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "cents",
+          "quantity": {
+            "value": "2000",
+            "scale": 4,
+            "unit": "cents"
+          },
+          "certainty": "measured"
+        },
+        {
+          "unit": "requests",
+          "quantity": {
+            "value": "1",
+            "scale": 0,
+            "unit": "requests"
+          },
+          "certainty": "measured"
+        }
+      ],
+      "cost": {
+        "certainty": "measured",
+        "money": {
+          "units": "2000",
+          "currency": "USD"
+        }
+      },
+      "providerRequestId": "09251212-1535-0139-0000-4b1c3a0f1d21",
+      "cached": false,
+      "failed": false
+    }
+  }
+}

@@ -1,6 +1,9 @@
 import { Hono } from "hono";
 import { createUsageHandlers, parseBudget, encodeWire } from "@usagekit/http";
 import { normalizeTags } from "@usagekit/core";
+import type { Catalog } from "@usagekit/providers";
+import type { createRecorder } from "./recorder.js";
+import { connectionMetadata } from "./connections.js";
 import type { Meter } from "@usagekit/core";
 import type { SqliteStore } from "@usagekit/store-sqlite";
 import type { createAuth } from "./auth.js";
@@ -13,7 +16,11 @@ export function createApp({
   vault,
   configPath,
   uiRoot,
+  catalog,
+  record,
 }: {
+  catalog?: Catalog;
+  record?: ReturnType<typeof createRecorder>;
   meter: Meter;
   store: SqliteStore;
   auth: ReturnType<typeof createAuth>;
@@ -67,7 +74,19 @@ export function createApp({
       return c.json({ error: "invalid_request" }, 400);
     const b = body as Record<string, unknown>;
     if (
-      Object.keys(b).some((k) => !["provider", "connectionId", "secret", "tags"].includes(k)) ||
+      Object.keys(b).some(
+        (k) =>
+          ![
+            "provider",
+            "connectionId",
+            "secret",
+            "tags",
+            "plan",
+            "tracking",
+            "manualPrices",
+            "overage",
+          ].includes(k),
+      ) ||
       ![b.provider, b.connectionId, b.secret].every(
         (x) => typeof x === "string" && x.trim().length > 0,
       )
@@ -75,11 +94,23 @@ export function createApp({
       return c.json({ error: "invalid_request" }, 400);
     const tags = b.tags === undefined ? undefined : normalizeTags(b.tags as readonly string[]);
     if (tags === null) return c.json({ error: "invalid_request" }, 400);
-    vault.put(b.provider as string, b.connectionId as string, b.secret as string, tags);
-    return c.json({
-      provider: b.provider,
-      connectionId: b.connectionId,
-      ...(tags ? { tags } : {}),
+    const metadata = connectionMetadata(b, catalog);
+    if (!metadata) return c.json({ error: "invalid_connection_policy" }, 400);
+    vault.put(b.provider as string, b.connectionId as string, b.secret as string, tags, metadata);
+    return c.json(vault.list().find((entry) => entry.connectionId === b.connectionId));
+  });
+  app.post("/providers/connections/:id/record", async (c) => {
+    if (!record) return c.json({ error: "recorder_unavailable" }, 404);
+    let body: unknown;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ error: "invalid_request" }, 400);
+    }
+    const result = await record(c.req.param("id"), body);
+    return new Response(encodeWire(result.body), {
+      status: result.status,
+      headers: { "Content-Type": "application/json" },
     });
   });
   app.delete("/providers/connections/:id", (c) => {

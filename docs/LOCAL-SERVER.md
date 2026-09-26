@@ -116,3 +116,53 @@ SQLite commands update one operation and its budget counters. Reads use read-onl
 Upgrading a pre-event database invalidates old cursors; restart those usage queries.
 The local token is a fully trusted owner credential. Multi-user write permissions require a separate host policy.
 Calls bypassing this API remain unmetered. P2 blocks cooperating scripts; routed provider blocking follows in P4.
+
+## Provider catalog (P5)
+
+The server enables the bundled DataForSEO and SerpApi descriptors by default. Embedders may set
+`enabledProviders` on `startServer`; disabled providers cannot be recorded. Existing explicit
+estimates continue working for uncatalogued integrations.
+
+```sh
+usagekit provider add serpapi --connection search --plan starter --secret-env SERPAPI_KEY
+usagekit report reserve --connection search --provider serpapi --feature search --json
+usagekit provider add serpapi --connection search --secret-env SERPAPI_KEY --tracking search=passthrough
+```
+
+`report reserve` can omit `--estimate` for catalogued connections. Repeat `--option key=value`
+for pricing options. Explicit estimates still override catalog prices on metered calls.
+Free/passthrough outcomes never grant a lease; the reporting CLI exits nonzero so existing
+shell scripts cannot mistake them for metered dispatch permission.
+
+`provider add` accepts `--plan` and repeated `--tracking operation=metered|passthrough` flags.
+The HTTP connection endpoint accepts the same `plan` and `tracking` fields; unknown plans,
+operations and policy values are rejected. Omitted policy fields survive credential rotation;
+an empty HTTP `tracking` object resets tracking overrides. Restart preserves the metadata.
+The metadata is also in the vault's public connection index, so metering works with a locked
+vault; recording requires it unlocked. Local config-directory integrity remains required.
+
+See [contributing providers](CONTRIBUTING-PROVIDERS.md) for `provider record`, its one-call cost
+semantics and fixture review. Neither installing nor testing this feature calls a provider.
+
+### Local resource ownership
+
+Vault writes remain owned by connection add/remove and key rotation; startup unlocks, shutdown
+locks, and restart reloads. Policy fields share that lifecycle. The SQLite store remains the
+sole writer for reservations, dispatch, receipts and counters; the recorder uses Meter only.
+Its failed dispatches remain recoverable and the existing reservation sweep only expires work
+that was not dispatched. Fixtures have one writer (the recorder), UUID filenames and private
+permissions. They persist across restart; no automated cleanup or synchronization is introduced.
+This local-only change adds no workflows, production environment variables or migrations.
+
+### Connection price overrides
+
+```sh
+usagekit provider add dataforseo --connection research --plan prepaid \
+  --price serp.google.organic.live.advanced=0.25:cents --overage false
+```
+
+The secret is read from standard input as with other `provider add` calls. `--price` is
+repeatable and keyed by catalog operation. `--overage true|false` explicitly selects the
+known allowance state. Omitted flags preserve the connection policy during key rotation.
+The server resolves manual prices before measured receipt history and catalog list prices.
+The HTTP connection endpoint accepts `manualPrices: {}` to clear all overrides.

@@ -2,13 +2,13 @@ import { readFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import type Database from "better-sqlite3";
 import { hash } from "./util.js";
-export function migrate(db: Database.Database, target = 4): void {
+export function migrate(db: Database.Database, target = 5): void {
   db.transaction(() => {
     db.exec("CREATE TABLE IF NOT EXISTS migrations(version INTEGER PRIMARY KEY)");
     const versions = (
       db.prepare("SELECT version FROM migrations").all() as { version: number | bigint }[]
     ).map((r) => Number(r.version));
-    if (![1, 2, 3, 4].includes(target) || versions.some((v) => v > target))
+    if (![1, 2, 3, 4, 5].includes(target) || versions.some((v) => v > target))
       throw new Error("Downgrade or unsupported schema version");
     if (!versions.includes(1)) {
       db.exec(readFileSync(new URL("./schema.sql", import.meta.url), "utf8"));
@@ -53,6 +53,12 @@ export function migrate(db: Database.Database, target = 4): void {
       ALTER TABLE operations ADD COLUMN alerts_json TEXT NOT NULL DEFAULT '[]';
       UPDATE commands SET result_json=json_set(result_json,'$.alerts',json('[]')) WHERE kind IN ('settle','correct') AND json_extract(result_json,'$.outcome')='settled';
       INSERT INTO migrations VALUES(4);`);
+    }
+    if (target >= 5 && !versions.includes(5)) {
+      db.exec(`CREATE TABLE request_counts(namespace TEXT NOT NULL,principal TEXT NOT NULL,grp TEXT NOT NULL,connection TEXT NOT NULL,pools_json TEXT NOT NULL,day TEXT NOT NULL,provider TEXT NOT NULL,operation TEXT NOT NULL,state TEXT NOT NULL,source TEXT NOT NULL,count INTEGER NOT NULL,PRIMARY KEY(namespace,principal,grp,connection,pools_json,day,provider,operation,state,source));
+      CREATE INDEX request_counts_window ON request_counts(namespace,day);
+      CREATE TABLE request_commands(namespace TEXT NOT NULL,command_id TEXT NOT NULL,identity_hash TEXT NOT NULL,PRIMARY KEY(namespace,command_id));
+      INSERT INTO migrations VALUES(5);`);
     }
   }).immediate();
 }

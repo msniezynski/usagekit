@@ -1,0 +1,29 @@
+{
+  "origin": "synthetic",
+  "provider": "example",
+  "operation": "search",
+  "description": "High priority web search that reports its cost in the body.",
+  "request": {
+    "method": "GET",
+    "url": "https://api.example.com/v1/search?q=coffee&priority=high",
+    "headers": { "x-api-key": "[redacted]" }
+  },
+  "response": { "status": 200, "body": { "id": "req-1", "cost_cents": "2", "results": [] } },
+  "expect": {
+    "options": { "priority": "high" },
+    "requestId": "req-1",
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "requests",
+          "quantity": { "value": "1", "scale": 0, "unit": "requests" },
+          "certainty": "measured"
+        }
+      ],
+      "cost": { "certainty": "measured", "money": { "units": "20000", "currency": "USD" } },
+      "providerRequestId": "req-1",
+      "cached": false,
+      "failed": false
+    }
+  }
+}

@@ -72,6 +72,9 @@ runStoreConformance(
       correct: async (i) => commandResult(await client(i.namespace).correct(i)),
       releaseUndispatched: async (i) =>
         commandResult(await client(i.namespace).releaseUndispatched(i)),
+      countRequest: async (i) => commandResult(await client(i.scope.namespace).countRequest(i)),
+      requestCounts: async (q) =>
+        readResult(await client(q.scope.namespace).requestCounts(access(q.scope.namespace), q)),
       getOperation: async (i) =>
         readResult(await client(i.namespace).getOperation(access(i.namespace), i)),
       aggregate: async (q) =>

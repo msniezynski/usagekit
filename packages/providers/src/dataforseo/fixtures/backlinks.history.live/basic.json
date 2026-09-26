@@ -1,0 +1,105 @@
+{
+  "origin": "documentation",
+  "provider": "dataforseo",
+  "operation": "backlinks.history.live",
+  "source": "https://docs.dataforseo.com/v3/backlinks/history/live/",
+  "request": {
+    "method": "POST",
+    "url": "https://api.dataforseo.com/v3/backlinks/history/live",
+    "headers": {
+      "authorization": "[redacted]",
+      "content-type": "application/json"
+    },
+    "body": [
+      {
+        "target": "example.com",
+        "date_from": "2026-06-01"
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "version": "0.1.20250925",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.4211 sec.",
+      "cost": 0.024108,
+      "tasks_count": 1,
+      "tasks_error": 0,
+      "tasks": [
+        {
+          "id": "09251251-1535-0450-0000-0001deadbeef",
+          "status_code": 20000,
+          "status_message": "Ok.",
+          "time": "0.3102 sec.",
+          "cost": 0.024108,
+          "result_count": 1,
+          "path": ["v3", "backlinks", "history", "live"],
+          "data": {
+            "api": "backlinks",
+            "function": "history",
+            "target": "example.com",
+            "date_from": "2026-06-01"
+          },
+          "result": [
+            {
+              "target": "example.com",
+              "total_count": 3,
+              "items_count": 3,
+              "items": [
+                {
+                  "type": "backlink",
+                  "rank": 0
+                },
+                {
+                  "type": "backlink",
+                  "rank": 1
+                },
+                {
+                  "type": "backlink",
+                  "rank": 2
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "expect": {
+    "requestId": "09251251-1535-0450-0000-0001deadbeef",
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "cents",
+          "quantity": {
+            "value": "24108",
+            "scale": 4,
+            "unit": "cents"
+          },
+          "certainty": "measured"
+        },
+        {
+          "unit": "requests",
+          "quantity": {
+            "value": "1",
+            "scale": 0,
+            "unit": "requests"
+          },
+          "certainty": "measured"
+        }
+      ],
+      "cost": {
+        "certainty": "measured",
+        "money": {
+          "units": "24108",
+          "currency": "USD"
+        }
+      },
+      "providerRequestId": "09251251-1535-0450-0000-0001deadbeef",
+      "cached": false,
+      "failed": false
+    }
+  }
+}

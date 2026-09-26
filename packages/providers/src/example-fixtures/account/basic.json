@@ -1,0 +1,29 @@
+{
+  "origin": "synthetic",
+  "provider": "example",
+  "operation": "account",
+  "request": { "method": "GET", "url": "https://api.example.com/v1/account" },
+  "response": {
+    "status": 200,
+    "body": {
+      "searches_left": 120,
+      "searches_per_month": 1000,
+      "used": 880,
+      "renews_on": "2026-10-12",
+      "plan": "basic",
+      "email": "owner@example.com",
+      "hourly_limit": 200
+    }
+  },
+  "expect": {
+    "balance": {
+      "remaining": { "value": "120", "scale": 0, "unit": "units" },
+      "allowance": { "value": "1000", "scale": 0, "unit": "units" },
+      "used": { "value": "880", "scale": 0, "unit": "units" },
+      "resetsAt": "2026-10-12T00:00:00.000Z",
+      "plan": "basic",
+      "accountIdentity": "owner@example.com",
+      "rateLimitPerHour": 200
+    }
+  }
+}

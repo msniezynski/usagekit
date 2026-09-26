@@ -1,0 +1,86 @@
+{
+  "origin": "documentation",
+  "provider": "dataforseo",
+  "operation": "dataforseo_labs.google.keyword_suggestions.live",
+  "source": "https://docs.dataforseo.com/v3/appendix/errors/",
+  "description": "Task error 40501 Invalid Field with zero cost: failed and not charged.",
+  "request": {
+    "method": "POST",
+    "url": "https://api.dataforseo.com/v3/dataforseo_labs/google/keyword_suggestions/live",
+    "headers": {
+      "authorization": "[redacted]",
+      "content-type": "application/json"
+    },
+    "body": [
+      {
+        "keyword": "coffee",
+        "location_code": 1
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "version": "0.1.20250925",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.4211 sec.",
+      "cost": 0,
+      "tasks_count": 1,
+      "tasks_error": 1,
+      "tasks": [
+        {
+          "id": "09251240-1535-0386-0000-00ff00ff00ff",
+          "status_code": 40501,
+          "status_message": "Invalid Field: 'location_code'.",
+          "time": "0.3102 sec.",
+          "cost": 0,
+          "result_count": 0,
+          "path": ["v3", "dataforseo_labs", "google", "keyword_suggestions", "live"],
+          "data": {
+            "api": "dataforseo_labs",
+            "function": "keyword_suggestions",
+            "se_type": "google",
+            "keyword": "coffee",
+            "location_code": 1
+          },
+          "result": null
+        }
+      ]
+    }
+  },
+  "expect": {
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "cents",
+          "quantity": {
+            "value": "0",
+            "scale": 4,
+            "unit": "cents"
+          },
+          "certainty": "measured"
+        },
+        {
+          "unit": "requests",
+          "quantity": {
+            "value": "1",
+            "scale": 0,
+            "unit": "requests"
+          },
+          "certainty": "measured"
+        }
+      ],
+      "cost": {
+        "certainty": "measured",
+        "money": {
+          "units": "0",
+          "currency": "USD"
+        }
+      },
+      "providerRequestId": "09251240-1535-0386-0000-00ff00ff00ff",
+      "cached": false,
+      "failed": true
+    }
+  }
+}

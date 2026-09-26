@@ -1,0 +1,22 @@
+{
+  "origin": "synthetic",
+  "provider": "example",
+  "operation": "items.special",
+  "request": { "method": "GET", "url": "https://api.example.com/v1/items/special" },
+  "response": { "status": 200, "body": {} },
+  "expect": {
+    "requestId": null,
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "requests",
+          "quantity": { "value": "1", "scale": 0, "unit": "requests" },
+          "certainty": "measured"
+        }
+      ],
+      "cost": { "certainty": "unknown", "money": null },
+      "cached": false,
+      "failed": false
+    }
+  }
+}

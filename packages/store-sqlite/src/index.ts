@@ -10,6 +10,7 @@ import { commands } from "./commands.js";
 import { currentBudgets, insertBudget, selected, status } from "./budgets.js";
 import { usageReader } from "./reads.js";
 import { operationsReader } from "./operations.js";
+import { counters } from "./counters.js";
 export type BudgetWriteResult =
   | { outcome: "saved"; budget: Budget }
   | { outcome: "conflict"; reason: "budget_version" }
@@ -57,6 +58,7 @@ export function createSqliteStore({
     listOperations = operationsReader(db, clock, cursorTtlMs);
   return {
     ...commands(db, clock, testHooks?.afterOperationWrite),
+    ...counters(db, clock),
     database: db,
     close: () => {
       if (db.open) db.close();

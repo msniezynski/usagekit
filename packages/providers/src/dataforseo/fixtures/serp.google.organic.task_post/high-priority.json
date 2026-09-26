@@ -1,0 +1,92 @@
+{
+  "origin": "documentation",
+  "provider": "dataforseo",
+  "operation": "serp.google.organic.task_post",
+  "source": "https://docs.dataforseo.com/v3/serp/google/organic/task_post/",
+  "description": "Deferred cost: the receipt keeps cost unknown and the task id; task get resolves it.",
+  "request": {
+    "method": "POST",
+    "url": "https://api.dataforseo.com/v3/serp/google/organic/task_post",
+    "headers": {
+      "authorization": "[redacted]",
+      "content-type": "application/json"
+    },
+    "body": [
+      {
+        "keyword": "espresso machine",
+        "location_code": 2840,
+        "language_code": "en",
+        "priority": 2,
+        "tag": "job-7"
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "version": "0.1.20250925",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.4211 sec.",
+      "cost": 0.0012,
+      "tasks_count": 1,
+      "tasks_error": 0,
+      "tasks": [
+        {
+          "id": "09251220-1535-0066-0000-8f0635c0dc89",
+          "status_code": 20100,
+          "status_message": "Task Created.",
+          "time": "0.3102 sec.",
+          "cost": 0.0012,
+          "result_count": 0,
+          "path": ["v3", "serp", "google", "organic", "task_post"],
+          "data": {
+            "api": "serp",
+            "function": "task_post",
+            "se": "google",
+            "se_type": "organic",
+            "keyword": "espresso machine",
+            "location_code": 2840,
+            "language_code": "en",
+            "priority": 2,
+            "tag": "job-7",
+            "device": "desktop",
+            "os": "windows"
+          },
+          "result": null
+        }
+      ]
+    }
+  },
+  "expect": {
+    "options": {
+      "priority": "high"
+    },
+    "requestId": "09251220-1535-0066-0000-8f0635c0dc89",
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "cents",
+          "quantity": null,
+          "certainty": "unknown"
+        },
+        {
+          "unit": "requests",
+          "quantity": {
+            "value": "1",
+            "scale": 0,
+            "unit": "requests"
+          },
+          "certainty": "measured"
+        }
+      ],
+      "cost": {
+        "certainty": "unknown",
+        "money": null
+      },
+      "providerRequestId": "09251220-1535-0066-0000-8f0635c0dc89",
+      "cached": false,
+      "failed": false
+    }
+  }
+}

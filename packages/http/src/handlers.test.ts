@@ -2,7 +2,7 @@ import { beforeEach, expect, test, vi } from "vitest";
 import { Hono } from "hono";
 import { createMemoryStore, createManualClock } from "@usagekit/store";
 import { createMeter } from "@usagekit/meter";
-import type { AccessContext } from "@usagekit/core";
+import type { AccessContext, PricingCatalog, ProviderOperation } from "@usagekit/core";
 import { createUsageHandlers, encodeWire, decodeWire } from "./index.js";
 const access: AccessContext = {
   namespace: "test",
@@ -93,6 +93,18 @@ const routes = [
     },
   ],
   ["/v1/operations/release", { ...command, reason: "cancel" }],
+  [
+    "/v1/requests/count",
+    {
+      commandId: "count",
+      scope,
+      surface: "programmatic",
+      source: "proxy",
+      provider: "example",
+      operation: "search",
+      state: "passthrough",
+    },
+  ],
   ["/v1/usage/query", query],
 ] as const;
 let app: Hono, meter: ReturnType<typeof createMeter>;
@@ -128,6 +140,15 @@ test.each([
   ["/v1/usage", query],
   ["/v1/budgets/defined", { scope: { kind: "principal", namespace: "test", principal: "u" } }],
   ["/v1/budgets/applicable", { scope, surface: "app", units: ["requests"] }],
+  [
+    "/v1/requests/counts",
+    {
+      scope: { kind: "principal", namespace: "test", principal: "u" },
+      from: "2026-09-01T00:00:00Z",
+      to: "2026-10-01T00:00:00Z",
+      groupBy: ["operation"],
+    },
+  ],
   ["/v1/operations/op", { namespace: "test", principal: "u", operationId: "op" }],
 ])("GET %s validates, authenticates and scopes", async (path, body) => {
   const get = (q: unknown, token = "valid") =>
@@ -318,4 +339,53 @@ test("the operations listing is a read route on every mount", async () => {
       )
     ).status,
   ).toBe(403);
+});
+test("an omitted estimate is a typed result until a catalog can resolve it", async () => {
+  const { estimate: _, ...rest } = reserve;
+  const omitted = await post("/v1/operations/reserve", { ...rest, operationId: "no-estimate" });
+  expect(omitted.status).toBe(200);
+  expect(await omitted.json()).toMatchObject({ outcome: "invalid", field: "estimate" });
+
+  const priced: ProviderOperation = {
+    id: "search",
+    label: "Search",
+    billable: true,
+    match: [],
+    costEvidence: "none",
+  };
+  const catalog: PricingCatalog = {
+    operationsOf: () => [priced],
+    estimate: () => ({
+      quantities: [{ unit: "requests", value: 1n, scale: 0 }],
+      source: "list",
+      priceVersion: "example:2026-09-01",
+    }),
+  };
+  const clock = createManualClock();
+  const handler = createUsageHandlers({
+    meter: createMeter({
+      clock,
+      store: createMemoryStore({ clock, budgets: [] }),
+      catalog,
+      resolveConnection: () => ({ provider: "example" }),
+    }),
+    authenticate: async () => access,
+  });
+  const send = (body: unknown) =>
+    handler(
+      new Request("http://local.test/v1/operations/reserve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+    );
+  const resolved = await send({ ...rest, operationId: "priced", options: { priority: "normal" } });
+  expect(resolved.status).toBe(200);
+  expect(decodeWire(await resolved.text())).toMatchObject({
+    outcome: "reserved",
+    operation: { estimateSource: "list", providerPriceVersion: "example:2026-09-01" },
+  });
+  const unknown = await send({ ...rest, operationId: "unknown-op", operation: "missing" });
+  expect(unknown.status).toBe(200);
+  expect(await unknown.json()).toEqual({ outcome: "unpriced", replayed: false, operation: null });
 });

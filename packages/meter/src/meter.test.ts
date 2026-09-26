@@ -407,3 +407,66 @@ test("listOperations validates states and window and follows the usage access ru
     field: "cursor",
   });
 });
+test("request counter: validation, access rules of usage and store-time windows", async () => {
+  const clock = createManualClock(),
+    meter = createMeter({ store: createMemoryStore({ clock, budgets: [] }), clock });
+  const count = {
+    commandId: "c-1",
+    scope: { namespace: "test", principal: "u1", connection: "c1" },
+    surface: "programmatic" as const,
+    source: "proxy" as const,
+    provider: "search",
+    operation: "search",
+    state: "passthrough" as const,
+  };
+  expect(await meter.countRequest(count)).toEqual({ outcome: "counted", replayed: false });
+  expect(await meter.countRequest({ ...count, source: "app" })).toMatchObject({
+    outcome: "invalid",
+    field: "source",
+  });
+  expect(await meter.countRequest({ ...count, provider: "" })).toMatchObject({
+    outcome: "invalid",
+  });
+  expect(
+    await meter.countRequest({ ...count, commandId: "c-2", state: "metered" as "cached" }),
+  ).toMatchObject({ outcome: "invalid", field: "state" });
+  const q = {
+    scope: { kind: "principal" as const, namespace: "test", principal: "u1" },
+    from: "2026-09-01T00:00:00.000Z",
+    to: "2026-10-01T00:00:00.000Z",
+    groupBy: ["operation" as const],
+  };
+  expect(await meter.requestCounts(access, q)).toMatchObject({
+    outcome: "ok",
+    value: { rows: [{ dimensions: { operation: "search" }, state: "passthrough", count: 1n }] },
+  });
+  expect(
+    await meter.requestCounts(access, { ...q, scope: { kind: "namespace", namespace: "test" } }),
+  ).toEqual({ outcome: "forbidden" });
+  expect(await meter.requestCounts({ ...access, canReadBillingDetail: false }, q)).toEqual({
+    outcome: "forbidden",
+  });
+  expect(await meter.requestCounts({ ...access, namespace: "other" }, q)).toEqual({
+    outcome: "forbidden",
+  });
+  expect(await meter.requestCounts(access, { ...q, from: q.to, to: q.from })).toMatchObject({
+    outcome: "invalid",
+    field: "window",
+  });
+  expect(
+    await meter.requestCounts(access, { ...q, from: "2026-09-01T12:00:00.000Z" }),
+  ).toMatchObject({ outcome: "invalid", field: "window" });
+  expect(
+    await meter.requestCounts(access, { ...q, groupBy: ["principal" as "day"] }),
+  ).toMatchObject({ outcome: "invalid", field: "groupBy" });
+  expect(await meter.requestCounts(access, { ...q, limit: 0 })).toMatchObject({
+    outcome: "invalid",
+    field: "limit",
+  });
+});
+test("reserve without estimate and without a catalog is invalid", async () => {
+  const clock = createManualClock(),
+    meter = createMeter({ store: createMemoryStore({ clock, budgets: [] }), clock });
+  const { estimate: _, ...rest } = input();
+  expect(await meter.reserve(rest)).toMatchObject({ outcome: "invalid", field: "estimate" });
+});

@@ -25,6 +25,10 @@ import type {
   UsageQuery,
   OperationsQuery,
   OperationsPage,
+  CountRequestInput,
+  CountRequestResult,
+  RequestCountsQuery,
+  RequestCountsPage,
 } from "@usagekit/core";
 
 /**
@@ -47,9 +51,12 @@ export interface Store {
   settle(input: SettleInput): Promise<SettleResult>;
   correct(input: CorrectionInput): Promise<SettleResult>;
   releaseUndispatched(input: ReleaseInput): Promise<ReleaseResult>;
+  /** Atomic, replay-safe count of one non-operation request; never reserves or touches budgets. */
+  countRequest(input: CountRequestInput): Promise<CountRequestResult>;
   getOperation(input: OperationRef): Promise<Operation | null>;
   aggregate(query: UsageQuery): Promise<UsagePage>;
   listOperations(query: OperationsQuery): Promise<OperationsPage>;
+  requestCounts(query: RequestCountsQuery): Promise<RequestCountsPage>;
   definedBudgets(query: DefinedBudgetsQuery): Promise<readonly Budget[]>;
   applicableBudgets(query: ApplicableBudgetsQuery): Promise<readonly BudgetStatus[]>;
 }
@@ -59,3 +66,12 @@ export { createManualClock } from "./clock.js";
 export type { Clock, ManualClock } from "./clock.js";
 export { InvalidInput } from "./memory/state.js";
 export { validateBudget, reachedAlerts, alertKey } from "./memory/admission.js";
+export {
+  validateCountRequest,
+  validateRequestCountsQuery,
+  countIdentity,
+  countRows,
+  bucketOf,
+  requestCountDimensions,
+} from "./memory/counters.js";
+export type { CountBucket } from "./memory/counters.js";

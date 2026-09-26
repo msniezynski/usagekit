@@ -215,6 +215,12 @@ export function commands(
               }
             : { outcome: "conflict", reason: "semantic_mismatch", operation: op };
         }
+        if (
+          db
+            .prepare("SELECT 1 FROM request_commands WHERE namespace=? AND command_id=?")
+            .get(i.scope.namespace, i.operationId)
+        )
+          throw new InvalidInput("operationId", "already counted without a reservation");
         const check = admission(db, i, clock.now(), p);
         if (check.invalid)
           return {

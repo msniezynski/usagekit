@@ -14,11 +14,14 @@ test("integer conversion follows DTO shapes rather than generic field names", ()
       costOwner: "u",
       unknownOperations: "2",
     },
+    counted: { dimensions: { operation: "search" }, state: "passthrough", count: "3" },
+    notCounted: { dimensions: {}, state: "metered", count: "3" },
   };
   expect(decodeMeterJson(JSON.stringify(data))).toEqual({
     ...data,
     money: { currency: "USD", units: 9223372036854775807n },
     quantity: { unit: "units", value: 1n, scale: 18 },
     row: { ...data.row, unknownOperations: 2n },
+    counted: { ...data.counted, count: 3n },
   });
 });

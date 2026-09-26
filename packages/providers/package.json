@@ -1,0 +1,53 @@
+{
+  "name": "@usagekit/providers",
+  "version": "0.4.0",
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "Provider descriptors, catalog, price tables, extractors, fixtures and probes.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "import": "./dist/testing/index.js"
+    },
+    "./eslint": {
+      "types": "./dist/eslint.d.ts",
+      "import": "./dist/eslint.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "prepublishOnly": "node ../../scripts/publish-guard.mjs",
+    "prepack": "node ../../scripts/package-license.mjs"
+  },
+  "dependencies": {
+    "@usagekit/core": "0.4.0"
+  },
+  "peerDependencies": {
+    "vitest": ">=5.0.1 <6",
+    "eslint": ">=9 <11"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    },
+    "eslint": {
+      "optional": true
+    }
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

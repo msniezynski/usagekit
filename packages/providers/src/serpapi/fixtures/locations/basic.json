@@ -1,0 +1,65 @@
+{
+  "origin": "documentation",
+  "provider": "serpapi",
+  "operation": "locations",
+  "source": "https://serpapi.com/locations-api",
+  "description": "Free locations endpoint; needs no key.",
+  "request": {
+    "method": "GET",
+    "url": "https://serpapi.com/locations.json?q=Austin&limit=2"
+  },
+  "response": {
+    "status": 200,
+    "body": [
+      {
+        "id": "585069bdee19ad271e9bc072",
+        "google_id": 200635,
+        "google_parent_id": 21176,
+        "name": "Austin, TX",
+        "canonical_name": "Austin,TX,Texas,United States",
+        "country_code": "US",
+        "target_type": "DMA Region",
+        "reach": 5560000,
+        "gps": [-97.7430608, 30.267153],
+        "keys": ["austin", "tx", "texas", "united", "states"]
+      },
+      {
+        "id": "585069b3ee19ad271e9bb5e7",
+        "google_id": 1026201,
+        "google_parent_id": 21176,
+        "name": "Austin",
+        "canonical_name": "Austin,Texas,United States",
+        "country_code": "US",
+        "target_type": "City",
+        "reach": 5350000,
+        "gps": [-97.7430608, 30.267153],
+        "keys": ["austin", "texas", "united", "states"]
+      }
+    ]
+  },
+  "expect": {
+    "requestId": null,
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "requests",
+          "quantity": {
+            "value": "1",
+            "scale": 0,
+            "unit": "requests"
+          },
+          "certainty": "measured"
+        }
+      ],
+      "cost": {
+        "certainty": "measured",
+        "money": {
+          "units": "0",
+          "currency": "USD"
+        }
+      },
+      "cached": false,
+      "failed": false
+    }
+  }
+}

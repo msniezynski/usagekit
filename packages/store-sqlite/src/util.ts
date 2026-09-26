@@ -16,9 +16,16 @@ export function canonical(v: unknown): string {
 }
 export const hash = (s: string) => createHash("sha256").update(s).digest("hex");
 export const key = (ns: string, id: string) => canonical([ns, id]);
-/** Reserve identity: diagnostic ids and attribution tags are not semantic. */
+/** Reserve identity: diagnostic ids, estimate provenance and attribution tags are not semantic. */
 export const identity = (i: ReserveInput) => {
-  const { correlationId: _, parentOperationId: __, scope, ...rest } = i;
+  const {
+    correlationId: _,
+    parentOperationId: __,
+    estimateSource: _source,
+    providerPriceVersion: _priceVersion,
+    scope,
+    ...rest
+  } = i;
   const { tags: ___, ...scopeIdentity } = scope;
   return hash(
     canonical({

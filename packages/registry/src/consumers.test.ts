@@ -282,6 +282,15 @@ async function memoryMeter() {
   }
   await reserve({ reservationTtlMs: 1000 });
   clock.advance(5000);
+  await meter.countRequest({
+    commandId: "unpriced-request",
+    scope,
+    provider: "search",
+    operation: "unknown",
+    surface: "app",
+    source: "app",
+    state: "unpriced",
+  });
   return meter;
 }
 
@@ -358,8 +367,9 @@ describe.each(variants)("%s blocks render against a memory Meter", (variant) => 
       }),
     );
     await screen.findByText("6");
-    expect(screen.getAllByText("Unavailable")).toHaveLength(4);
-    expect(screen.getByText(/cost may exclude untracked requests/)).toBeTruthy();
+    expect(screen.queryByText("Unavailable")).toBeNull();
+    expect(screen.getByText("7")).toBeTruthy();
+    expect(screen.getByText(/Cost excludes untracked requests/)).toBeTruthy();
   });
   test("exceptions list shows state and age", async () => {
     const { ExceptionsListPanel } = await load(variant, "exceptions-list");

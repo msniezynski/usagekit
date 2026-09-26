@@ -4,6 +4,7 @@ import type { Store } from "../index.js";
 import type { Clock } from "../clock.js";
 import { copy, find } from "./state.js";
 import type { State } from "./state.js";
+import { countRequest, requestCounts } from "./counters.js";
 import { reserve, intent, renew, settle, release, claim, expireReservations } from "./commands.js";
 export function createMemoryStore({ clock, budgets }: { clock: Clock; budgets: Budget[] }): Store {
   const state: State = {
@@ -28,6 +29,8 @@ export function createMemoryStore({ clock, budgets }: { clock: Clock; budgets: B
     settle: async (i) => settle(state, i),
     correct: async (i) => settle(state, i, true),
     releaseUndispatched: async (i) => release(state, i),
+    countRequest: async (i) => countRequest(state, i),
+    requestCounts: async (q) => requestCounts(state, q),
     aggregate: async (q) => aggregate(state, q),
     listOperations: async (q) => listOperations(state, q),
     definedBudgets: async (q) => definedBudgets(state, q),

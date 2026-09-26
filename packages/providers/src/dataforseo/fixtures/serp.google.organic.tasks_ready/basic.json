@@ -1,0 +1,90 @@
+{
+  "origin": "documentation",
+  "provider": "dataforseo",
+  "operation": "serp.google.organic.tasks_ready",
+  "source": "https://docs.dataforseo.com/v3/serp/google/organic/tasks_ready/",
+  "request": {
+    "method": "GET",
+    "url": "https://api.dataforseo.com/v3/serp/google/organic/tasks_ready",
+    "headers": {
+      "authorization": "[redacted]",
+      "content-type": "application/json"
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "version": "0.1.20250925",
+      "status_code": 20000,
+      "status_message": "Ok.",
+      "time": "0.4211 sec.",
+      "cost": 0,
+      "tasks_count": 1,
+      "tasks_error": 0,
+      "tasks": [
+        {
+          "id": "09251225-1535-0216-0000-9e5d3c2b1a00",
+          "status_code": 20000,
+          "status_message": "Ok.",
+          "time": "0.3102 sec.",
+          "cost": 0,
+          "result_count": 1,
+          "path": ["v3", "serp", "google", "organic", "tasks_ready"],
+          "data": {
+            "api": "serp",
+            "function": "tasks_ready",
+            "se": "google",
+            "se_type": "organic"
+          },
+          "result": [
+            {
+              "id": "09251220-1535-0066-0000-8f0635c0dc89",
+              "se": "google",
+              "se_type": "organic",
+              "date_posted": "2026-09-25 12:20:11 +00:00",
+              "tag": "job-7",
+              "endpoint_regular": "/v3/serp/google/organic/task_get/regular/09251220-1535-0066-0000-8f0635c0dc89",
+              "endpoint_advanced": "/v3/serp/google/organic/task_get/advanced/09251220-1535-0066-0000-8f0635c0dc89",
+              "endpoint_html": "/v3/serp/google/organic/task_get/html/09251220-1535-0066-0000-8f0635c0dc89"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "expect": {
+    "requestId": "09251225-1535-0216-0000-9e5d3c2b1a00",
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "cents",
+          "quantity": {
+            "value": "0",
+            "scale": 4,
+            "unit": "cents"
+          },
+          "certainty": "measured"
+        },
+        {
+          "unit": "requests",
+          "quantity": {
+            "value": "1",
+            "scale": 0,
+            "unit": "requests"
+          },
+          "certainty": "measured"
+        }
+      ],
+      "cost": {
+        "certainty": "measured",
+        "money": {
+          "units": "0",
+          "currency": "USD"
+        }
+      },
+      "providerRequestId": "09251225-1535-0216-0000-9e5d3c2b1a00",
+      "cached": false,
+      "failed": false
+    }
+  }
+}

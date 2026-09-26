@@ -4,6 +4,7 @@ import type { SettleResult, ReleaseResult } from "@usagekit/core";
 import type { AllowanceExceeded, BudgetAlertCrossed } from "@usagekit/core";
 import type { Budget, Operation, ReserveInput, OperationRef, Quantity } from "@usagekit/core";
 import type { Clock } from "../clock.js";
+import type { CountBucket } from "./counters.js";
 import { normalizeTags } from "@usagekit/core";
 export class InvalidInput extends Error {
   constructor(
@@ -26,9 +27,16 @@ export function canonical(value: unknown): string {
   return JSON.stringify(value) ?? "null";
 }
 export const key = (namespace: string, id: string) => canonical([namespace, id]);
-/** Reserve identity: diagnostic ids and attribution tags are not semantic. */
+/** Reserve identity: diagnostic ids, estimate provenance and attribution tags are not semantic. */
 export function semantics(i: ReserveInput): string {
-  const { correlationId: _, parentOperationId: __, scope, ...rest } = i;
+  const {
+    correlationId: _,
+    parentOperationId: __,
+    estimateSource: _source,
+    providerPriceVersion: _priceVersion,
+    scope,
+    ...rest
+  } = i;
   const { tags: ___, ...scopeIdentity } = scope;
   return canonical({
     ...rest,
@@ -81,6 +89,10 @@ export type State = {
   reserveAlerts: Map<string, readonly BudgetAlertCrossed[]>;
   /** Recorded crossings keyed by namespace, budget id, epoch and threshold. */
   alerts: Set<string>;
+  /** Request counter: replay identities by namespace and command id. */
+  requestCommands?: Map<string, string>;
+  /** Request counter: daily buckets keyed by their canonical fields. */
+  requestBuckets?: Map<string, CountBucket>;
 };
 export function find(s: State, ref: OperationRef): Operation | null {
   const op = s.operations.get(key(ref.namespace, ref.operationId));

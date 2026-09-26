@@ -3,6 +3,9 @@ import { join } from "node:path";
 import type { Server } from "node:http";
 import type { Clock } from "@usagekit/store";
 import { createSqliteStore } from "@usagekit/store-sqlite";
+import { createCatalog, dataforseo, serpapi } from "@usagekit/providers";
+import { resolvePricing } from "./pricing.js";
+import { createRecorder } from "./recorder.js";
 import { createMeter } from "@usagekit/meter";
 import { loadConfig, defaultConfigDir } from "./config.js";
 import { createAuth } from "./auth.js";
@@ -16,6 +19,10 @@ export type ServerConfig = {
   allowRemote?: boolean;
   passphrase?: string;
   clock?: Clock;
+  /** Host allowlist; defaults to the two bundled descriptors. */
+  enabledProviders?: readonly string[];
+  /** Injectable transport for recorder tests; production uses fetch. */
+  providerFetch?: typeof fetch;
   onToken?: (token: string) => void;
   /** Directory of the built UI; defaults to dist/ui next to the server. */
   uiRoot?: string;
@@ -35,7 +42,14 @@ export async function startServer(options: ServerConfig = {}) {
     );
   if (options.passphrase) vault.unlock(options.passphrase);
   const store = createSqliteStore({ path: join(dir, "usage.db"), clock });
+  const catalog = createCatalog({
+    providers: [dataforseo, serpapi],
+    enabled: options.enabledProviders ?? ["dataforseo", "serpapi"],
+    now: () => clock.now(),
+  });
   const meter = createMeter({
+      catalog,
+      resolveConnection: (id) => resolvePricing(id, { vault, store, catalog, now: clock.now }),
       store,
       clock,
       resolveOwnership: async (scope) =>
@@ -44,6 +58,15 @@ export async function startServer(options: ServerConfig = {}) {
           : null,
     }),
     app = createApp({
+      catalog,
+      record: createRecorder({
+        meter,
+        catalog,
+        vault,
+        dir,
+        clock,
+        transport: options.providerFetch ?? fetch,
+      }),
       meter,
       store,
       auth,
@@ -102,3 +125,5 @@ export async function startServer(options: ServerConfig = {}) {
     },
   };
 }
+
+export type { ConnectionMetadata } from "./vault.js";

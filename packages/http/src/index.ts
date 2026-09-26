@@ -7,6 +7,7 @@ import { dispatchCommand } from "./routes/commands.js";
 import { dispatchRead } from "./routes/reads.js";
 export { encodeWire, decodeWire } from "./wire.js";
 export type { WireInputs, RouteName } from "./schemas/index.js";
+export { routes } from "./schemas/index.js";
 export { Budget as BudgetSchema } from "./schemas/index.js";
 /**
  * Web-standard handler for the Meter routes. Access comes from authenticate, never the request.
@@ -49,12 +50,18 @@ export function createUsageHandlers({
           write = true;
         }
       }
+      if (request.method === "POST" && url.pathname === "/v1/requests/count") {
+        if (!commands) return problem(404);
+        name = "count";
+        write = true;
+      }
       if (request.method === "POST" && url.pathname === "/v1/usage/query") name = "usage";
       if (request.method === "GET") {
         if (url.pathname === "/v1/usage") name = "usage";
         else if (url.pathname === "/v1/operations") name = "operations";
         else if (url.pathname === "/v1/budgets/defined") name = "defined";
         else if (url.pathname === "/v1/budgets/applicable") name = "applicable";
+        else if (url.pathname === "/v1/requests/counts") name = "counts";
         else if (/^\/v1\/operations\/[^/]+$/.test(url.pathname)) name = "operation";
       }
       if (!name) return problem(404);

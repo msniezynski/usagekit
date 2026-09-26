@@ -1,0 +1,51 @@
+{
+  "origin": "documentation",
+  "provider": "serpapi",
+  "operation": "search",
+  "source": "https://serpapi.com/search-api",
+  "description": "Errored searches do not consume plan searches: zero units, measured, failed.",
+  "request": {
+    "method": "GET",
+    "url": "https://serpapi.com/search?engine=google&q=coffee&api_key=[redacted]"
+  },
+  "response": {
+    "status": 401,
+    "body": {
+      "error": "Invalid API key. Your API key should be here: https://serpapi.com/manage-api-key"
+    }
+  },
+  "expect": {
+    "requestId": null,
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "units",
+          "quantity": {
+            "value": "0",
+            "scale": 0,
+            "unit": "units"
+          },
+          "certainty": "measured"
+        },
+        {
+          "unit": "requests",
+          "quantity": {
+            "value": "1",
+            "scale": 0,
+            "unit": "requests"
+          },
+          "certainty": "measured"
+        }
+      ],
+      "cost": {
+        "certainty": "measured",
+        "money": {
+          "units": "0",
+          "currency": "USD"
+        }
+      },
+      "cached": false,
+      "failed": true
+    }
+  }
+}

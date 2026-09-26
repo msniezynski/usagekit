@@ -3,7 +3,7 @@
 Use Node 22 and pin exact package versions:
 
 ```sh
-npm install --save-exact @usagekit/core@0.1.0 @usagekit/store@0.1.0 @usagekit/meter@0.1.0
+npm install --save-exact @usagekit/core@0.4.0 @usagekit/store@0.4.0 @usagekit/meter@0.4.0 @usagekit/providers@0.4.0
 ```
 
 The registry is `https://registry.npmjs.org/`. No scope registry mapping is needed.
@@ -52,7 +52,7 @@ Skipped capabilities are not passed guarantees.
 
 ## Release operators
 
-Only npm run release can publish core, store and meter. Other workspaces stay private.
-Live release requires clean main, its verified signed v0.1.0 tag, full checks and inspected tarballs.
+Only npm run release can publish core, store, meter and providers. Other workspaces stay private.
+Live release requires clean main, its verified signed v0.4.0 tag, full checks and inspected tarballs.
 A dry run on a clean branch builds and audits packages without checking live authorization or publishing.
 Apache-2.0 LICENSE and NOTICE are included in every tarball.

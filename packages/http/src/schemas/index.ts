@@ -103,6 +103,8 @@ const reserveFields = {
   provider: text,
   operation: text,
   estimate: v.array(Quantity),
+  estimateSource: v.optional(v.picklist(["manual", "measured", "list", "unknown"])),
+  providerPriceVersion: v.optional(text),
   correlationId: v.optional(text),
   parentOperationId: v.optional(text),
 };
@@ -198,23 +200,55 @@ const UsagePage = obj({
   watermark: text,
   nextCursor: v.optional(text),
 });
+const requestState = v.picklist(["passthrough", "unpriced", "cached", "rate_limited"]);
+export const RequestCountsQuery = obj({
+  scope: UsageScope,
+  from: timestamp,
+  to: timestamp,
+  connection: v.optional(text),
+  groupBy: v.array(v.picklist(["provider", "operation", "connection", "source", "day"])),
+  limit: v.optional(v.pipe(integer, v.minValue(1), v.maxValue(1000))),
+});
+const RequestCountsPage = obj({
+  rows: v.array(
+    obj({ dimensions: v.record(v.string(), v.string()), state: requestState, count: decimal }),
+  ),
+  asOf: timestamp,
+  truncated: v.boolean(),
+});
 export const schemas = {
   expire: obj({
     namespace: text,
     commandId: text,
     limit: v.optional(v.pipe(integer, v.minValue(1), v.maxValue(1000))),
   }),
-  reserve: obj({ ...reserveFields, commandId: text }),
+  reserve: obj({
+    ...reserveFields,
+    estimate: v.optional(v.array(Quantity)),
+    options: v.optional(v.record(v.string(), v.string())),
+    commandId: text,
+  }),
   intent: obj({ ...Command, holder: text, leaseTtlMs: leaseTtl }),
   renew: obj({ ...Ref, commandId: text, leaseId: text, leaseTtlMs: leaseTtl }),
   claim: obj({ ...Ref, commandId: text, holder: text, leaseTtlMs: leaseTtl }),
   settle: obj({ ...Command, authority, receipt: Receipt }),
   correct: obj({ ...Command, authority, receipt: Receipt, replacesReceiptId: text, reason: text }),
   release: obj({ ...Command, reason: text }),
+  count: obj({
+    commandId: text,
+    scope: Scope,
+    surface,
+    source,
+    provider: text,
+    operation: text,
+    state: requestState,
+    platformPools: v.optional(v.array(text)),
+  }),
   operation: obj(Ref),
   usage: UsageQuery,
   operations: OperationsQuery,
   defined: obj({ scope: BudgetScope }),
+  counts: RequestCountsQuery,
   applicable: obj({
     scope: Scope,
     surface,
@@ -275,6 +309,11 @@ export const responses = {
     }),
     obj({ outcome: v.literal("exceeded"), exceeded, operation: v.null() }),
     obj({
+      outcome: v.picklist(["passthrough", "unpriced"]),
+      replayed: v.boolean(),
+      operation: v.null(),
+    }),
+    obj({
       outcome: v.literal("conflict"),
       reason: v.literal("semantic_mismatch"),
       operation: Operation,
@@ -327,11 +366,35 @@ export const responses = {
     }),
     invalid,
   ]),
+  count: v.union([
+    obj({ outcome: v.literal("counted"), replayed: v.boolean() }),
+    obj({ outcome: v.literal("conflict"), reason: v.literal("command_mismatch") }),
+    invalid,
+  ]),
   operation: read(v.nullable(Operation)),
   usage: read(UsagePage),
   operations: read(OperationsPage),
   defined: read(v.array(Budget)),
   applicable: read(v.array(Status)),
+  counts: read(RequestCountsPage),
+};
+/** Method and path of every route; reads take their query as base64url JSON in q. */
+export const routes: Record<RouteName, { read: boolean; path: string }> = {
+  expire: { read: false, path: "/v1/operations/expire" },
+  reserve: { read: false, path: "/v1/operations/reserve" },
+  intent: { read: false, path: "/v1/operations/intent" },
+  renew: { read: false, path: "/v1/operations/renew" },
+  claim: { read: false, path: "/v1/operations/claim" },
+  settle: { read: false, path: "/v1/operations/settle" },
+  correct: { read: false, path: "/v1/operations/correct" },
+  release: { read: false, path: "/v1/operations/release" },
+  count: { read: false, path: "/v1/requests/count" },
+  operation: { read: true, path: "/v1/operations/{id}" },
+  usage: { read: true, path: "/v1/usage" },
+  operations: { read: true, path: "/v1/operations" },
+  defined: { read: true, path: "/v1/budgets/defined" },
+  applicable: { read: true, path: "/v1/budgets/applicable" },
+  counts: { read: true, path: "/v1/requests/counts" },
 };
 export function parseWire(name: RouteName, data: unknown) {
   return v.safeParse(schemas[name], data);

@@ -19,10 +19,10 @@ test("migrations are idempotent and reject downgrade/newer schema", () => {
       { version: 2 },
       { version: 3 },
       { version: 4 },
+      { version: 5 },
     ]);
-    expect(
-      db.prepare("SELECT name FROM sqlite_master WHERE name='budget_alerts'").get(),
-    ).toBeTruthy();
+    for (const name of ["budget_alerts", "request_counts", "request_commands"])
+      expect(db.prepare("SELECT name FROM sqlite_master WHERE name=?").get(name)).toBeTruthy();
     expect(() => migrate(db, 0)).toThrow("Downgrade");
     db.prepare("INSERT INTO migrations(version) VALUES (99)").run();
     expect(() => migrate(db)).toThrow("Downgrade");
@@ -147,6 +147,49 @@ test("version-one operations, receipts and command replays survive migration", a
           })
         ).rows[0]!.cost.money?.units,
       ).toBe(7n);
+    } finally {
+      s.close();
+    }
+  } finally {
+    if (db.open) db.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a version-four database gains the request counter and keeps its operations", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "usagekit-migrate-")),
+    path = join(dir, "usage.db"),
+    db = new Database(path),
+    clock = createManualClock();
+  try {
+    migrate(db, 4);
+    expect(db.prepare("SELECT name FROM sqlite_master WHERE name='request_counts'").get()).toBe(
+      undefined,
+    );
+    db.close();
+    const s = createSqliteStore({ path, clock });
+    try {
+      const count = {
+        commandId: "c",
+        scope: { namespace: "test", principal: "u", connection: "c" },
+        surface: "programmatic" as const,
+        source: "proxy" as const,
+        provider: "example",
+        operation: "search",
+        state: "unpriced" as const,
+      };
+      expect(await s.countRequest(count)).toEqual({ outcome: "counted", replayed: false });
+      expect(await s.countRequest(count)).toEqual({ outcome: "counted", replayed: true });
+      expect(
+        (
+          await s.requestCounts({
+            scope: { kind: "namespace", namespace: "test" },
+            from: "2026-09-01T00:00:00.000Z",
+            to: "2026-10-01T00:00:00.000Z",
+            groupBy: [],
+          })
+        ).rows,
+      ).toEqual([{ dimensions: {}, state: "unpriced", count: 1n }]);
     } finally {
       s.close();
     }

@@ -1,13 +1,14 @@
 import type {
   Meter,
   ExpireReservationsInput,
-  ReserveInput,
+  MeterReserveInput,
   DispatchIntentInput,
   LeaseRenewalInput,
   RecoveryClaimInput,
   SettleInput,
   CorrectionInput,
   ReleaseInput,
+  CountRequestInput,
 } from "@usagekit/core";
 import type { RouteName } from "../schemas/index.js";
 export function dispatchCommand(meter: Meter, name: RouteName, input: Record<string, unknown>) {
@@ -18,7 +19,7 @@ export function dispatchCommand(meter: Meter, name: RouteName, input: Record<str
     }
     case "reserve": {
       const { commandId: _, ...data } = input;
-      return meter.reserve(data as ReserveInput);
+      return meter.reserve(data as MeterReserveInput);
     }
     case "intent":
       return meter.markDispatchIntent(input as DispatchIntentInput);
@@ -36,6 +37,8 @@ export function dispatchCommand(meter: Meter, name: RouteName, input: Record<str
       return meter.correct(input as CorrectionInput);
     case "release":
       return meter.releaseUndispatched(input as ReleaseInput);
+    case "count":
+      return meter.countRequest(input as CountRequestInput);
     default:
       throw new Error("Unknown command");
   }

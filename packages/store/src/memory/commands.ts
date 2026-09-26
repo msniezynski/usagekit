@@ -29,6 +29,8 @@ export function reserve(s: State, raw: ReserveInput, policy?: AdmissionPolicy): 
           operation: copy(existing),
         }
       : { outcome: "conflict", reason: "semantic_mismatch", operation: copy(existing) };
+  if (s.requestCommands?.has(k))
+    throw new InvalidInput("operationId", "already counted without a reservation");
   const check = admission(s, i, policy);
   if (check.invalid)
     return {

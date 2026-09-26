@@ -27,6 +27,14 @@ export function decodeMeterJson(text: string): unknown {
       decimal(v.unknownOperations)
     )
       return { ...v, unknownOperations: BigInt(v.unknownOperations) };
+    if (
+      keys.length === 3 &&
+      v.dimensions &&
+      typeof v.dimensions === "object" &&
+      ["passthrough", "unpriced", "cached", "rate_limited"].includes(String(v.state)) &&
+      decimal(v.count)
+    )
+      return { ...v, count: BigInt(v.count) };
     return value;
   });
 }

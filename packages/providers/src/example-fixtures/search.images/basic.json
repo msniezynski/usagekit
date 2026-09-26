@@ -1,0 +1,23 @@
+{
+  "origin": "synthetic",
+  "provider": "example",
+  "operation": "search.images",
+  "request": { "method": "GET", "url": "https://api.example.com/v1/search?engine=images&q=cat" },
+  "response": { "status": 200, "body": { "id": "req-2", "cost_cents": "0.3" } },
+  "expect": {
+    "options": {},
+    "receipt": {
+      "measurements": [
+        {
+          "unit": "requests",
+          "quantity": { "value": "1", "scale": 0, "unit": "requests" },
+          "certainty": "measured"
+        }
+      ],
+      "cost": { "certainty": "measured", "money": { "units": "3000", "currency": "USD" } },
+      "providerRequestId": "req-2",
+      "cached": false,
+      "failed": false
+    }
+  }
+}

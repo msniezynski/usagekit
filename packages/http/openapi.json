@@ -264,6 +264,13 @@
                                 "required": ["value", "scale", "unit"]
                               }
                             },
+                            "estimateSource": {
+                              "enum": ["manual", "measured", "list", "unknown"]
+                            },
+                            "providerPriceVersion": {
+                              "type": "string",
+                              "minLength": 1
+                            },
                             "correlationId": {
                               "type": "string",
                               "minLength": 1
@@ -1469,6 +1476,22 @@
                       "additionalProperties": false,
                       "properties": {
                         "outcome": {
+                          "enum": ["passthrough", "unpriced"]
+                        },
+                        "replayed": {
+                          "type": "boolean"
+                        },
+                        "operation": {
+                          "type": "null"
+                        }
+                      },
+                      "required": ["outcome", "replayed", "operation"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
                           "const": "conflict"
                         },
                         "reason": {
@@ -1599,6 +1622,13 @@
                                 },
                                 "required": ["value", "scale", "unit"]
                               }
+                            },
+                            "estimateSource": {
+                              "enum": ["manual", "measured", "list", "unknown"]
+                            },
+                            "providerPriceVersion": {
+                              "type": "string",
+                              "minLength": 1
                             },
                             "correlationId": {
                               "type": "string",
@@ -2072,6 +2102,13 @@
                       "required": ["value", "scale", "unit"]
                     }
                   },
+                  "estimateSource": {
+                    "enum": ["manual", "measured", "list", "unknown"]
+                  },
+                  "providerPriceVersion": {
+                    "type": "string",
+                    "minLength": 1
+                  },
                   "correlationId": {
                     "type": "string",
                     "minLength": 1
@@ -2079,6 +2116,12 @@
                   "parentOperationId": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "options": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
                   },
                   "commandId": {
                     "type": "string",
@@ -2094,7 +2137,6 @@
                   "source",
                   "provider",
                   "operation",
-                  "estimate",
                   "commandId"
                 ]
               }
@@ -2250,6 +2292,13 @@
                                 },
                                 "required": ["value", "scale", "unit"]
                               }
+                            },
+                            "estimateSource": {
+                              "enum": ["manual", "measured", "list", "unknown"]
+                            },
+                            "providerPriceVersion": {
+                              "type": "string",
+                              "minLength": 1
                             },
                             "correlationId": {
                               "type": "string",
@@ -2688,6 +2737,13 @@
                                     },
                                     "required": ["value", "scale", "unit"]
                                   }
+                                },
+                                "estimateSource": {
+                                  "enum": ["manual", "measured", "list", "unknown"]
+                                },
+                                "providerPriceVersion": {
+                                  "type": "string",
+                                  "minLength": 1
                                 },
                                 "correlationId": {
                                   "type": "string",
@@ -3371,6 +3427,13 @@
                                 "required": ["value", "scale", "unit"]
                               }
                             },
+                            "estimateSource": {
+                              "enum": ["manual", "measured", "list", "unknown"]
+                            },
+                            "providerPriceVersion": {
+                              "type": "string",
+                              "minLength": 1
+                            },
                             "correlationId": {
                               "type": "string",
                               "minLength": 1
@@ -3808,6 +3871,13 @@
                                     },
                                     "required": ["value", "scale", "unit"]
                                   }
+                                },
+                                "estimateSource": {
+                                  "enum": ["manual", "measured", "list", "unknown"]
+                                },
+                                "providerPriceVersion": {
+                                  "type": "string",
+                                  "minLength": 1
                                 },
                                 "correlationId": {
                                   "type": "string",
@@ -4338,6 +4408,13 @@
                                 "required": ["value", "scale", "unit"]
                               }
                             },
+                            "estimateSource": {
+                              "enum": ["manual", "measured", "list", "unknown"]
+                            },
+                            "providerPriceVersion": {
+                              "type": "string",
+                              "minLength": 1
+                            },
                             "correlationId": {
                               "type": "string",
                               "minLength": 1
@@ -4866,6 +4943,13 @@
                                     },
                                     "required": ["value", "scale", "unit"]
                                   }
+                                },
+                                "estimateSource": {
+                                  "enum": ["manual", "measured", "list", "unknown"]
+                                },
+                                "providerPriceVersion": {
+                                  "type": "string",
+                                  "minLength": 1
                                 },
                                 "correlationId": {
                                   "type": "string",
@@ -5583,6 +5667,13 @@
                                 "required": ["value", "scale", "unit"]
                               }
                             },
+                            "estimateSource": {
+                              "enum": ["manual", "measured", "list", "unknown"]
+                            },
+                            "providerPriceVersion": {
+                              "type": "string",
+                              "minLength": 1
+                            },
                             "correlationId": {
                               "type": "string",
                               "minLength": 1
@@ -6111,6 +6202,13 @@
                                     },
                                     "required": ["value", "scale", "unit"]
                                   }
+                                },
+                                "estimateSource": {
+                                  "enum": ["manual", "measured", "list", "unknown"]
+                                },
+                                "providerPriceVersion": {
+                                  "type": "string",
+                                  "minLength": 1
                                 },
                                 "correlationId": {
                                   "type": "string",
@@ -6838,6 +6936,13 @@
                                 "required": ["value", "scale", "unit"]
                               }
                             },
+                            "estimateSource": {
+                              "enum": ["manual", "measured", "list", "unknown"]
+                            },
+                            "providerPriceVersion": {
+                              "type": "string",
+                              "minLength": 1
+                            },
                             "correlationId": {
                               "type": "string",
                               "minLength": 1
@@ -7259,6 +7364,13 @@
                                     "required": ["value", "scale", "unit"]
                                   }
                                 },
+                                "estimateSource": {
+                                  "enum": ["manual", "measured", "list", "unknown"]
+                                },
+                                "providerPriceVersion": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
                                 "correlationId": {
                                   "type": "string",
                                   "minLength": 1
@@ -7633,6 +7745,193 @@
         }
       }
     },
+    "/v1/requests/count": {
+      "post": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Command route. A handler mounted with commands: false answers 404 here after authentication.",
+        "responses": {
+          "200": {
+            "description": "Typed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "const": "counted"
+                        },
+                        "replayed": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": ["outcome", "replayed"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "const": "conflict"
+                        },
+                        "reason": {
+                          "const": "command_mismatch"
+                        }
+                      },
+                      "required": ["outcome", "reason"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "const": "invalid"
+                        },
+                        "field": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "reason": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["outcome", "field", "reason"]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid schema"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Commands disabled on this mount"
+          },
+          "500": {
+            "description": "Unexpected failure"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "commandId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "scope": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "namespace": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "principal": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "actor": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "group": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "connection": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "accessCredential": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": ["kind", "id"]
+                      },
+                      "providerCredentialVersion": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "tags": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                        },
+                        "minItems": 1,
+                        "maxItems": 16
+                      }
+                    },
+                    "required": ["namespace", "principal", "connection"]
+                  },
+                  "surface": {
+                    "enum": ["app", "programmatic"]
+                  },
+                  "source": {
+                    "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                  },
+                  "provider": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "operation": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "state": {
+                    "enum": ["passthrough", "unpriced", "cached", "rate_limited"]
+                  },
+                  "platformPools": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "required": [
+                  "commandId",
+                  "scope",
+                  "surface",
+                  "source",
+                  "provider",
+                  "operation",
+                  "state"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/operations/{id}": {
       "get": {
         "security": [
@@ -7781,6 +8080,13 @@
                                     },
                                     "required": ["value", "scale", "unit"]
                                   }
+                                },
+                                "estimateSource": {
+                                  "enum": ["manual", "measured", "list", "unknown"]
+                                },
+                                "providerPriceVersion": {
+                                  "type": "string",
+                                  "minLength": 1
                                 },
                                 "correlationId": {
                                   "type": "string",
@@ -9030,6 +9336,13 @@
                                       "required": ["value", "scale", "unit"]
                                     }
                                   },
+                                  "estimateSource": {
+                                    "enum": ["manual", "measured", "list", "unknown"]
+                                  },
+                                  "providerPriceVersion": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
                                   "correlationId": {
                                     "type": "string",
                                     "minLength": 1
@@ -10042,6 +10355,231 @@
                 }
               },
               "required": ["scope"]
+            }
+          }
+        ]
+      }
+    },
+    "/v1/requests/counts": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "const": "ok"
+                        },
+                        "value": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "rows": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "dimensions": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "state": {
+                                    "enum": ["passthrough", "unpriced", "cached", "rate_limited"]
+                                  },
+                                  "count": {
+                                    "type": "string",
+                                    "pattern": "^-?\\d+$"
+                                  }
+                                },
+                                "required": ["dimensions", "state", "count"]
+                              }
+                            },
+                            "asOf": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "Z$"
+                            },
+                            "truncated": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": ["rows", "asOf", "truncated"]
+                        }
+                      },
+                      "required": ["outcome", "value"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "const": "forbidden"
+                        }
+                      },
+                      "required": ["outcome"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "const": "invalid"
+                        },
+                        "field": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "reason": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["outcome", "field", "reason"]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid schema"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Unexpected failure"
+          }
+        },
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Base64url-encoded JSON query",
+            "schema": {
+              "type": "string"
+            },
+            "x-decoded-schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "scope": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "const": "principal"
+                        },
+                        "namespace": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "principal": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["kind", "namespace", "principal"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "const": "group"
+                        },
+                        "namespace": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "group": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["kind", "namespace", "group"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "const": "namespace"
+                        },
+                        "namespace": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["kind", "namespace"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "const": "platform_pool"
+                        },
+                        "namespace": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "poolId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["kind", "namespace", "poolId"]
+                    }
+                  ]
+                },
+                "from": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "Z$"
+                },
+                "to": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "Z$"
+                },
+                "connection": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "groupBy": {
+                  "type": "array",
+                  "items": {
+                    "enum": ["provider", "operation", "connection", "source", "day"]
+                  }
+                },
+                "limit": {
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 1000
+                }
+              },
+              "required": ["scope", "from", "to", "groupBy"]
             }
           }
         ]

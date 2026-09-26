@@ -21,6 +21,15 @@ export const strings = (o: Options, name: string): string[] | undefined => {
   if (!Array.isArray(v) || !v.every((x) => typeof x === "string" && x)) throw new UsageError();
   return v;
 };
+export function pairs(o: Options, name: string): Record<string, string> {
+  const entries = (strings(o, name) ?? []).map((value) => {
+    const at = value.indexOf("=");
+    if (at < 1 || at === value.length - 1) throw new UsageError();
+    return [value.slice(0, at), value.slice(at + 1)] as const;
+  });
+  if (new Set(entries.map(([key]) => key)).size !== entries.length) throw new UsageError();
+  return Object.fromEntries(entries);
+}
 export function quantity(text: string): Quantity {
   const match = /^(\d+)(?:\.(\d{1,18}))?:([^\s:]+)$/.exec(text);
   if (!match) throw new UsageError();

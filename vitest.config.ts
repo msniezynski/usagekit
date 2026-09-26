@@ -69,21 +69,22 @@ export default defineConfig({
       include: [
         "packages/store/src/memory/**/*.ts",
         "packages/meter/src/**/*.ts",
-        ...["store-sqlite", "http", "client", "server", "views", "react"].map(
+        "packages/core/src/providers.ts",
+        ...["store-sqlite", "http", "client", "server", "views", "react", "providers"].map(
           (name) => `packages/${name}/src/**/*.ts`,
         ),
       ],
-      exclude: ["**/*.test.ts"],
+      exclude: ["**/*.test.ts", "**/*.d.ts"],
       thresholds: {
         lines: 85,
         ...Object.fromEntries(
-          ["store-sqlite", "http", "client", "server", "views", "react"].map((name) => [
-            `packages/${name}/src/**`,
-            { lines: 85 },
-          ]),
+          ["store-sqlite", "http", "client", "server", "views", "react", "providers"].map(
+            (name) => [`packages/${name}/src/**`, { lines: 85 }],
+          ),
         ),
         "packages/store/src/memory/**": { lines: 90 },
         "packages/meter/src/**": { lines: 90 },
+        "packages/core/src/providers.ts": { lines: 85 },
       },
     },
   },
