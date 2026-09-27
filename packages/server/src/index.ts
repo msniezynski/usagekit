@@ -1,3 +1,5 @@
+import { createProviderProxy, recoverProxyIntents } from "@usagekit/proxy";
+import { localAccess } from "./auth.js";
 import { serve } from "@hono/node-server";
 import { join } from "node:path";
 import type { Server } from "node:http";
@@ -5,6 +7,7 @@ import type { Clock } from "@usagekit/store";
 import { createSqliteStore } from "@usagekit/store-sqlite";
 import { createCatalog, dataforseo, serpapi } from "@usagekit/providers";
 import { resolvePricing } from "./pricing.js";
+import { createProxyRecorder } from "./proxy-recorder.js";
 import { createRecorder } from "./recorder.js";
 import { createMeter } from "@usagekit/meter";
 import { loadConfig, defaultConfigDir } from "./config.js";
@@ -21,7 +24,9 @@ export type ServerConfig = {
   clock?: Clock;
   /** Host allowlist; defaults to the two bundled descriptors. */
   enabledProviders?: readonly string[];
-  /** Injectable transport for recorder tests; production uses fetch. */
+  /** Reject paths not advertised by an enabled descriptor. */
+  strictProxy?: boolean;
+  /** Injectable provider transport; production uses fetch. */
   providerFetch?: typeof fetch;
   onToken?: (token: string) => void;
   /** Directory of the built UI; defaults to dist/ui next to the server. */
@@ -58,6 +63,20 @@ export async function startServer(options: ServerConfig = {}) {
           : null,
     }),
     app = createApp({
+      proxy: createProviderProxy({
+        meter,
+        catalog,
+        authenticate: auth.authenticate,
+        owner: { namespace: "local", principal: "local" },
+        strict: options.strictProxy ?? false,
+        transport: options.providerFetch ?? fetch,
+        now: () => clock.now(),
+        recordFixture: createProxyRecorder({ catalog, dir, now: () => clock.now() }),
+        connection(id) {
+          const c = vault.list().find((e) => e.connectionId === id);
+          return c ? { ...c, secret: vault.get(c.provider, id) } : undefined;
+        },
+      }),
       catalog,
       record: createRecorder({
         meter,
@@ -82,6 +101,7 @@ export async function startServer(options: ServerConfig = {}) {
         result = await meter.expireReservations({ namespace: "local", limit: 1000 });
         if (result.outcome !== "expired") throw new Error("ReservationCleanupFailed");
       } while (result.hasMore);
+      await recoverProxyIntents(meter, localAccess, clock.now());
     })().finally(() => {
       maintenance = undefined;
     }));

@@ -1,7 +1,9 @@
 # Local server
 
 P2 supports one developer. It stores accounting in SQLite and provider keys in an encrypted vault.
-It has no proxy, provider catalog, automatic evidence recovery, hosted service or UI yet.
+It includes the provider catalog, authenticated local proxy, encrypted vault and reference UI.
+Proxy crash recovery preserves unknown exposure; it does not fetch provider evidence or redispatch.
+It is a single-owner loopback server, not a hosted multi-user service.
 
 ## Install and start
 
@@ -166,3 +168,11 @@ repeatable and keyed by catalog operation. `--overage true|false` explicitly sel
 known allowance state. Omitted flags preserve the connection policy during key rotation.
 The server resolves manual prices before measured receipt history and catalog list prices.
 The HTTP connection endpoint accepts `manualPrices: {}` to clear all overrides.
+
+## Routed provider requests (P6)
+
+The server also accepts `/proxy/<connection-id>/<upstream-path>` with its bearer token.
+Use `usagekit serve --providers dataforseo,serpapi` and optionally `--strict-proxy`.
+See [local proxy](PROXY.md) for the full request, budget, replay, streaming, recording and
+restart contract. Requests routed here are enforced before dispatch; reporting clients still
+must honor their own admission results. Traffic sent directly to providers bypasses the proxy.

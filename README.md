@@ -5,8 +5,8 @@ costs and application credits. Both BYOK and platform-funded keys are in scope.
 Host A uses Postgres and Prisma. Host B adds team-owned connections.
 Host C targets Cloudflare D1. A local server shares the embedded Meter contract.
 
-**Status: P5 provider catalog prepared for the authorized 0.4.0 release.**
-Licensed under Apache-2.0. Core, Store, Meter and Providers target `@usagekit` on registry.npmjs.org at version 0.4.0.
+**Status: P5 provider catalog published at 0.4.0; P6 local proxy implemented.**
+Licensed under Apache-2.0. Core, Store, Meter and Providers are available under `@usagekit` on registry.npmjs.org at version 0.4.0.
 `core`, `store`, `meter` and `providers` are the public npm release packages. Other workspaces remain private. See [consuming packages](docs/CONSUMING.md) and the [roadmap](docs/ROADMAP.md).
 
 ## Start here
@@ -100,7 +100,7 @@ Pre-commit permits partial staging and untracked files. It does not run policy t
 It checks current files; the privacy guard also scans indexed content. Review staged changes independently.
 Full tests run through `npm run check` and during approved main promotion.
 `npm run test:unit` runs Vitest; `npm run test:unit:watch` watches changes.
-`npx vitest run --coverage` enforces 90% lines for reference Store and Meter, and 85% for SQLite, HTTP, client, server, views and react.
+`npx vitest run --coverage` enforces 90% lines for reference Store and Meter, and 85% for SQLite, HTTP, client, server, proxy, views and react.
 Conformance runs unchanged against memory, embedded Meter, SQLite and the remote Meter over HTTP.
 The adapter converts typed validation failures to Store exceptions; other outcomes stay unchanged.
 Memory and remote-memory skip `durable` and `rollingWindows`. SQLite skips only `rollingWindows`. Each run reports its skips.
@@ -110,20 +110,21 @@ There is no pre-push hook. The release allow-list and publish guard restrict pub
 
 `usagekit.workspace.json` defines the existing inventory and allowed dependencies.
 
-| Workspace               | Current contents                                                     |
-| ----------------------- | -------------------------------------------------------------------- |
-| `packages/core`         | Meter interface, exact quantities and domain DTO types               |
-| `packages/store`        | Atomic commands, in-memory store and factory-based conformance       |
-| `packages/meter`        | Embedded Meter with validation, policy and authorized reads          |
-| `packages/store-sqlite` | Durable transactions, migrations and admission projection            |
-| `packages/http`         | Web handlers, strict Valibot wire schemas and generated OpenAPI      |
-| `packages/client`       | Remote Meter with explicit accounting retries                        |
-| `packages/server`       | Loopback API, token auth, encrypted vault and the UI at `/`          |
-| `packages/cli`          | Serve, provider, budget, reporting and usage commands                |
-| `packages/providers`    | Provider catalog, fixture conformance and wrapper-boundary lint rule |
-| `packages/views`        | View models over the Meter: usage, budgets, header, coverage         |
-| `packages/react`        | React hooks and `MeterProvider` over the view models                 |
-| `packages/registry`     | shadcn blocks for Radix and Base UI, see [UI](docs/UI.md)            |
+| Workspace               | Current contents                                                                         |
+| ----------------------- | ---------------------------------------------------------------------------------------- |
+| `packages/core`         | Meter interface, exact quantities and domain DTO types                                   |
+| `packages/store`        | Atomic commands, in-memory store and factory-based conformance                           |
+| `packages/meter`        | Embedded Meter with validation, policy and authorized reads                              |
+| `packages/store-sqlite` | Durable transactions, migrations and admission projection                                |
+| `packages/http`         | Web handlers, strict Valibot wire schemas and generated OpenAPI                          |
+| `packages/client`       | Remote Meter with explicit accounting retries                                            |
+| `packages/server`       | Loopback API, token auth, encrypted vault and the UI at `/`                              |
+| `packages/proxy`        | Authenticated provider routing, budget enforcement, streamed receipts and crash recovery |
+| `packages/cli`          | Serve, provider, budget, reporting and usage commands                                    |
+| `packages/providers`    | Provider catalog, fixture conformance and wrapper-boundary lint rule                     |
+| `packages/views`        | View models over the Meter: usage, budgets, header, coverage                             |
+| `packages/react`        | React hooks and `MeterProvider` over the view models                                     |
+| `packages/registry`     | shadcn blocks for Radix and Base UI, see [UI](docs/UI.md)                                |
 
 Future packages are listed in the [plan](docs/PLAN.md#4-package-grid), without placeholder directories.
 Host schema mappings stay in host repositories. Shared adapters provide mechanics only.

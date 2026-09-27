@@ -12,22 +12,7 @@
       "path": "../core"
     },
     {
-      "path": "../store"
-    },
-    {
-      "path": "../meter"
-    },
-    {
-      "path": "../store-sqlite"
-    },
-    {
-      "path": "../http"
-    },
-    {
       "path": "../providers"
-    },
-    {
-      "path": "../proxy"
     }
   ]
 }

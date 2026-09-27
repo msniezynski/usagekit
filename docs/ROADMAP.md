@@ -137,10 +137,10 @@ maintain and a registry to test against both.
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | P1 core, store, meter                | On `main`. 110-case conformance suite, property tests, embedded Meter.                                                                                                              |
 | P2 SQLite, HTTP, client, server, CLI | On `main`. Row-level SQLite adapter, scaling gate, restart and race tests, encrypted vault, reservation expiry.                                                                     |
-| Packages on npm                      | `@usagekit/core`, `store`, `meter` at 0.1.0, Apache-2.0, **public**. Token setup in older docs is obsolete.                                                                         |
+| Packages on npm                      | `@usagekit/core`, `store`, `meter`, `providers` at 0.4.0, Apache-2.0, **public**. Token setup in older docs is obsolete.                                                            |
 | P3 host A embedded shadow            | Complete on a host branch: Postgres adapter passes conformance, shadow on own and hosted paths, admin comparison page. Awaiting rebase onto the host's moved `main` and a draft PR. |
 | Repository hosting                   | No remote yet. Sources exist only locally.                                                                                                                                          |
-| Provider catalog                     | Implemented on the P5 task branch. A host mapping adapter preserves its existing price resolver.                                                                                    |
+| Provider catalog                     | Published in 0.4.0. The host mapping adapter is merged and preserves its existing price resolver.                                                                                   |
 | UI layer                             | On a task branch: view models, React hooks, a shadcn registry for Radix and Base UI, and the local server UI. See [UI](UI.md). Host A's admin page is still hand-written.           |
 
 ## 7. Order of work
@@ -167,6 +167,15 @@ per-state request counter and appear in coverage. Rate limiter state is not a le
 its own port. Cache stores responses under its own retention and privacy policy, never in
 accounting tables; descriptors declare cache keys, default TTLs and provider rate limits.
 See PLAN.md section 7.
+
+### P6 implementation evidence
+
+The local proxy is implemented in `packages/proxy` and mounted by the local server.
+[PROXY.md](PROXY.md) defines routes, credentials, admission, idempotency, streaming limits,
+recording and crash behavior. `packages/server/src/proxy.test.ts` exercises the real HTTP
+boundary, including SIGKILL during upstream dispatch and restart without redispatch.
+Unknown paths consume a requests reservation and stay pending with unknown cost; coverage
+classifies them as unpriced. The host authoritative cutover is still P8.
 
 ## 8. Topics added after P3
 

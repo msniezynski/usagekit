@@ -70,7 +70,7 @@ export default defineConfig({
         "packages/store/src/memory/**/*.ts",
         "packages/meter/src/**/*.ts",
         "packages/core/src/providers.ts",
-        ...["store-sqlite", "http", "client", "server", "views", "react", "providers"].map(
+        ...["store-sqlite", "http", "client", "server", "views", "react", "providers", "proxy"].map(
           (name) => `packages/${name}/src/**/*.ts`,
         ),
       ],
@@ -78,7 +78,7 @@ export default defineConfig({
       thresholds: {
         lines: 85,
         ...Object.fromEntries(
-          ["store-sqlite", "http", "client", "server", "views", "react", "providers"].map(
+          ["store-sqlite", "http", "client", "server", "views", "react", "providers", "proxy"].map(
             (name) => [`packages/${name}/src/**`, { lines: 85 }],
           ),
         ),

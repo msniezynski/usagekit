@@ -83,24 +83,28 @@ export function createMemoryCoverageSource() {
   } satisfies CoverageSource & { add(entry: unknown): void };
 }
 
-/** Metered requests from the meter's own usage, paging with groupBy []. Unknown is unavailable. */
+/** Partition operation usage from unpriced paths without double counting. Unknown stays unavailable. */
 async function meteredRequests(
   meter: Meter,
   access: AccessContext,
   input: CoverageInput,
   first: UsagePage,
-): Promise<{ total: Quantity | null; rows: number } | Problem> {
+): Promise<{ total: Quantity | null; unpriced: Quantity | null; rows: number } | Problem> {
   let page = first,
     total: Quantity | null = { value: 0n, scale: 0, unit: "requests" },
+    unpriced: Quantity | null = { value: 0n, scale: 0, unit: "requests" },
     rows = 0;
   for (;;) {
     for (const row of page.rows) {
       rows++;
       const m = row.measurements.find((x) => x.unit === "requests");
-      if (m?.certainty === "unknown") total = null;
+      if (row.dimensions.operation === "unknown") {
+        if (m?.certainty === "unknown") unpriced = null;
+        else if (m && unpriced) unpriced = plus(unpriced, m.quantity);
+      } else if (m?.certainty === "unknown") total = null;
       else if (m && total) total = plus(total, m.quantity);
     }
-    if (!page.nextCursor) return { total, rows };
+    if (!page.nextCursor) return { total, unpriced, rows };
     const cursor = page.nextCursor;
     const next = await attempt(() => meter.usage(access, { ...query(input), cursor }));
     if (next.outcome !== "ok")
@@ -115,7 +119,7 @@ const query = (input: CoverageInput) => ({
   from: input.from,
   to: input.to,
   units: ["requests"],
-  groupBy: [],
+  groupBy: ["operation"] as const,
   limit: 1000,
 });
 
@@ -156,21 +160,27 @@ export async function loadCoverageView(
       };
     const extra = Object.fromEntries(coverageStates.slice(1).map((state) => [state, 0n]));
     for (const row of counted.value.rows) extra[row.state] = (extra[row.state] ?? 0n) + row.count;
-    const scale = metered.total?.scale ?? 0,
+    const scale = Math.max(metered.total?.scale ?? 0, metered.unpriced?.scale ?? 0),
       factor = 10n ** BigInt(scale);
+    const unpriced = metered.unpriced
+      ? metered.unpriced.value * 10n ** BigInt(scale - metered.unpriced.scale)
+      : 0n;
     const values = [
-      metered.total?.value ?? 0n,
-      ...coverageStates.slice(1).map((state) => (extra[state] ?? 0n) * factor),
+      metered.total ? metered.total.value * 10n ** BigInt(scale - metered.total.scale) : 0n,
+      ...coverageStates
+        .slice(1)
+        .map((state) => (extra[state] ?? 0n) * factor + (state === "unpriced" ? unpriced : 0n)),
     ];
     const total = values.reduce((sum, value) => sum + value, 0n),
-      known = metered.total !== null;
+      known = metered.total !== null && metered.unpriced !== null;
     return {
       ...blank,
       state: total > 0n || metered.rows > 0 ? "ok" : "empty",
       entries: coverageStates.map((state, index) => ({
         state,
         count:
-          index === 0 && !known
+          (state === "metered" && metered.total === null) ||
+          (state === "unpriced" && metered.unpriced === null)
             ? "unavailable"
             : formatQuantity({ value: values[index]!, scale, unit: "requests" }),
         share: known ? share(values[index]!, total) : null,

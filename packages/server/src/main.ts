@@ -16,6 +16,8 @@ async function launch(args: string[]) {
       json: { type: "boolean" },
       host: { type: "string" },
       "config-dir": { type: "string" },
+      "strict-proxy": { type: "boolean" },
+      providers: { type: "string" },
       "allow-remote": { type: "boolean" },
     },
   });
@@ -42,6 +44,15 @@ async function launch(args: string[]) {
   }
 
   const server = await startServer({
+    ...(values["strict-proxy"] ? { strictProxy: true } : {}),
+    ...(values.providers !== undefined
+      ? {
+          enabledProviders: values.providers
+            .split(",")
+            .map((p) => p.trim())
+            .filter(Boolean),
+        }
+      : {}),
     ...(values.port ? { port: Number(values.port) } : {}),
     ...(values.host ? { host: values.host } : {}),
     ...(values["config-dir"] ? { configDir: values["config-dir"] } : {}),

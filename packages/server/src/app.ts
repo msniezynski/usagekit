@@ -18,7 +18,9 @@ export function createApp({
   uiRoot,
   catalog,
   record,
+  proxy,
 }: {
+  proxy?: (request: Request) => Promise<Response>;
   catalog?: Catalog;
   record?: ReturnType<typeof createRecorder>;
   meter: Meter;
@@ -60,6 +62,7 @@ export function createApp({
   app.get("/health", (c) =>
     c.json({ ok: true, version: "0.0.0", durable: true, vaultUnlocked: vault.unlocked }),
   );
+  if (proxy) app.all("/proxy/*", (c) => proxy(c.req.raw));
   const handler = createUsageHandlers({ meter, authenticate: auth.authenticate });
   app.all("/v1/*", (c) => handler(c.req.raw));
   app.get("/providers/connections", (c) => c.json(vault.list()));

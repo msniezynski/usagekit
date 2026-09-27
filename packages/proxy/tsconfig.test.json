@@ -15,8 +15,7 @@
       "@usagekit/cli": ["../cli/src/index.ts"],
       "@usagekit/store/conformance": ["../store/conformance/index.ts"],
       "@usagekit/store/reference": ["../store/src/reference.ts"],
-      "@usagekit/providers": ["../providers/src/index.ts"],
-      "@usagekit/proxy": ["../proxy/src/index.ts"]
+      "@usagekit/providers": ["../providers/src/index.ts"]
     }
   },
   "include": ["src/**/*.ts", "conformance/**/*.ts"],

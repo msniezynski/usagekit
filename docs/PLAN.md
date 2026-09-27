@@ -11,15 +11,15 @@ Optional downstream export remains part of that direction.
 The admin must show usage, provider costs and application credit information.
 `@usagekit/core`, `store` and `meter` are published publicly on npm under Apache-2.0; see the README for the current version. Deployment remains outside this work.
 
-| Mode         | Execution                                                | Boundary                                                                |
-| ------------ | -------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Embedded     | A trusted host wraps provider dispatch with Meter        | Only instrumented host paths are enforced                               |
-| Local server | SQLite, local keys, authenticated write/read API and CLI | Reporting clients must honor admission; proxy enforcement follows in P6 |
+| Mode         | Execution                                                | Boundary                                                                  |
+| ------------ | -------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Embedded     | A trusted host wraps provider dispatch with Meter        | Only instrumented host paths are enforced                                 |
+| Local server | SQLite, local keys, authenticated write/read API and CLI | Reporting clients must honor admission; P6 enforces routed proxy dispatch |
 
 Host A uses Postgres and Prisma. Host B uses Postgres, Prisma and team-owned connections.
 Host C targets Cloudflare D1. Private consumer evidence stays in ignored ADRs.
 Hosts own authentication, routing, secrets, content and product billing.
-The local server owns its vault, admission and later proxy dispatch.
+The local server owns its vault, admission and proxy dispatch.
 The [README](../README.md) defines workflow rules. The [local ADR index](adr/0000-index.md) holds private rationale.
 
 ## 2. One interface and end-to-end flow
