@@ -2,13 +2,13 @@ import { readFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import type Database from "better-sqlite3";
 import { hash } from "./util.js";
-export function migrate(db: Database.Database, target = 5): void {
+export function migrate(db: Database.Database, target = 6): void {
   db.transaction(() => {
     db.exec("CREATE TABLE IF NOT EXISTS migrations(version INTEGER PRIMARY KEY)");
     const versions = (
       db.prepare("SELECT version FROM migrations").all() as { version: number | bigint }[]
     ).map((r) => Number(r.version));
-    if (![1, 2, 3, 4, 5].includes(target) || versions.some((v) => v > target))
+    if (![1, 2, 3, 4, 5, 6].includes(target) || versions.some((v) => v > target))
       throw new Error("Downgrade or unsupported schema version");
     if (!versions.includes(1)) {
       db.exec(readFileSync(new URL("./schema.sql", import.meta.url), "utf8"));
@@ -59,6 +59,14 @@ export function migrate(db: Database.Database, target = 5): void {
       CREATE INDEX request_counts_window ON request_counts(namespace,day);
       CREATE TABLE request_commands(namespace TEXT NOT NULL,command_id TEXT NOT NULL,identity_hash TEXT NOT NULL,PRIMARY KEY(namespace,command_id));
       INSERT INTO migrations VALUES(5);`);
+    }
+    if (target >= 6 && !versions.includes(6)) {
+      db.exec(`CREATE TABLE billing_import_families(family_id TEXT PRIMARY KEY,latest_import_id TEXT NOT NULL);
+      CREATE TABLE billing_imports(import_id TEXT PRIMARY KEY,family_id TEXT NOT NULL REFERENCES billing_import_families(family_id),namespace TEXT NOT NULL,principal TEXT NOT NULL,connection TEXT NOT NULL,provider TEXT NOT NULL,window_from TEXT NOT NULL,window_to TEXT NOT NULL,recorded_at TEXT NOT NULL,identity_json TEXT NOT NULL,record_json TEXT NOT NULL);
+      CREATE INDEX billing_import_family ON billing_imports(family_id,recorded_at,import_id);
+      CREATE INDEX billing_import_scope ON billing_imports(namespace,principal,connection,window_from,window_to);
+      CREATE INDEX operations_billing_scope ON operations(namespace,principal,json_extract(operation_json,'$.scope.connection'),json_extract(operation_json,'$.provider'));
+      INSERT INTO migrations VALUES(6);`);
     }
   }).immediate();
 }

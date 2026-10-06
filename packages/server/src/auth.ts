@@ -9,6 +9,7 @@ export const localAccess: AccessContext = {
   readablePools: "*",
   canReadBillingDetail: true,
   canManageBudgets: true,
+  canImportBilling: true,
 };
 export function createAuth(config: Config, path: string) {
   return {

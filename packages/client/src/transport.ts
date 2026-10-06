@@ -20,6 +20,8 @@ export const encode = (v: unknown) =>
 export const decode = decodeMeterJson;
 /** Route paths, mirrored from the handler's route table (the client imports only types from it). */
 const paths: Record<Exclude<RouteName, "operation">, string> = {
+  importBilling: "/v1/billing/import",
+  billingImports: "/v1/billing/imports",
   expire: "/v1/operations/expire",
   reserve: "/v1/operations/reserve",
   intent: "/v1/operations/intent",
@@ -42,11 +44,13 @@ export function transport({ baseUrl, token, fetch: fetcher = globalThis.fetch }:
       id =
         typeof raw.commandId === "string"
           ? raw.commandId
-          : name === "reserve"
-            ? String(raw.operationId)
-            : crypto.randomUUID();
+          : name === "importBilling"
+            ? String(raw.fileHash)
+            : name === "reserve"
+              ? String(raw.operationId)
+              : crypto.randomUUID();
     const data = JSON.parse(
-      encode(read ? input : { ...raw, commandId: id }),
+      encode(read || name === "importBilling" ? input : { ...raw, commandId: id }),
     ) as WireInputs[typeof name];
     const path =
       name === "operation"
@@ -74,7 +78,8 @@ export function transport({ baseUrl, token, fetch: fetcher = globalThis.fetch }:
       throw new RemoteUnavailable(id);
     }
     if (response.status >= 500) throw new RemoteUnavailable(id);
-    if (response.status === 403 && read) return { outcome: "forbidden" } as T;
+    if (response.status === 403 && (read || name === "importBilling"))
+      return { outcome: "forbidden" } as T;
     if (response.status === 401 || response.status === 403 || response.status === 404)
       throw new RemoteHttpError(response.status, id);
     try {

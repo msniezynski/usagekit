@@ -7,10 +7,13 @@ import type {
   DefinedBudgetsQuery,
   ApplicableBudgetsQuery,
   RequestCountsQuery,
+  BillingImportsQuery,
 } from "@usagekit/core";
 import type { RouteName } from "../schemas/index.js";
 export function dispatchRead(meter: Meter, access: AccessContext, name: RouteName, input: unknown) {
   switch (name) {
+    case "billingImports":
+      return meter.billingImports(access, input as BillingImportsQuery);
     case "operation":
       return meter.getOperation(access, input as OperationRef);
     case "usage":

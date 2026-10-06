@@ -25,3 +25,28 @@ test("integer conversion follows DTO shapes rather than generic field names", ()
     counted: { ...data.counted, count: 3n },
   });
 });
+
+test("billing reconciliation restores signed differences and unknown counts without changing metadata", () => {
+  const entry = {
+    id: "r",
+    importId: "i",
+    kind: "import_total",
+    scope: { namespace: "n", principal: "p", connection: "c" },
+    window: { from: "2026-10-01T00:00:00Z", to: "2026-11-01T00:00:00Z" },
+    ledgerTotal: { certainty: "measured", money: { currency: "USD", units: "9007199254740993" } },
+    evidenceTotal: { currency: "USD", units: "9007199254740992" },
+    differenceUnits: "-1",
+    unknownOperations: "0",
+    metadata: { differenceUnits: "-001", unknownOperations: "002" },
+  };
+  expect(decodeMeterJson(JSON.stringify(entry))).toEqual({
+    ...entry,
+    ledgerTotal: { certainty: "measured", money: { currency: "USD", units: 9007199254740993n } },
+    evidenceTotal: { currency: "USD", units: 9007199254740992n },
+    differenceUnits: -1n,
+    unknownOperations: 0n,
+  });
+  expect(
+    decodeMeterJson(JSON.stringify({ ...entry, differenceUnits: null, unknownOperations: "2" })),
+  ).toMatchObject({ differenceUnits: null, unknownOperations: 2n });
+});

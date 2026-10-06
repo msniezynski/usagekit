@@ -1,3 +1,10 @@
+import type {
+  BillingImportInput,
+  BillingImportResult,
+  BillingImportsQuery,
+  BillingImportsPage,
+} from "./billing.js";
+
 export type ValidationFailure = { outcome: "invalid"; field: string; reason: string };
 
 /** Exact USD units: 1 unit = 1/10000 cent. */
@@ -40,7 +47,7 @@ export type Scope = {
 
 export type FundingSource = "byok" | "platform";
 export type Surface = "app" | "programmatic";
-export type Source = "app" | "worker" | "api" | "sdk" | "cli" | "mcp" | "proxy";
+export type Source = "app" | "worker" | "api" | "sdk" | "cli" | "mcp" | "proxy" | "import";
 
 /** Timestamps are UTC ISO strings. Resolved reservation epochs remain immutable. */
 export type BudgetWindow =
@@ -123,6 +130,8 @@ export type Cost =
  */
 export type Receipt = {
   id: string;
+  /** Existing receipts without this field are dispatch evidence. */
+  source?: "dispatch" | "probe" | "import";
   supersedes?: string;
   measurements: readonly Measurement[];
   cost: Cost;
@@ -447,6 +456,8 @@ export type AccessContext = {
   readablePools: readonly string[] | "*";
   canReadBillingDetail: boolean;
   canManageBudgets: boolean;
+  /** Explicit billing write permission. Read access or budget management does not imply it. */
+  canImportBilling?: boolean;
 };
 
 /**
@@ -570,6 +581,14 @@ export type ExpireReservationsResult =
  * Admission sweeps at most one default batch. Maintenance owns the remaining expired backlog.
  */
 export interface Meter {
+  importBilling(
+    access: AccessContext,
+    input: BillingImportInput,
+  ): Promise<BillingImportResult | { outcome: "forbidden" }>;
+  billingImports(
+    access: AccessContext,
+    query: BillingImportsQuery,
+  ): Promise<ReadResult<BillingImportsPage>>;
   expireReservations(input: ExpireReservationsInput): Promise<ExpireReservationsResult>;
   reserve(input: MeterReserveInput): Promise<ReserveResult>;
   countRequest(input: CountRequestInput): Promise<CountRequestResult>;

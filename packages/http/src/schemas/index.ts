@@ -21,7 +21,7 @@ export const Scope = obj({
   ),
 });
 const surface = v.picklist(["app", "programmatic"]);
-const source = v.picklist(["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]);
+const source = v.picklist(["app", "worker", "api", "sdk", "cli", "mcp", "proxy", "import"]);
 const funding = v.picklist(["byok", "platform"]);
 export const BudgetScope = v.variant("kind", [
   obj({ kind: v.literal("principal"), namespace: text, principal: text }),
@@ -78,6 +78,7 @@ const Cost = v.variant("certainty", [
 ]);
 export const Receipt = obj({
   id: text,
+  source: v.optional(v.picklist(["dispatch", "probe", "import"])),
   supersedes: v.optional(text),
   measurements: v.array(Measurement),
   cost: Cost,
@@ -216,7 +217,68 @@ const RequestCountsPage = obj({
   asOf: timestamp,
   truncated: v.boolean(),
 });
+const importWindow = obj({ from: timestamp, to: timestamp });
+const fileHash = v.pipe(v.string(), v.regex(/^[a-f0-9]{64}$/));
+const BillingLine = obj({
+  providerRequestId: v.optional(text),
+  operation: v.optional(text),
+  occurredAt: timestamp,
+  cost: Money,
+  window: v.optional(importWindow),
+});
+const ReconciliationEntry = obj({
+  id: text,
+  importId: text,
+  scope: Scope,
+  provider: text,
+  window: importWindow,
+  kind: v.picklist(["aggregate", "import_total"]),
+  operation: v.optional(text),
+  ledgerTotal: Cost,
+  evidenceTotal: Money,
+  differenceUnits: v.nullable(decimal),
+  unknownOperations: v.pipe(v.string(), v.regex(/^\d+$/)),
+  evidenceRef: text,
+});
+const BillingImportRecord = obj({
+  id: text,
+  scope: Scope,
+  provider: text,
+  fileHash,
+  window: importWindow,
+  recordedAt: timestamp,
+  supersedes: v.optional(text),
+  supersededBy: v.optional(text),
+  matchedOperationIds: v.array(text),
+  unobservedOperationIds: v.array(text),
+  reconciliations: v.array(ReconciliationEntry),
+  alerts: v.array(AlertCrossed),
+});
 export const schemas = {
+  importBilling: obj({
+    scope: Scope,
+    provider: text,
+    fileHash,
+    window: importWindow,
+    expectedPreviousImportId: v.nullable(text),
+    attribution: obj({
+      fundingSource: funding,
+      costOwner: text,
+      creditAccountRef: v.optional(text),
+      customerPriceVersion: v.optional(text),
+      providerPriceVersion: v.optional(text),
+      platformPools: v.optional(v.array(text)),
+    }),
+    lines: v.array(BillingLine),
+  }),
+  billingImports: obj({
+    scope: obj({ namespace: text, principal: text }),
+    connection: text,
+    from: timestamp,
+    to: timestamp,
+    history: v.optional(v.boolean()),
+    limit: v.optional(v.pipe(integer, v.minValue(1), v.maxValue(1000))),
+  }),
   expire: obj({
     namespace: text,
     commandId: text,
@@ -295,6 +357,27 @@ const settleResult = v.union([
   invalid,
 ]);
 export const responses = {
+  importBilling: v.union([
+    obj({ outcome: v.literal("imported"), replayed: v.boolean(), record: BillingImportRecord }),
+    obj({
+      outcome: v.literal("rejected"),
+      reason: v.picklist([
+        "previous_import_conflict",
+        "payload_conflict",
+        "ambiguous_request",
+        "active_operation",
+        "operation_state",
+        "evidence_conflict",
+      ]),
+      latestImportId: v.nullable(text),
+      line: v.optional(integer),
+    }),
+    obj({ outcome: v.literal("forbidden") }),
+    invalid,
+  ]),
+  billingImports: read(
+    obj({ records: v.array(BillingImportRecord), asOf: timestamp, truncated: v.boolean() }),
+  ),
   expire: v.union([
     obj({ outcome: v.literal("expired"), count: integer, hasMore: v.boolean() }),
     invalid,
@@ -380,6 +463,8 @@ export const responses = {
 };
 /** Method and path of every route; reads take their query as base64url JSON in q. */
 export const routes: Record<RouteName, { read: boolean; path: string }> = {
+  importBilling: { read: false, path: "/v1/billing/import" },
+  billingImports: { read: true, path: "/v1/billing/imports" },
   expire: { read: false, path: "/v1/operations/expire" },
   reserve: { read: false, path: "/v1/operations/reserve" },
   intent: { read: false, path: "/v1/operations/intent" },

@@ -1,5 +1,11 @@
 import type { AdmissionPolicy } from "@usagekit/core";
 import type {
+  BillingImportInput,
+  BillingImportResult,
+  BillingImportsQuery,
+  BillingImportsPage,
+} from "@usagekit/core";
+import type {
   ExpireReservationsInput,
   ExpireReservationsResult,
   Budget,
@@ -43,6 +49,8 @@ import type {
  * Adapters prove these guarantees through one conformance suite, without callback locks.
  */
 export interface Store {
+  importBilling(input: BillingImportInput): Promise<BillingImportResult>;
+  billingImports(query: BillingImportsQuery): Promise<BillingImportsPage>;
   expireReservations(input: ExpireReservationsInput): Promise<ExpireReservationsResult>;
   reserve(input: ReserveInput, policy?: AdmissionPolicy): Promise<ReserveResult>;
   markDispatchIntent(input: DispatchIntentInput): Promise<DispatchGrant>;
@@ -75,3 +83,12 @@ export {
   requestCountDimensions,
 } from "./memory/counters.js";
 export type { CountBucket } from "./memory/counters.js";
+
+export {
+  prepareBillingImport,
+  billingFamilyId,
+  readBillingImports,
+  validateBillingImportInput,
+  validateBillingImportsQuery,
+} from "./billing.js";
+export type { StoredBillingImport, BillingSnapshot, BillingPreparation } from "./billing.js";

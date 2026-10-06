@@ -49,11 +49,14 @@ CREATE TABLE request_counts(namespace TEXT NOT NULL,principal TEXT NOT NULL,grp 
 CREATE INDEX request_counts_window ON request_counts(namespace,day);
 CREATE TABLE request_commands(namespace TEXT NOT NULL,command_id TEXT NOT NULL,identity_hash TEXT NOT NULL,PRIMARY KEY(namespace,command_id));
 `;
-export function migrate(db: Database): void {
+export function migrate(db: Database, target = 2): void {
   db.transaction(() => {
     db.exec("CREATE TABLE IF NOT EXISTS migrations(version INTEGER PRIMARY KEY)");
     const versions = db.prepare("SELECT version FROM migrations").all() as { version: number }[];
-    if (versions.some((v) => v.version !== 1))
+    if (
+      ![1, 2].includes(target) ||
+      versions.some((v) => v.version > target || ![1, 2].includes(v.version))
+    )
       throw new Error("Unsupported Cloudflare schema version");
     if (versions.length === 0) {
       db.exec(schema);
@@ -62,6 +65,14 @@ export function migrate(db: Database): void {
       ).join("");
       db.prepare("INSERT INTO store_metadata VALUES('cursor_key',?)").run(secret);
       db.prepare("INSERT INTO migrations VALUES(1)").run();
+    }
+    if (target >= 2 && !versions.some((v) => v.version === 2)) {
+      db.exec(`CREATE TABLE billing_import_families(family_id TEXT PRIMARY KEY,latest_import_id TEXT NOT NULL);
+      CREATE TABLE billing_imports(import_id TEXT PRIMARY KEY,family_id TEXT NOT NULL REFERENCES billing_import_families(family_id),namespace TEXT NOT NULL,principal TEXT NOT NULL,connection TEXT NOT NULL,provider TEXT NOT NULL,window_from TEXT NOT NULL,window_to TEXT NOT NULL,recorded_at TEXT NOT NULL,identity_json TEXT NOT NULL,record_json TEXT NOT NULL);
+      CREATE INDEX billing_import_family ON billing_imports(family_id,recorded_at,import_id);
+      CREATE INDEX billing_import_scope ON billing_imports(namespace,principal,connection,window_from,window_to);
+      CREATE INDEX operations_billing_scope ON operations(namespace,principal,json_extract(operation_json,'$.scope.connection'),json_extract(operation_json,'$.provider'));
+      INSERT INTO migrations VALUES(2);`);
     }
   }).immediate();
 }

@@ -65,7 +65,9 @@ export function generateOpenApi() {
         ? {}
         : {
             description:
-              "Command route. A handler mounted with commands: false answers 404 here after authentication.",
+              name === "importBilling"
+                ? "Billing import command. Requires explicit canImportBilling permission from verified server authentication and host connection ownership. A handler mounted with commands: false answers 404 here after authentication. Never dispatches a provider request."
+                : "Command route. A handler mounted with commands: false answers 404 here after authentication.",
           }),
       responses: {
         "200": {

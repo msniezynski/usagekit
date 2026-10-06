@@ -67,6 +67,8 @@ export function validateQuantity(q: Quantity): void {
     throw new InvalidInput("quantity", "money storage bound");
 }
 export type State = {
+  billingImports?: Map<string, import("../billing.js").StoredBillingImport>;
+  billingFamilies?: Map<string, string>;
   /** Optional adapter projection, read in the same transaction as admission. */
   readBudgetUsage?: (budget: Budget, epoch: string) => { used: Quantity; reserved: Quantity };
   cursors: Map<

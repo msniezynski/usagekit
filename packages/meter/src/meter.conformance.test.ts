@@ -49,6 +49,15 @@ runStoreConformance(
       },
     });
     const store: Store = {
+      importBilling: async (i) => {
+        const result = commandResult(
+          await meter.importBilling({ ...access(i.scope.namespace), canImportBilling: true }, i),
+        );
+        if (result.outcome === "forbidden") throw new Error("Forbidden");
+        return result;
+      },
+      billingImports: async (q) =>
+        readResult(await meter.billingImports(access(q.scope.namespace), q)),
       expireReservations: async (i) => commandResult(await meter.expireReservations(i)),
       reserve: async (i) => commandResult(await meter.reserve(i)),
       markDispatchIntent: async (i) => commandResult(await meter.markDispatchIntent(i)),

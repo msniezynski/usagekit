@@ -16,6 +16,7 @@ import {
 } from "./validation.js";
 import { canRead, canReadBudget, canReadShared, isShared } from "./access.js";
 import { defaultBudgetOrder, normalizeTags } from "@usagekit/core";
+import { validateBillingImportInput, validateBillingImportsQuery } from "@usagekit/store";
 export function createMeter({
   store,
   policy = defaultPolicy,
@@ -60,8 +61,61 @@ export function createMeter({
   const read = async <T>(fn: () => Promise<T>): Promise<ReadResult<T>> =>
     safely(async () => ({ outcome: "ok" as const, value: await fn() }));
   return {
+    importBilling: async (access, i) => {
+      const invalid = validateBillingImportInput(i);
+      if (invalid) return invalid;
+      if (
+        access.canImportBilling !== true ||
+        !access.canReadBillingDetail ||
+        !canRead(access, {
+          kind: "principal",
+          namespace: i.scope.namespace,
+          principal: i.scope.principal,
+        })
+      )
+        return { outcome: "forbidden" };
+      const owner = await resolveOwnership?.({
+        kind: "connection",
+        namespace: i.scope.namespace,
+        connection: i.scope.connection,
+      });
+      if (
+        !owner ||
+        (owner.kind === "principal"
+          ? owner.principal !== i.scope.principal
+          : owner.group !== i.scope.group) ||
+        !canRead(access, owner)
+      )
+        return { outcome: "forbidden" };
+      const connection = await resolveConnection?.(i.scope.connection);
+      if (resolveConnection && (!connection || connection.provider !== i.provider))
+        return { outcome: "forbidden" };
+      if (catalog && catalog.operationsOf(i.provider).length === 0) return { outcome: "forbidden" };
+      return safely(() => store.importBilling(i));
+    },
+    billingImports: async (access, q) => {
+      const invalid = validateBillingImportsQuery(q);
+      if (invalid) return invalid;
+      if (
+        !access.canReadBillingDetail ||
+        !canRead(access, { kind: "principal", ...q.scope }) ||
+        !(await canReadBudget(resolveOwnership, access, {
+          kind: "connection",
+          namespace: q.scope.namespace,
+          connection: q.connection,
+        }))
+      )
+        return { outcome: "forbidden" };
+      return read(() => store.billingImports(q));
+    },
     expireReservations: (i) => command(i, () => store.expireReservations(i)),
     reserve: async (requested) => {
+      if (requested.source === "import")
+        return {
+          outcome: "invalid",
+          field: "source",
+          reason: "import source is reserved for authorized billing evidence",
+        };
       const early =
         validate({ ...requested, estimate: requested.estimate ?? [] }) ??
         sourceValidation(requested) ??
@@ -124,10 +178,30 @@ export function createMeter({
     markDispatchIntent: (i) => command(i, () => store.markDispatchIntent(i)),
     renewLease: (i) => command(i, () => store.renewLease(i)),
     claimForRecovery: (i) => command(i, () => store.claimForRecovery(i)),
-    settle: (i) => command(i, () => store.settle(i)),
-    correct: (i) => command(i, () => store.correct(i)),
+    settle: (i) =>
+      i.receipt.source === "import"
+        ? Promise.resolve({
+            outcome: "invalid" as const,
+            field: "receipt.source",
+            reason: "import evidence requires the atomic billing import command",
+          })
+        : command(i, () => store.settle(i)),
+    correct: (i) =>
+      i.receipt.source === "import"
+        ? Promise.resolve({
+            outcome: "invalid" as const,
+            field: "receipt.source",
+            reason: "import evidence requires the atomic billing import command",
+          })
+        : command(i, () => store.correct(i)),
     releaseUndispatched: (i) => command(i, () => store.releaseUndispatched(i)),
     countRequest: (i) => {
+      if (i.source === "import")
+        return Promise.resolve({
+          outcome: "invalid" as const,
+          field: "source",
+          reason: "import source is reserved for authorized billing evidence",
+        });
       const invalid = validate(i) ?? sourceValidation(i);
       return invalid ? Promise.resolve(invalid) : safely(() => store.countRequest(i));
     },

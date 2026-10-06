@@ -20,8 +20,15 @@ test("migrations are idempotent and reject downgrade/newer schema", () => {
       { version: 3 },
       { version: 4 },
       { version: 5 },
+      { version: 6 },
     ]);
-    for (const name of ["budget_alerts", "request_counts", "request_commands"])
+    for (const name of [
+      "budget_alerts",
+      "request_counts",
+      "request_commands",
+      "billing_imports",
+      "billing_import_families",
+    ])
       expect(db.prepare("SELECT name FROM sqlite_master WHERE name=?").get(name)).toBeTruthy();
     expect(() => migrate(db, 0)).toThrow("Downgrade");
     db.prepare("INSERT INTO migrations(version) VALUES (99)").run();

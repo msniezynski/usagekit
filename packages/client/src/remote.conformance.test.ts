@@ -14,6 +14,7 @@ const access = (namespace: string): AccessContext => ({
   readablePools: "*",
   canReadBillingDetail: true,
   canManageBudgets: true,
+  canImportBilling: true,
 });
 function commandResult<T>(r: T): T {
   if (r && typeof r === "object" && "outcome" in r && r.outcome === "invalid" && "field" in r)
@@ -61,6 +62,15 @@ runStoreConformance(
     );
     const client = (ns: string) => clients.get(ns)!;
     const store: Store = {
+      importBilling: async (i) => {
+        const result = commandResult(
+          await client(i.scope.namespace).importBilling(access(i.scope.namespace), i),
+        );
+        if (result.outcome === "forbidden") throw new Error("Forbidden");
+        return result;
+      },
+      billingImports: async (q) =>
+        readResult(await client(q.scope.namespace).billingImports(access(q.scope.namespace), q)),
       expireReservations: async (i) =>
         commandResult(await client(i.namespace).expireReservations(i)),
       reserve: async (i) => commandResult(await client(i.scope.namespace).reserve(i)),

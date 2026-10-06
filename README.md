@@ -5,7 +5,7 @@ costs and application credits. Both BYOK and platform-funded keys are in scope.
 Host A uses Postgres and Prisma. Host B adds team-owned connections.
 Host C targets Cloudflare D1. A local server shares the embedded Meter contract.
 
-**Status: P5 provider catalog published at 0.4.0; P6 local proxy and P7 Cloudflare adapter implemented.**
+**Status: P5 is published at 0.4.0; P6 and P7 are approved on local main; P8 is in development.**
 Licensed under Apache-2.0. Core, Store, Meter and Providers are available under `@usagekit` on registry.npmjs.org at version 0.4.0.
 `core`, `store`, `meter` and `providers` are the public npm release packages. Other workspaces remain private. See [consuming packages](docs/CONSUMING.md) and the [roadmap](docs/ROADMAP.md).
 
@@ -25,6 +25,7 @@ usagekit serve
 ```
 
 See [local server operation](docs/LOCAL-SERVER.md) for tokens, the vault, budgets, scripts and restart recovery.
+See [billing imports](docs/BILLING-IMPORTS.md) for P8 evidence, revisions and reconciliation.
 
 `npm ci` installs local hooks through `prepare`. Use `npm run setup` if scripts were disabled.
 Hooks prefer the pinned NVM binary. Otherwise PATH must satisfy the supported range.

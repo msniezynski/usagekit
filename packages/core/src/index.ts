@@ -109,3 +109,14 @@ export type {
   MeasuredPrice,
 } from "./providers.js";
 export { validateDescriptor } from "./providers.js";
+
+export type {
+  ImportAttribution,
+  BillingImportInput,
+  ReconciliationEntry,
+  BillingImportRecord,
+  BillingImportResult,
+  BillingImportsQuery,
+  BillingImportsPage,
+  BillingOperationChange,
+} from "./billing.js";

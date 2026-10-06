@@ -13,6 +13,7 @@ import { currentBudgets, insertBudget, selected, status } from "./budgets.js";
 import { usageReader } from "./reads.js";
 import { operationsReader } from "./operations.js";
 import { counters } from "./counters.js";
+import { billing } from "./billing.js";
 export type BudgetWriteResult =
   | { outcome: "saved"; budget: Budget }
   | { outcome: "conflict"; reason: "budget_version" }
@@ -56,6 +57,7 @@ export function createDurableObjectStore({
   return {
     ...commands(db, clock, testHooks?.afterOperationWrite),
     ...counters(db, clock),
+    ...billing(db, clock, testHooks?.afterOperationWrite),
     database: db,
     putBudget: (b) =>
       db

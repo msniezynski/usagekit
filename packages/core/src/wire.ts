@@ -35,6 +35,22 @@ export function decodeMeterJson(text: string): unknown {
       decimal(v.count)
     )
       return { ...v, count: BigInt(v.count) };
+    if (
+      typeof v.id === "string" &&
+      typeof v.importId === "string" &&
+      ["aggregate", "import_total"].includes(String(v.kind)) &&
+      v.scope &&
+      v.window &&
+      v.ledgerTotal &&
+      v.evidenceTotal &&
+      decimal(v.unknownOperations) &&
+      (v.differenceUnits === null || decimal(v.differenceUnits))
+    )
+      return {
+        ...v,
+        unknownOperations: BigInt(v.unknownOperations),
+        differenceUnits: v.differenceUnits === null ? null : BigInt(v.differenceUnits),
+      };
     return value;
   });
 }

@@ -11,7 +11,7 @@ export { routes } from "./schemas/index.js";
 export { Budget as BudgetSchema } from "./schemas/index.js";
 /**
  * Web-standard handler for the Meter routes. Access comes from authenticate, never the request.
- * commands: false mounts the read side only: every POST under /v1/operations/ answers 404
+ * commands: false mounts the read side only: accounting and billing import POSTs answer 404
  * after authentication and before any authorization or body parsing, so an embedded host can
  * expose usage to an external dashboard while operations stay created in process.
  */
@@ -55,6 +55,12 @@ export function createUsageHandlers({
         name = "count";
         write = true;
       }
+      if (request.method === "POST" && url.pathname === "/v1/billing/import") {
+        if (!commands) return problem(404);
+        if (access.canImportBilling !== true) return problem(403);
+        name = "importBilling";
+        write = true;
+      }
       if (request.method === "POST" && url.pathname === "/v1/usage/query") name = "usage";
       if (request.method === "GET") {
         if (url.pathname === "/v1/usage") name = "usage";
@@ -62,6 +68,7 @@ export function createUsageHandlers({
         else if (url.pathname === "/v1/budgets/defined") name = "defined";
         else if (url.pathname === "/v1/budgets/applicable") name = "applicable";
         else if (url.pathname === "/v1/requests/counts") name = "counts";
+        else if (url.pathname === "/v1/billing/imports") name = "billingImports";
         else if (/^\/v1\/operations\/[^/]+$/.test(url.pathname)) name = "operation";
       }
       if (!name) return problem(404);
@@ -94,7 +101,7 @@ export function createUsageHandlers({
         return problem(400);
       const native = decodeWire(JSON.stringify(body));
       const result = write
-        ? await dispatchCommand(meter, name, native as Record<string, unknown>)
+        ? await dispatchCommand(meter, access, name, native as Record<string, unknown>)
         : await dispatchRead(meter, access, name, native);
       if ("outcome" in result && result.outcome === "forbidden") return problem(403);
       const encoded = encodeWire(result);

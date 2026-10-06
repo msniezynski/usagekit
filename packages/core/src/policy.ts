@@ -18,7 +18,7 @@ export function normalizeTags(tags: readonly string[]): string[] | null {
 }
 const surfaceSources: Readonly<Record<Surface, readonly Source[]>> = Object.freeze({
   app: Object.freeze(["app", "worker"] as const),
-  programmatic: Object.freeze(["api", "sdk", "cli", "mcp", "proxy"] as const),
+  programmatic: Object.freeze(["api", "sdk", "cli", "mcp", "proxy", "import"] as const),
 });
 /** Sources a surface budget covers. Every Source belongs to exactly one Surface. */
 export const sourcesOf = (surface: Surface): readonly Source[] => surfaceSources[surface];

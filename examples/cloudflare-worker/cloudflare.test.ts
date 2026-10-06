@@ -7,7 +7,7 @@ import { join, resolve } from "node:path";
 import { runStoreConformance, runStoreScalingConformance } from "@usagekit/store/conformance";
 import { createManualClock, InvalidInput } from "@usagekit/store";
 import type { Store } from "@usagekit/store";
-import type { Budget } from "@usagekit/core";
+import type { Budget, BillingImportInput } from "@usagekit/core";
 import type { SqlMetrics } from "../../packages/store-d1/src/index.js";
 import { encode, decode } from "../../packages/store-d1/src/serialize.js";
 import { input, budget, command, receipt, ref } from "../../packages/store/conformance/helpers.js";
@@ -267,4 +267,123 @@ test("signed usage cursors survive process restart and reject tampering", async 
   await expect(f.store.aggregate({ ...q, cursor: first.nextCursor! + "x" })).rejects.toThrow(
     "cursor",
   );
+});
+
+const billingInput = (overrides: Partial<BillingImportInput> = {}): BillingImportInput => ({
+  scope: { namespace: "test", principal: "u1", connection: "c1" },
+  provider: "search",
+  fileHash: "a".repeat(64),
+  window: { from: "2026-09-01T00:00:00.000Z", to: "2026-10-01T00:00:00.000Z" },
+  expectedPreviousImportId: null,
+  attribution: { fundingSource: "byok", costOwner: "u1" },
+  lines: [
+    {
+      providerRequestId: "provider-request",
+      operation: "search",
+      occurredAt: "2026-09-23T12:00:00.000Z",
+      cost: { units: 9007199254740993n, currency: "USD" },
+    },
+  ],
+  ...overrides,
+});
+
+test("Cloudflare v1 storage upgrades idempotently and import replay survives object restart", async () => {
+  const f = await fixture();
+  const reserved = await f.store.reserve(input({ operationId: "before-upgrade" }));
+  if (reserved.outcome !== "reserved") throw new Error("fixture");
+  await f.call("$upgradeVersionOne");
+  expect(await f.call("$schemaVersions")).toEqual([{ version: 1 }, { version: 2 }]);
+  expect(await f.store.getOperation(ref(reserved.operation))).toEqual(reserved.operation);
+  await expect(f.call("$unsupportedSchema")).rejects.toThrow("Unsupported Cloudflare schema");
+  const first = await f.store.importBilling(billingInput());
+  if (first.outcome !== "imported") throw new Error("fixture import");
+  await f.restart();
+  expect(await f.store.importBilling(billingInput())).toEqual({ ...first, replayed: true });
+  const op = await f.store.getOperation({
+    namespace: "test",
+    principal: "u1",
+    operationId: first.record.unobservedOperationIds[0]!,
+  });
+  expect(op).toMatchObject({
+    source: "import",
+    state: "pending",
+    budgetEpochs: [],
+    estimate: [],
+    lease: null,
+  });
+  expect(op!.receipts[0]!.cost.money!.units).toBe(9007199254740993n);
+});
+
+test("independent Cloudflare Workers serialize identical imports and competing revisions", async () => {
+  const f = await fixture();
+  const initial = (await Promise.all(
+    ["a", "b"].map((worker) => f.call("importBilling", [billingInput()], worker)),
+  )) as Awaited<ReturnType<Store["importBilling"]>>[];
+  expect(initial.every((r) => r.outcome === "imported")).toBe(true);
+  expect(initial.map((r) => r.outcome === "imported" && r.replayed).sort()).toEqual([false, true]);
+  const first = initial[0]!;
+  if (first.outcome !== "imported") throw new Error("fixture initial");
+  const revisions = (await Promise.all(
+    ["a", "b"].map((worker, index) =>
+      f.call(
+        "importBilling",
+        [
+          billingInput({
+            fileHash: String(index + 1).repeat(64),
+            expectedPreviousImportId: first.record.id,
+          }),
+        ],
+        worker,
+      ),
+    ),
+  )) as Awaited<ReturnType<Store["importBilling"]>>[];
+  expect(revisions.map((r) => r.outcome).sort()).toEqual(["imported", "rejected"]);
+  expect(revisions.find((r) => r.outcome === "rejected")).toMatchObject({
+    reason: "previous_import_conflict",
+  });
+  await f.restart();
+  const state = (await f.call("$billingState")) as Record<string, unknown[]>;
+  expect(state.billing_imports).toHaveLength(2);
+  expect(state.operations).toHaveLength(1);
+  expect(state.receipts).toHaveLength(2);
+});
+
+test("Cloudflare multi-line import failure rolls back complete ledger and import journal", async () => {
+  const f = await fixture();
+  f.budgets.push(budget({ limit: null }));
+  for (const providerRequestId of ["a", "b"]) {
+    const reserved = await f.store.reserve(input());
+    if (reserved.outcome !== "reserved") throw new Error("fixture reserve");
+    const grant = await f.store.markDispatchIntent({
+      ...command(reserved.operation),
+      holder: "h",
+      leaseTtlMs: 1000,
+    });
+    if (!("granted" in grant) || !grant.granted) throw new Error("fixture intent");
+    await f.store.settle({
+      ...command(grant.operation),
+      authority: { kind: "lease", leaseId: grant.lease.leaseId },
+      receipt: receipt({ providerRequestId, cost: { certainty: "unknown", money: null } }),
+    });
+  }
+  const before = await f.call("$billingState");
+  const imported = billingInput({
+    lines: ["a", "b"].map((providerRequestId) => ({
+      providerRequestId,
+      operation: "search",
+      occurredAt: "2026-09-23T12:00:00.000Z",
+      cost: { units: 7n, currency: "USD" },
+    })),
+  });
+  await f.call("$failWriteAt", [2]);
+  await expect(f.store.importBilling(imported)).rejects.toThrow("injected write failure");
+  expect(await f.call("$billingState")).toEqual(before);
+  await f.call("$failWriteAt", [0]);
+  const first = await f.store.importBilling(imported);
+  expect(first).toMatchObject({ outcome: "imported", replayed: false });
+  await f.restart();
+  expect(await f.store.importBilling(imported)).toMatchObject({
+    outcome: "imported",
+    replayed: true,
+  });
 });

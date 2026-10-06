@@ -13,6 +13,7 @@ import { operationsTests } from "./operations.js";
 import { propertyTests } from "./properties.js";
 import { capabilityTests } from "./capabilities.js";
 import { counterTests } from "./counters.js";
+import { billingTests } from "./billing.js";
 export function runStoreConformance(factory: StoreFactory, capabilities: StoreCapabilities) {
   describe("store conformance", () => {
     reserveTests(factory);
@@ -26,6 +27,7 @@ export function runStoreConformance(factory: StoreFactory, capabilities: StoreCa
     readsTests(factory, capabilities);
     operationsTests(factory);
     counterTests(factory);
+    billingTests(factory, capabilities);
     propertyTests(factory);
     capabilityTests(factory, capabilities);
     afterAll(() =>

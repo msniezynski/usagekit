@@ -1,5 +1,7 @@
 import type {
   Meter,
+  AccessContext,
+  BillingImportInput,
   ExpireReservationsInput,
   MeterReserveInput,
   DispatchIntentInput,
@@ -11,8 +13,15 @@ import type {
   CountRequestInput,
 } from "@usagekit/core";
 import type { RouteName } from "../schemas/index.js";
-export function dispatchCommand(meter: Meter, name: RouteName, input: Record<string, unknown>) {
+export function dispatchCommand(
+  meter: Meter,
+  access: AccessContext,
+  name: RouteName,
+  input: Record<string, unknown>,
+) {
   switch (name) {
+    case "importBilling":
+      return meter.importBilling(access, input as BillingImportInput);
     case "expire": {
       const { commandId: _, ...data } = input;
       return meter.expireReservations(data as ExpireReservationsInput);

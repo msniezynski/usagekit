@@ -13,6 +13,1301 @@
     }
   },
   "paths": {
+    "/v1/billing/import": {
+      "post": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "description": "Billing import command. Requires explicit canImportBilling permission from verified server authentication and host connection ownership. A handler mounted with commands: false answers 404 here after authentication. Never dispatches a provider request.",
+        "responses": {
+          "200": {
+            "description": "Typed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "const": "imported"
+                        },
+                        "replayed": {
+                          "type": "boolean"
+                        },
+                        "record": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "scope": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "namespace": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "principal": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "actor": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "group": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "connection": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "accessCredential": {
+                                  "type": "object",
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "id": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    }
+                                  },
+                                  "required": ["kind", "id"]
+                                },
+                                "providerCredentialVersion": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "tags": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                  },
+                                  "minItems": 1,
+                                  "maxItems": 16
+                                }
+                              },
+                              "required": ["namespace", "principal", "connection"]
+                            },
+                            "provider": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "fileHash": {
+                              "type": "string",
+                              "pattern": "^[a-f0-9]{64}$"
+                            },
+                            "window": {
+                              "type": "object",
+                              "additionalProperties": false,
+                              "properties": {
+                                "from": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "Z$"
+                                },
+                                "to": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "Z$"
+                                }
+                              },
+                              "required": ["from", "to"]
+                            },
+                            "recordedAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "Z$"
+                            },
+                            "supersedes": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "supersededBy": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "matchedOperationIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "unobservedOperationIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "reconciliations": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "importId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "scope": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "namespace": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "principal": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "actor": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "group": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "connection": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "accessCredential": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        },
+                                        "required": ["kind", "id"]
+                                      },
+                                      "providerCredentialVersion": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "tags": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                        },
+                                        "minItems": 1,
+                                        "maxItems": 16
+                                      }
+                                    },
+                                    "required": ["namespace", "principal", "connection"]
+                                  },
+                                  "provider": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "window": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "from": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "Z$"
+                                      },
+                                      "to": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "Z$"
+                                      }
+                                    },
+                                    "required": ["from", "to"]
+                                  },
+                                  "kind": {
+                                    "enum": ["aggregate", "import_total"]
+                                  },
+                                  "operation": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "ledgerTotal": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "certainty": {
+                                            "const": "unknown"
+                                          },
+                                          "money": {
+                                            "type": "null"
+                                          }
+                                        },
+                                        "required": ["certainty", "money"]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "certainty": {
+                                            "enum": ["measured", "estimated"]
+                                          },
+                                          "money": {
+                                            "type": "object",
+                                            "additionalProperties": false,
+                                            "properties": {
+                                              "units": {
+                                                "type": "string",
+                                                "pattern": "^-?\\d+$"
+                                              },
+                                              "currency": {
+                                                "const": "USD"
+                                              }
+                                            },
+                                            "required": ["units", "currency"]
+                                          }
+                                        },
+                                        "required": ["certainty", "money"]
+                                      }
+                                    ]
+                                  },
+                                  "evidenceTotal": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "units": {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+$"
+                                      },
+                                      "currency": {
+                                        "const": "USD"
+                                      }
+                                    },
+                                    "required": ["units", "currency"]
+                                  },
+                                  "differenceUnits": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "unknownOperations": {
+                                    "type": "string",
+                                    "pattern": "^\\d+$"
+                                  },
+                                  "evidenceRef": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "importId",
+                                  "scope",
+                                  "provider",
+                                  "window",
+                                  "kind",
+                                  "ledgerTotal",
+                                  "evidenceTotal",
+                                  "differenceUnits",
+                                  "unknownOperations",
+                                  "evidenceRef"
+                                ]
+                              }
+                            },
+                            "alerts": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "budgetId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "budgetVersion": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "epoch": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "at": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "percent": {
+                                            "type": "number",
+                                            "minimum": 1,
+                                            "maximum": 100
+                                          }
+                                        },
+                                        "required": ["percent"]
+                                      },
+                                      {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "value": {
+                                            "type": "string",
+                                            "pattern": "^-?\\d+$"
+                                          },
+                                          "scale": {
+                                            "type": "number",
+                                            "maximum": 18
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        },
+                                        "required": ["value", "scale", "unit"]
+                                      }
+                                    ]
+                                  },
+                                  "used": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "value": {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+$"
+                                      },
+                                      "scale": {
+                                        "type": "number",
+                                        "maximum": 18
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["value", "scale", "unit"]
+                                  },
+                                  "reserved": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "value": {
+                                        "type": "string",
+                                        "pattern": "^-?\\d+$"
+                                      },
+                                      "scale": {
+                                        "type": "number",
+                                        "maximum": 18
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      }
+                                    },
+                                    "required": ["value", "scale", "unit"]
+                                  }
+                                },
+                                "required": [
+                                  "budgetId",
+                                  "budgetVersion",
+                                  "epoch",
+                                  "at",
+                                  "used",
+                                  "reserved"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "scope",
+                            "provider",
+                            "fileHash",
+                            "window",
+                            "recordedAt",
+                            "matchedOperationIds",
+                            "unobservedOperationIds",
+                            "reconciliations",
+                            "alerts"
+                          ]
+                        }
+                      },
+                      "required": ["outcome", "replayed", "record"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "const": "rejected"
+                        },
+                        "reason": {
+                          "enum": [
+                            "previous_import_conflict",
+                            "payload_conflict",
+                            "ambiguous_request",
+                            "active_operation",
+                            "operation_state",
+                            "evidence_conflict"
+                          ]
+                        },
+                        "latestImportId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "line": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": ["outcome", "reason", "latestImportId"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "const": "forbidden"
+                        }
+                      },
+                      "required": ["outcome"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "const": "invalid"
+                        },
+                        "field": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "reason": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["outcome", "field", "reason"]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid schema"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Commands disabled on this mount"
+          },
+          "500": {
+            "description": "Unexpected failure"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "scope": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "namespace": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "principal": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "actor": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "group": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "connection": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "accessCredential": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "id": {
+                            "type": "string",
+                            "minLength": 1
+                          }
+                        },
+                        "required": ["kind", "id"]
+                      },
+                      "providerCredentialVersion": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "tags": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                        },
+                        "minItems": 1,
+                        "maxItems": 16
+                      }
+                    },
+                    "required": ["namespace", "principal", "connection"]
+                  },
+                  "provider": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "fileHash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "window": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "from": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "Z$"
+                      },
+                      "to": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "Z$"
+                      }
+                    },
+                    "required": ["from", "to"]
+                  },
+                  "expectedPreviousImportId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "attribution": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "fundingSource": {
+                        "enum": ["byok", "platform"]
+                      },
+                      "costOwner": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "creditAccountRef": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "customerPriceVersion": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "providerPriceVersion": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "platformPools": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    },
+                    "required": ["fundingSource", "costOwner"]
+                  },
+                  "lines": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "providerRequestId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "operation": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "occurredAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "Z$"
+                        },
+                        "cost": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "units": {
+                              "type": "string",
+                              "pattern": "^-?\\d+$"
+                            },
+                            "currency": {
+                              "const": "USD"
+                            }
+                          },
+                          "required": ["units", "currency"]
+                        },
+                        "window": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "from": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "Z$"
+                            },
+                            "to": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "Z$"
+                            }
+                          },
+                          "required": ["from", "to"]
+                        }
+                      },
+                      "required": ["occurredAt", "cost"]
+                    }
+                  }
+                },
+                "required": [
+                  "scope",
+                  "provider",
+                  "fileHash",
+                  "window",
+                  "expectedPreviousImportId",
+                  "attribution",
+                  "lines"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/billing/imports": {
+      "get": {
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Typed result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "const": "ok"
+                        },
+                        "value": {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "properties": {
+                            "records": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "scope": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "namespace": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "principal": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "actor": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "group": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "connection": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "accessCredential": {
+                                        "type": "object",
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          },
+                                          "id": {
+                                            "type": "string",
+                                            "minLength": 1
+                                          }
+                                        },
+                                        "required": ["kind", "id"]
+                                      },
+                                      "providerCredentialVersion": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "tags": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string",
+                                          "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                        },
+                                        "minItems": 1,
+                                        "maxItems": 16
+                                      }
+                                    },
+                                    "required": ["namespace", "principal", "connection"]
+                                  },
+                                  "provider": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "fileHash": {
+                                    "type": "string",
+                                    "pattern": "^[a-f0-9]{64}$"
+                                  },
+                                  "window": {
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "from": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "Z$"
+                                      },
+                                      "to": {
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "pattern": "Z$"
+                                      }
+                                    },
+                                    "required": ["from", "to"]
+                                  },
+                                  "recordedAt": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "pattern": "Z$"
+                                  },
+                                  "supersedes": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "supersededBy": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "matchedOperationIds": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    }
+                                  },
+                                  "unobservedOperationIds": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    }
+                                  },
+                                  "reconciliations": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "id": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "importId": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "scope": {
+                                          "type": "object",
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "namespace": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            "principal": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            "actor": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            "group": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            "connection": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            "accessCredential": {
+                                              "type": "object",
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "kind": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                },
+                                                "id": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                }
+                                              },
+                                              "required": ["kind", "id"]
+                                            },
+                                            "providerCredentialVersion": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            "tags": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string",
+                                                "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"
+                                              },
+                                              "minItems": 1,
+                                              "maxItems": 16
+                                            }
+                                          },
+                                          "required": ["namespace", "principal", "connection"]
+                                        },
+                                        "provider": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "window": {
+                                          "type": "object",
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "from": {
+                                              "type": "string",
+                                              "format": "date-time",
+                                              "pattern": "Z$"
+                                            },
+                                            "to": {
+                                              "type": "string",
+                                              "format": "date-time",
+                                              "pattern": "Z$"
+                                            }
+                                          },
+                                          "required": ["from", "to"]
+                                        },
+                                        "kind": {
+                                          "enum": ["aggregate", "import_total"]
+                                        },
+                                        "operation": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "ledgerTotal": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "certainty": {
+                                                  "const": "unknown"
+                                                },
+                                                "money": {
+                                                  "type": "null"
+                                                }
+                                              },
+                                              "required": ["certainty", "money"]
+                                            },
+                                            {
+                                              "type": "object",
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "certainty": {
+                                                  "enum": ["measured", "estimated"]
+                                                },
+                                                "money": {
+                                                  "type": "object",
+                                                  "additionalProperties": false,
+                                                  "properties": {
+                                                    "units": {
+                                                      "type": "string",
+                                                      "pattern": "^-?\\d+$"
+                                                    },
+                                                    "currency": {
+                                                      "const": "USD"
+                                                    }
+                                                  },
+                                                  "required": ["units", "currency"]
+                                                }
+                                              },
+                                              "required": ["certainty", "money"]
+                                            }
+                                          ]
+                                        },
+                                        "evidenceTotal": {
+                                          "type": "object",
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "units": {
+                                              "type": "string",
+                                              "pattern": "^-?\\d+$"
+                                            },
+                                            "currency": {
+                                              "const": "USD"
+                                            }
+                                          },
+                                          "required": ["units", "currency"]
+                                        },
+                                        "differenceUnits": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "pattern": "^-?\\d+$"
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "unknownOperations": {
+                                          "type": "string",
+                                          "pattern": "^\\d+$"
+                                        },
+                                        "evidenceRef": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        }
+                                      },
+                                      "required": [
+                                        "id",
+                                        "importId",
+                                        "scope",
+                                        "provider",
+                                        "window",
+                                        "kind",
+                                        "ledgerTotal",
+                                        "evidenceTotal",
+                                        "differenceUnits",
+                                        "unknownOperations",
+                                        "evidenceRef"
+                                      ]
+                                    }
+                                  },
+                                  "alerts": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "budgetId": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "budgetVersion": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "epoch": {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        "at": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "percent": {
+                                                  "type": "number",
+                                                  "minimum": 1,
+                                                  "maximum": 100
+                                                }
+                                              },
+                                              "required": ["percent"]
+                                            },
+                                            {
+                                              "type": "object",
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "value": {
+                                                  "type": "string",
+                                                  "pattern": "^-?\\d+$"
+                                                },
+                                                "scale": {
+                                                  "type": "number",
+                                                  "maximum": 18
+                                                },
+                                                "unit": {
+                                                  "type": "string",
+                                                  "minLength": 1
+                                                }
+                                              },
+                                              "required": ["value", "scale", "unit"]
+                                            }
+                                          ]
+                                        },
+                                        "used": {
+                                          "type": "object",
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "value": {
+                                              "type": "string",
+                                              "pattern": "^-?\\d+$"
+                                            },
+                                            "scale": {
+                                              "type": "number",
+                                              "maximum": 18
+                                            },
+                                            "unit": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": ["value", "scale", "unit"]
+                                        },
+                                        "reserved": {
+                                          "type": "object",
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "value": {
+                                              "type": "string",
+                                              "pattern": "^-?\\d+$"
+                                            },
+                                            "scale": {
+                                              "type": "number",
+                                              "maximum": 18
+                                            },
+                                            "unit": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            }
+                                          },
+                                          "required": ["value", "scale", "unit"]
+                                        }
+                                      },
+                                      "required": [
+                                        "budgetId",
+                                        "budgetVersion",
+                                        "epoch",
+                                        "at",
+                                        "used",
+                                        "reserved"
+                                      ]
+                                    }
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "scope",
+                                  "provider",
+                                  "fileHash",
+                                  "window",
+                                  "recordedAt",
+                                  "matchedOperationIds",
+                                  "unobservedOperationIds",
+                                  "reconciliations",
+                                  "alerts"
+                                ]
+                              }
+                            },
+                            "asOf": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "Z$"
+                            },
+                            "truncated": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": ["records", "asOf", "truncated"]
+                        }
+                      },
+                      "required": ["outcome", "value"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "const": "forbidden"
+                        }
+                      },
+                      "required": ["outcome"]
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "outcome": {
+                          "const": "invalid"
+                        },
+                        "field": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "reason": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": ["outcome", "field", "reason"]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid schema"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Unexpected failure"
+          }
+        },
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Base64url-encoded JSON query",
+            "schema": {
+              "type": "string"
+            },
+            "x-decoded-schema": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "scope": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "namespace": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "principal": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": ["namespace", "principal"]
+                },
+                "connection": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "from": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "Z$"
+                },
+                "to": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "Z$"
+                },
+                "history": {
+                  "type": "boolean"
+                },
+                "limit": {
+                  "type": "number",
+                  "minimum": 1,
+                  "maximum": 1000
+                }
+              },
+              "required": ["scope", "connection", "from", "to"]
+            }
+          }
+        ]
+      }
+    },
     "/v1/operations/expire": {
       "post": {
         "security": [
@@ -232,7 +1527,16 @@
                               "enum": ["app", "programmatic"]
                             },
                             "source": {
-                              "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                              "enum": [
+                                "app",
+                                "worker",
+                                "api",
+                                "sdk",
+                                "cli",
+                                "mcp",
+                                "proxy",
+                                "import"
+                              ]
                             },
                             "provider": {
                               "type": "string",
@@ -361,6 +1665,9 @@
                                   "id": {
                                     "type": "string",
                                     "minLength": 1
+                                  },
+                                  "source": {
+                                    "enum": ["dispatch", "probe", "import"]
                                   },
                                   "supersedes": {
                                     "type": "string",
@@ -706,7 +2013,8 @@
                                       "sdk",
                                       "cli",
                                       "mcp",
-                                      "proxy"
+                                      "proxy",
+                                      "import"
                                     ]
                                   },
                                   "unit": {
@@ -1222,7 +2530,8 @@
                                     "sdk",
                                     "cli",
                                     "mcp",
-                                    "proxy"
+                                    "proxy",
+                                    "import"
                                   ]
                                 },
                                 "unit": {
@@ -1591,7 +2900,16 @@
                               "enum": ["app", "programmatic"]
                             },
                             "source": {
-                              "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                              "enum": [
+                                "app",
+                                "worker",
+                                "api",
+                                "sdk",
+                                "cli",
+                                "mcp",
+                                "proxy",
+                                "import"
+                              ]
                             },
                             "provider": {
                               "type": "string",
@@ -1720,6 +3038,9 @@
                                   "id": {
                                     "type": "string",
                                     "minLength": 1
+                                  },
+                                  "source": {
+                                    "enum": ["dispatch", "probe", "import"]
                                   },
                                   "supersedes": {
                                     "type": "string",
@@ -2070,7 +3391,7 @@
                     "enum": ["app", "programmatic"]
                   },
                   "source": {
-                    "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                    "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy", "import"]
                   },
                   "provider": {
                     "type": "string",
@@ -2261,7 +3582,16 @@
                               "enum": ["app", "programmatic"]
                             },
                             "source": {
-                              "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                              "enum": [
+                                "app",
+                                "worker",
+                                "api",
+                                "sdk",
+                                "cli",
+                                "mcp",
+                                "proxy",
+                                "import"
+                              ]
                             },
                             "provider": {
                               "type": "string",
@@ -2390,6 +3720,9 @@
                                   "id": {
                                     "type": "string",
                                     "minLength": 1
+                                  },
+                                  "source": {
+                                    "enum": ["dispatch", "probe", "import"]
                                   },
                                   "supersedes": {
                                     "type": "string",
@@ -2706,7 +4039,16 @@
                                   "enum": ["app", "programmatic"]
                                 },
                                 "source": {
-                                  "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                                  "enum": [
+                                    "app",
+                                    "worker",
+                                    "api",
+                                    "sdk",
+                                    "cli",
+                                    "mcp",
+                                    "proxy",
+                                    "import"
+                                  ]
                                 },
                                 "provider": {
                                   "type": "string",
@@ -2835,6 +4177,9 @@
                                       "id": {
                                         "type": "string",
                                         "minLength": 1
+                                      },
+                                      "source": {
+                                        "enum": ["dispatch", "probe", "import"]
                                       },
                                       "supersedes": {
                                         "type": "string",
@@ -3395,7 +4740,16 @@
                               "enum": ["app", "programmatic"]
                             },
                             "source": {
-                              "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                              "enum": [
+                                "app",
+                                "worker",
+                                "api",
+                                "sdk",
+                                "cli",
+                                "mcp",
+                                "proxy",
+                                "import"
+                              ]
                             },
                             "provider": {
                               "type": "string",
@@ -3524,6 +4878,9 @@
                                   "id": {
                                     "type": "string",
                                     "minLength": 1
+                                  },
+                                  "source": {
+                                    "enum": ["dispatch", "probe", "import"]
                                   },
                                   "supersedes": {
                                     "type": "string",
@@ -3840,7 +5197,16 @@
                                   "enum": ["app", "programmatic"]
                                 },
                                 "source": {
-                                  "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                                  "enum": [
+                                    "app",
+                                    "worker",
+                                    "api",
+                                    "sdk",
+                                    "cli",
+                                    "mcp",
+                                    "proxy",
+                                    "import"
+                                  ]
                                 },
                                 "provider": {
                                   "type": "string",
@@ -3969,6 +5335,9 @@
                                       "id": {
                                         "type": "string",
                                         "minLength": 1
+                                      },
+                                      "source": {
+                                        "enum": ["dispatch", "probe", "import"]
                                       },
                                       "supersedes": {
                                         "type": "string",
@@ -4376,7 +5745,16 @@
                               "enum": ["app", "programmatic"]
                             },
                             "source": {
-                              "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                              "enum": [
+                                "app",
+                                "worker",
+                                "api",
+                                "sdk",
+                                "cli",
+                                "mcp",
+                                "proxy",
+                                "import"
+                              ]
                             },
                             "provider": {
                               "type": "string",
@@ -4505,6 +5883,9 @@
                                   "id": {
                                     "type": "string",
                                     "minLength": 1
+                                  },
+                                  "source": {
+                                    "enum": ["dispatch", "probe", "import"]
                                   },
                                   "supersedes": {
                                     "type": "string",
@@ -4912,7 +6293,16 @@
                                   "enum": ["app", "programmatic"]
                                 },
                                 "source": {
-                                  "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                                  "enum": [
+                                    "app",
+                                    "worker",
+                                    "api",
+                                    "sdk",
+                                    "cli",
+                                    "mcp",
+                                    "proxy",
+                                    "import"
+                                  ]
                                 },
                                 "provider": {
                                   "type": "string",
@@ -5041,6 +6431,9 @@
                                       "id": {
                                         "type": "string",
                                         "minLength": 1
+                                      },
+                                      "source": {
+                                        "enum": ["dispatch", "probe", "import"]
                                       },
                                       "supersedes": {
                                         "type": "string",
@@ -5359,6 +6752,9 @@
                       "id": {
                         "type": "string",
                         "minLength": 1
+                      },
+                      "source": {
+                        "enum": ["dispatch", "probe", "import"]
                       },
                       "supersedes": {
                         "type": "string",
@@ -5635,7 +7031,16 @@
                               "enum": ["app", "programmatic"]
                             },
                             "source": {
-                              "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                              "enum": [
+                                "app",
+                                "worker",
+                                "api",
+                                "sdk",
+                                "cli",
+                                "mcp",
+                                "proxy",
+                                "import"
+                              ]
                             },
                             "provider": {
                               "type": "string",
@@ -5764,6 +7169,9 @@
                                   "id": {
                                     "type": "string",
                                     "minLength": 1
+                                  },
+                                  "source": {
+                                    "enum": ["dispatch", "probe", "import"]
                                   },
                                   "supersedes": {
                                     "type": "string",
@@ -6171,7 +7579,16 @@
                                   "enum": ["app", "programmatic"]
                                 },
                                 "source": {
-                                  "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                                  "enum": [
+                                    "app",
+                                    "worker",
+                                    "api",
+                                    "sdk",
+                                    "cli",
+                                    "mcp",
+                                    "proxy",
+                                    "import"
+                                  ]
                                 },
                                 "provider": {
                                   "type": "string",
@@ -6300,6 +7717,9 @@
                                       "id": {
                                         "type": "string",
                                         "minLength": 1
+                                      },
+                                      "source": {
+                                        "enum": ["dispatch", "probe", "import"]
                                       },
                                       "supersedes": {
                                         "type": "string",
@@ -6618,6 +8038,9 @@
                       "id": {
                         "type": "string",
                         "minLength": 1
+                      },
+                      "source": {
+                        "enum": ["dispatch", "probe", "import"]
                       },
                       "supersedes": {
                         "type": "string",
@@ -6904,7 +8327,16 @@
                               "enum": ["app", "programmatic"]
                             },
                             "source": {
-                              "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                              "enum": [
+                                "app",
+                                "worker",
+                                "api",
+                                "sdk",
+                                "cli",
+                                "mcp",
+                                "proxy",
+                                "import"
+                              ]
                             },
                             "provider": {
                               "type": "string",
@@ -7033,6 +8465,9 @@
                                   "id": {
                                     "type": "string",
                                     "minLength": 1
+                                  },
+                                  "source": {
+                                    "enum": ["dispatch", "probe", "import"]
                                   },
                                   "supersedes": {
                                     "type": "string",
@@ -7332,7 +8767,16 @@
                                   "enum": ["app", "programmatic"]
                                 },
                                 "source": {
-                                  "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                                  "enum": [
+                                    "app",
+                                    "worker",
+                                    "api",
+                                    "sdk",
+                                    "cli",
+                                    "mcp",
+                                    "proxy",
+                                    "import"
+                                  ]
                                 },
                                 "provider": {
                                   "type": "string",
@@ -7461,6 +8905,9 @@
                                       "id": {
                                         "type": "string",
                                         "minLength": 1
+                                      },
+                                      "source": {
+                                        "enum": ["dispatch", "probe", "import"]
                                       },
                                       "supersedes": {
                                         "type": "string",
@@ -7896,7 +9343,7 @@
                     "enum": ["app", "programmatic"]
                   },
                   "source": {
-                    "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                    "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy", "import"]
                   },
                   "provider": {
                     "type": "string",
@@ -8049,7 +9496,16 @@
                                   "enum": ["app", "programmatic"]
                                 },
                                 "source": {
-                                  "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                                  "enum": [
+                                    "app",
+                                    "worker",
+                                    "api",
+                                    "sdk",
+                                    "cli",
+                                    "mcp",
+                                    "proxy",
+                                    "import"
+                                  ]
                                 },
                                 "provider": {
                                   "type": "string",
@@ -8178,6 +9634,9 @@
                                       "id": {
                                         "type": "string",
                                         "minLength": 1
+                                      },
+                                      "source": {
+                                        "enum": ["dispatch", "probe", "import"]
                                       },
                                       "supersedes": {
                                         "type": "string",
@@ -9304,7 +10763,16 @@
                                     "enum": ["app", "programmatic"]
                                   },
                                   "source": {
-                                    "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                                    "enum": [
+                                      "app",
+                                      "worker",
+                                      "api",
+                                      "sdk",
+                                      "cli",
+                                      "mcp",
+                                      "proxy",
+                                      "import"
+                                    ]
                                   },
                                   "provider": {
                                     "type": "string",
@@ -9433,6 +10901,9 @@
                                         "id": {
                                           "type": "string",
                                           "minLength": 1
+                                        },
+                                        "source": {
+                                          "enum": ["dispatch", "probe", "import"]
                                         },
                                         "supersedes": {
                                           "type": "string",
@@ -9980,7 +11451,8 @@
                                   "sdk",
                                   "cli",
                                   "mcp",
-                                  "proxy"
+                                  "proxy",
+                                  "import"
                                 ]
                               },
                               "unit": {
@@ -10758,7 +12230,8 @@
                                       "sdk",
                                       "cli",
                                       "mcp",
-                                      "proxy"
+                                      "proxy",
+                                      "import"
                                     ]
                                   },
                                   "unit": {
@@ -11179,7 +12652,7 @@
                   "enum": ["app", "programmatic"]
                 },
                 "source": {
-                  "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy"]
+                  "enum": ["app", "worker", "api", "sdk", "cli", "mcp", "proxy", "import"]
                 },
                 "units": {
                   "type": "array",
