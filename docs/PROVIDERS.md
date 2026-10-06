@@ -1,6 +1,6 @@
 # Provider descriptor design (P5)
 
-Status: P5 implementation complete; the 0.4.0 package release is authorized. Host runtime rollout remains a separate integration. This file is the specification of the provider catalog and is kept in
+Status: P5 implementation is on main with the recorded 0.4.0 release. The approved P8 billing parser is included in the local 0.5.0 candidate; publication and host runtime rollout remain separate gates. This file is the specification of the provider catalog and is kept in
 sync with the types in `packages/core/src/providers.ts` and the `@usagekit/providers` package.
 
 ## 1. What a descriptor is

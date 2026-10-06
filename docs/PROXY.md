@@ -1,7 +1,8 @@
 # Local proxy (P6)
 
 The local server routes authenticated requests through `@usagekit/proxy`. The package is
-private, as are the server and CLI; the four published library packages remain at 0.4.0.
+private, as are the server and CLI. The repository records the four public library packages
+at 0.4.0; this branch prepares their 0.5.0 candidate. See the [migration guide](MIGRATING-0.5.md).
 Start from this checkout using the root README. Nothing needs to change in a production host.
 
 ```sh

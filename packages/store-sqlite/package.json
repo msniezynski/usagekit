@@ -19,8 +19,8 @@
     "prepublishOnly": "node ../../scripts/deny-publish.mjs"
   },
   "dependencies": {
-    "@usagekit/core": "0.4.0",
-    "@usagekit/store": "0.4.0",
+    "@usagekit/core": "0.5.0",
+    "@usagekit/store": "0.5.0",
     "better-sqlite3": "13.0.3"
   },
   "devDependencies": {

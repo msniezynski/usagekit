@@ -49,10 +49,10 @@ test("release publishes the allow-listed packages with public access", () => {
   assert.equal(args.includes("restricted"), false);
   assert.equal(args[args.indexOf("--registry") + 1], "https://registry.npmjs.org/");
 });
-test("the contract release is 0.4.0 for every changed package and the new view packages", async () => {
+test("the 0.5.0 contract cohort stays aligned across public and private consumers", async () => {
   const { readFileSync } = await import("node:fs");
   const { releaseVersion } = await import("../lib/release.mjs");
-  assert.equal(releaseVersion, "0.4.0");
+  assert.equal(releaseVersion, "0.5.0");
   for (const name of ["core", "store", "meter", "http", "client", "views", "react", "providers"]) {
     const manifest = JSON.parse(
       readFileSync(new URL(`../../packages/${name}/package.json`, import.meta.url), "utf8"),

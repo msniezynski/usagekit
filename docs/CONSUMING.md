@@ -1,14 +1,19 @@
 # Consuming usagekit
 
-Use Node 22 and pin exact package versions:
+Use Node 22.23.1 and pin the four public packages to the same exact version.
+This branch prepares 0.5.0; the repository records 0.4.0 as the preceding published cohort.
+After 0.5.0 is published:
 
 ```sh
-npm install --save-exact @usagekit/core@0.4.0 @usagekit/store@0.4.0 @usagekit/meter@0.4.0 @usagekit/providers@0.4.0
+npm install --save-exact @usagekit/core@0.5.0 @usagekit/store@0.5.0 @usagekit/meter@0.5.0 @usagekit/providers@0.5.0
 ```
 
 The registry is `https://registry.npmjs.org/`. No scope registry mapping is needed.
 The packages are public. No registry token is required to install them.
 Consumers that configured a read-only token during the private phase should verify a token-free `npm ci` and then remove the token from CI, deployment and user configuration.
+For an unpublished candidate, install all four reviewed local tarballs together as described in
+the [migration guide](MIGRATING-0.5.md). Custom Store and Meter implementations need the new
+mandatory billing methods before upgrading; the 0.4.0 interfaces are not interchangeable.
 
 ## Embedded contract
 
@@ -53,6 +58,6 @@ Skipped capabilities are not passed guarantees.
 ## Release operators
 
 Only npm run release can publish core, store, meter and providers. Other workspaces stay private.
-Live release requires clean main, its verified signed v0.4.0 tag, full checks and inspected tarballs.
+Live release of this cohort requires clean main, its verified signed v0.5.0 tag, full checks and inspected tarballs.
 A dry run on a clean branch builds and audits packages without checking live authorization or publishing.
 Apache-2.0 LICENSE and NOTICE are included in every tarball.

@@ -2,7 +2,7 @@
   "name": "usagekit-workspace",
   "version": "0.0.0",
   "private": true,
-  "description": "Local usagekit monorepo scaffold. No published packages.",
+  "description": "Local usage and cost metering workspace with four public library packages.",
   "license": "Apache-2.0",
   "packageManager": "npm@10.9.3",
   "engines": {

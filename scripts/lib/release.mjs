@@ -6,7 +6,7 @@ export const publishable = [
 ];
 export const registry = "https://registry.npmjs.org/";
 /** Version of the publishable packages on this branch; the workspace check enforces it. */
-export const releaseVersion = "0.4.0";
+export const releaseVersion = "0.5.0";
 
 /** The packages are public. CLI flags take precedence over each manifest's publishConfig. */
 export function publishArgs() {

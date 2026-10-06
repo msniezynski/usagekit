@@ -135,22 +135,24 @@ maintain and a registry to test against both.
 ## 6. Where we are
 
 This is a local repository snapshot, not a live audit of npm, Cloudflare or a host deployment.
-Reviewed base: local `main` at `32befb7`, with approved P7 source `3b8025b`.
+Reviewed base: local `main` at `1e5c25b`, with approved P8 billing-import source.
+The `chore/p8-release-prep` branch prepares the 0.5.0 cohort; it does not assert publication.
 
-| Item                                 | State on 2026-10-06                                                                                                                                                                                                                                                           |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P1 core, store, meter                | On `main`: embedded Meter, shared conformance suite and property tests.                                                                                                                                                                                                       |
-| P2 SQLite, HTTP, client, server, CLI | On `main`: durable local storage, authenticated API and CLI, encrypted vault, reservation expiry and restart recovery.                                                                                                                                                        |
-| P4 contract and UI                   | On `main`: source and tag budgets, soft/hard limits, view models, React hooks, Radix/Base UI registry and local server UI. Host adoption is a separate check. See [UI](UI.md).                                                                                                |
-| P5 provider catalog                  | On `main`, tagged `v0.4.0`: descriptors, pricing, fixture extraction/recording and the wrapper boundary.                                                                                                                                                                      |
-| P6 local proxy                       | On `main`: routed provider dispatch, budget enforcement and crash recovery. See [PROXY](PROXY.md).                                                                                                                                                                            |
-| P7 Cloudflare storage                | Approved on local `main`: authoritative SQLite-backed Durable Object storage and Worker example. Direct D1Database support remains unimplemented.                                                                                                                             |
-| Library release                      | The repository records the public 0.4.0 release of `core`, `store`, `meter` and `providers`. Other workspaces, including `store-d1`, remain private.                                                                                                                          |
-| Repository hosting and CI            | No Git remote is configured. The public hosting/CI part of P4 remains outstanding.                                                                                                                                                                                            |
-| P3 host shadow and P8 cutover        | Current host PR, deployment, shadow observations and credit authority must be checked in the host repository before cutover. Library checks do not establish production readiness.                                                                                            |
-| P8 billing import                    | In development on `feat/p8-billing-reconciliation`: atomic imports, scoped request matching, immutable revisions, reconciliation, SQLite and Durable Object replay, HTTP and local parsing. See [billing imports](BILLING-IMPORTS.md). Unpublished and not approved for main. |
+| Item                                 | State on 2026-10-06                                                                                                                                                                                                                                                                                   |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P1 core, store, meter                | On `main`: embedded Meter, shared conformance suite and property tests.                                                                                                                                                                                                                               |
+| P2 SQLite, HTTP, client, server, CLI | On `main`: durable local storage, authenticated API and CLI, encrypted vault, reservation expiry and restart recovery.                                                                                                                                                                                |
+| P4 contract and UI                   | On `main`: source and tag budgets, soft/hard limits, view models, React hooks, Radix/Base UI registry and local server UI. Host adoption is a separate check. See [UI](UI.md).                                                                                                                        |
+| P5 provider catalog                  | On `main`, tagged `v0.4.0`: descriptors, pricing, fixture extraction/recording and the wrapper boundary.                                                                                                                                                                                              |
+| P6 local proxy                       | On `main`: routed provider dispatch, budget enforcement and crash recovery. See [PROXY](PROXY.md).                                                                                                                                                                                                    |
+| P7 Cloudflare storage                | Approved on local `main`: authoritative SQLite-backed Durable Object storage and Worker example. Direct D1Database support remains unimplemented.                                                                                                                                                     |
+| Library release                      | The repository records the public 0.4.0 release of `core`, `store`, `meter` and `providers`. The same four packages target the local 0.5.0 candidate; publication requires separate exact-SHA approval and release authorization. Other workspaces remain private.                                    |
+| Repository hosting and CI            | No Git remote is configured. The public hosting/CI part of P4 remains outstanding.                                                                                                                                                                                                                    |
+| P3 host shadow and P8 cutover        | Current host PR, deployment, shadow observations and credit authority must be checked in the host repository before cutover. Library checks do not establish production readiness.                                                                                                                    |
+| P8 billing import                    | Approved on local `main`: atomic imports, scoped request matching, immutable revisions, reconciliation, SQLite and Durable Object replay, HTTP and local parsing. Included in the unpublished 0.5.0 candidate. See [billing imports](BILLING-IMPORTS.md) and the [migration guide](MIGRATING-0.5.md). |
 
-Next: finish and review P8 source and host preparation. Host integration and shadow evidence are
+Next: validate the 0.5.0 cohort and its host migration, then obtain exact-candidate release approval.
+Host integration and shadow evidence are
 being checked in the host repository, with funding identity and balance ownership retained per
 execution. P8 still requires real-database crash tests, reconciled holds, a rehearsed rollback,
 measured shadow observations and live end-user views. Library imports do not satisfy those host
@@ -420,7 +422,7 @@ The contract already supports the mechanics: `correct` appends a superseding rec
 `late_evidence` authority, receipts carry `providerRequestId` and `evidenceRef`, and certainty
 is per dimension so cost can become `measured` while quantity stays `estimated`.
 
-The P8 task branch implements the import mechanics described in
+The approved P8 source implements the import mechanics described in
 [billing imports](BILLING-IMPORTS.md). Production host adoption remains a separate exit gate.
 The responsibilities span the following stages.
 

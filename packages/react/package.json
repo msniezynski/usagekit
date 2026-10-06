@@ -1,6 +1,6 @@
 {
   "name": "@usagekit/react",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
@@ -20,8 +20,8 @@
     "prepublishOnly": "node ../../scripts/deny-publish.mjs"
   },
   "dependencies": {
-    "@usagekit/core": "0.4.0",
-    "@usagekit/views": "0.4.0"
+    "@usagekit/core": "0.5.0",
+    "@usagekit/views": "0.5.0"
   },
   "peerDependencies": {
     "react": ">=19 <20"

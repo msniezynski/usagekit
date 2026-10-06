@@ -5,8 +5,9 @@ request, reserves customer credits or changes a host wallet balance. A host keep
 authority and supplies historical funding attribution; upstream cost and customer price are
 separate values.
 
-The P8 task branch adds this API to the existing 0.4.0 source. It has not been published as a
-new package release. Host compatibility with published 0.4.0 is a separate gate.
+The P8 implementation is approved on local main and is included in the prepared 0.5.0 cohort.
+This candidate has not been published. The new mandatory Store and Meter methods require the
+[consumer migration](MIGRATING-0.5.md); published 0.4.0 does not expose this API.
 
 ## Parse and import
 
