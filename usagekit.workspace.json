@@ -118,6 +118,14 @@
       "allows": ["@usagekit/core", "@usagekit/providers"],
       "purpose": "Local provider routing, vault key injection, admission and bounded receipt capture.",
       "runtime": "node"
+    },
+    {
+      "name": "@usagekit/store-d1",
+      "path": "packages/store-d1",
+      "phase": "cloudflare",
+      "allows": ["@usagekit/core", "@usagekit/store"],
+      "purpose": "Cloudflare adapter with authoritative SQLite-backed Durable Object storage.",
+      "runtime": "web"
     }
   ],
   "testDependencies": [
@@ -135,7 +143,10 @@
     "ajv",
     "eslint",
     "@usagekit/providers",
-    "@usagekit/proxy"
+    "@usagekit/proxy",
+    "miniflare",
+    "esbuild",
+    "@usagekit/store-d1"
   ],
   "publishable": ["@usagekit/core", "@usagekit/store", "@usagekit/meter", "@usagekit/providers"]
 }

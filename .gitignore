@@ -15,3 +15,9 @@ packages/store/dist-conformance/
 packages/registry/.work/
 
 /graphify-out/
+
+.wrangler/
+.dev.vars
+examples/cloudflare-worker/worker-configuration.d.ts
+examples/cloudflare-worker/remote/.state/
+examples/cloudflare-worker/remote/worker-configuration.d.ts

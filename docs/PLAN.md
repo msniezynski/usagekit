@@ -1,6 +1,10 @@
 # usagekit implementation plan
 
-Date: 2026-09-24. Owner: Michal. Status: P1 and P2 approved on main; P3 complete on the host branch, awaiting rebase.
+Established: 2026-09-24. Owner: Michal. Repository status reviewed: 2026-10-06.
+P1/P2, the P4 contract and UI packages, P5 and P6 are on local `main`.
+P7 is implemented on `feat/p7-cloudflare`, pending approval of an exact commit for integration.
+Public repository hosting and CI remain open. Current P3 host integration and the P8 cutover
+must be verified in the host repository; this checkout does not establish their production status.
 Purpose, scope model, current position and the order of stages live in [ROADMAP.md](ROADMAP.md).
 This file keeps the contract, constraints and exit gates.
 
@@ -242,29 +246,29 @@ The reserve or settlement that first reaches 800 requests returns one `alerts` e
 
 ## 4. Package grid
 
-Eleven workspace directories exist. Add future packages when their first real implementation exists.
+Fourteen workspace directories exist. Add future packages when their first real implementation exists.
 Host schema mappings live in host repositories. Shared Prisma code provides mechanics only.
 
-| Package        | Exists | Runtime | Responsibility                                                 |
-| -------------- | ------ | ------- | -------------------------------------------------------------- |
-| `core`         | yes    | web     | Exact DTOs and the single Meter interface                      |
-| `store`        | yes    | web     | Atomic port, reference rules and factory-based conformance     |
-| `meter`        | yes    | web     | Embedded validation, host policy and authorized reads          |
-| `providers`    | no     | web     | Descriptors, price versions, receipt fixtures and probes       |
-| `store-prisma` | no     | node    | Optional shared Prisma mechanics, without host schema mappings |
-| `store-sqlite` | yes    | node    | Local server storage                                           |
-| `store-d1`     | no     | web     | Cloudflare storage and atomicity proof                         |
-| `http`         | yes    | web     | Authenticated write/read handlers and wire validation          |
-| `client`       | yes    | web     | Remote implementation of the core Meter interface              |
-| `views`        | yes    | web     | Pure view models over the Meter; amounts as exact text         |
-| `react`        | yes    | web     | Hooks and a Meter provider over the view models                |
-| `registry`     | yes    | node    | shadcn blocks for Radix and Base UI, build and consumer tests  |
-| `proxy`        | no     | node    | Local provider routes, key injection and admission             |
-| `wallet`       | no     | web     | Optional ledger primitives after host stabilization            |
-| `ratelimit`    | no     | web     | Later: request rate limits before reservation, own state port  |
-| `cache`        | no     | web     | Later: response cache before rate limit, own storage, counted  |
-| `server`       | yes    | node    | Local API, SQLite, vault, recovery and the UI on the registry  |
-| `cli`          | yes    | node    | Local server commands and usage reads                          |
+| Package        | Exists | Runtime | Responsibility                                                  |
+| -------------- | ------ | ------- | --------------------------------------------------------------- |
+| `core`         | yes    | web     | Exact DTOs and the single Meter interface                       |
+| `store`        | yes    | web     | Atomic port, reference rules and factory-based conformance      |
+| `meter`        | yes    | web     | Embedded validation, host policy and authorized reads           |
+| `providers`    | yes    | web     | Descriptors, price versions, receipt fixtures and probes        |
+| `store-prisma` | no     | node    | Optional shared Prisma mechanics, without host schema mappings  |
+| `store-sqlite` | yes    | node    | Local server storage                                            |
+| `store-d1`     | yes    | web     | Authoritative Durable Object SQLite storage (see CLOUDFLARE.md) |
+| `http`         | yes    | web     | Authenticated write/read handlers and wire validation           |
+| `client`       | yes    | web     | Remote implementation of the core Meter interface               |
+| `views`        | yes    | web     | Pure view models over the Meter; amounts as exact text          |
+| `react`        | yes    | web     | Hooks and a Meter provider over the view models                 |
+| `registry`     | yes    | node    | shadcn blocks for Radix and Base UI, build and consumer tests   |
+| `proxy`        | yes    | node    | Local provider routes, key injection and admission              |
+| `wallet`       | no     | web     | Optional ledger primitives after host stabilization             |
+| `ratelimit`    | no     | web     | Later: request rate limits before reservation, own state port   |
+| `cache`        | no     | web     | Later: response cache before rate limit, own storage, counted   |
+| `server`       | yes    | node    | Local API, SQLite, vault, recovery and the UI on the registry   |
+| `cli`          | yes    | node    | Local server commands and usage reads                           |
 
 Web projects extend `tsconfig.base.json`. Node projects extend `tsconfig.node.json`.
 A D1 entry point must not import Node modules or a Node SQLite entry point.
@@ -370,7 +374,7 @@ Successful reservations carry `warnings` for warn-only bounds.
 | Credit coordination                     | Shared transaction where possible; durable host saga otherwise                               | P8                                  |
 | Public license, organization and domain | Apache-2.0, npm organization usagekit, packages public; domain and repository host undecided | Done for packages; repository in P4 |
 
-Publication runs through the release allow-list. The three packages are public. Repository hosting and CI are P4 work. Squash integration follows the README.
+Publication runs through the release allow-list. The four public release packages are `core`, `store`, `meter` and `providers`; see the README for the recorded release version. Repository hosting and CI are P4 work. Squash integration follows the README.
 P1 proves reference-store rules and embedded Meter behavior. It does not prove persistent adapter durability.
 
 ## 7. Appendix: Later, optional

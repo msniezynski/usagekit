@@ -1,6 +1,7 @@
 # usagekit roadmap
 
-Date: 2026-09-24. Owner: Michal. This is the bird's-eye view. [PLAN.md](PLAN.md) holds the
+Established: 2026-09-24. Owner: Michal. Repository status reviewed: 2026-10-06.
+This is the bird's-eye view. [PLAN.md](PLAN.md) holds the
 engineering contract, constraints and stage exit gates; this file holds purpose, model,
 current position and the order of work. When they disagree, this file wins on order and scope,
 PLAN.md wins on contract detail.
@@ -26,10 +27,10 @@ application incurs on behalf of each user, and it can feed that into any of thos
   crashes and a queryable usage ledger. They do not rewrite provider clients. They keep their
   own authentication, routing, product billing and UI.
 - **A single developer or agent operator (local server).** They run `usagekit serve`, store
-  keys in the encrypted vault, set budgets, and report or proxy calls through it. Any SDK or
-  agent gets a spend limit without code changes once the proxy stage lands.
+  keys in the encrypted vault, set budgets, and report or proxy calls through it. A client
+  that can use the proxy endpoint gets spend enforcement without a metering wrapper in its code.
 - **A team building a new product on Cloudflare or similar.** They start from the Worker
-  example and the D1 adapter instead of designing metering from scratch.
+  example and the Cloudflare Store instead of designing metering from scratch.
 
 The reason to use it instead of writing it: the parts that are hard are not the counting. They
 are concurrency under a shared limit, crashes between reservation and settlement, unknown costs
@@ -133,15 +134,25 @@ maintain and a registry to test against both.
 
 ## 6. Where we are
 
-| Item                                 | State on 2026-09-24                                                                                                                                                                 |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P1 core, store, meter                | On `main`. 110-case conformance suite, property tests, embedded Meter.                                                                                                              |
-| P2 SQLite, HTTP, client, server, CLI | On `main`. Row-level SQLite adapter, scaling gate, restart and race tests, encrypted vault, reservation expiry.                                                                     |
-| Packages on npm                      | `@usagekit/core`, `store`, `meter`, `providers` at 0.4.0, Apache-2.0, **public**. Token setup in older docs is obsolete.                                                            |
-| P3 host A embedded shadow            | Complete on a host branch: Postgres adapter passes conformance, shadow on own and hosted paths, admin comparison page. Awaiting rebase onto the host's moved `main` and a draft PR. |
-| Repository hosting                   | No remote yet. Sources exist only locally.                                                                                                                                          |
-| Provider catalog                     | Published in 0.4.0. The host mapping adapter is merged and preserves its existing price resolver.                                                                                   |
-| UI layer                             | On a task branch: view models, React hooks, a shadcn registry for Radix and Base UI, and the local server UI. See [UI](UI.md). Host A's admin page is still hand-written.           |
+This is a local repository snapshot, not a live audit of npm, Cloudflare or a host deployment.
+Reviewed base: `main` at `844e99d`; P7 implementation at `33faa0e`.
+
+| Item                                 | State on 2026-10-06                                                                                                                                                                                                                  |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| P1 core, store, meter                | On `main`: embedded Meter, shared conformance suite and property tests.                                                                                                                                                              |
+| P2 SQLite, HTTP, client, server, CLI | On `main`: durable local storage, authenticated API and CLI, encrypted vault, reservation expiry and restart recovery.                                                                                                               |
+| P4 contract and UI                   | On `main`: source and tag budgets, soft/hard limits, view models, React hooks, Radix/Base UI registry and local server UI. Host adoption is a separate check. See [UI](UI.md).                                                       |
+| P5 provider catalog                  | On `main`, tagged `v0.4.0`: descriptors, pricing, fixture extraction/recording and the wrapper boundary.                                                                                                                             |
+| P6 local proxy                       | On `main`: routed provider dispatch, budget enforcement and crash recovery. See [PROXY](PROXY.md).                                                                                                                                   |
+| P7 Cloudflare storage                | Implemented on `feat/p7-cloudflare`: authoritative SQLite-backed Durable Object storage and Worker example. Local gates pass; exact-commit approval is required before integration. Direct D1Database support remains unimplemented. |
+| Library release                      | The repository records the public 0.4.0 release of `core`, `store`, `meter` and `providers`. Other workspaces, including `store-d1`, remain private.                                                                                 |
+| Repository hosting and CI            | No Git remote is configured. The public hosting/CI part of P4 remains outstanding.                                                                                                                                                   |
+| P3 host shadow and P8 cutover        | Current host PR, deployment, shadow observations and credit authority must be checked in the host repository before cutover. Library checks do not establish production readiness.                                                   |
+
+Next: review and approve the exact P7 commit through the README workflow. Before P8 implementation,
+refresh the host integration and shadow evidence, define ledger ownership per funding source,
+and agree retention and throughput requirements. P8 still requires real-database crash tests,
+reconciled holds, a rehearsed rollback and live end-user views.
 
 ## 7. Order of work
 
@@ -176,6 +187,21 @@ recording and crash behavior. `packages/server/src/proxy.test.ts` exercises the 
 boundary, including SIGKILL during upstream dispatch and restart without redispatch.
 Unknown paths consume a requests reservation and stay pending with unknown cost; coverage
 classifies them as unpriced. The host authoritative cutover is still P8.
+
+### P7 implementation evidence
+
+`packages/store-d1` implements the plan's authoritative Durable Object storage alternative;
+it is not a direct D1Database adapter. [CLOUDFLARE.md](CLOUDFLARE.md) documents ownership,
+exact amounts, routing and local operation. The unchanged Store suite runs under Miniflare
+with `durable: true`, including runtime disposal/recreation. Additional tests prove a
+shared-pool race from two Workers, rollback, immutable budget versions, cursor restart and
+constant command footprint after 5000 operations. The example smoke uses `wrangler dev`,
+restarts the process, and verifies persisted settlement and budget usage. P8 remains the
+production authority cutover.
+
+The [2026-10-06 local review](validation/2026-10-06-p7-local-review.md) records the source reviewed,
+current checks and remaining boundaries. The earlier cloud report is historical evidence;
+it does not establish the current state of its deployed test resources.
 
 ## 8. Topics added after P3
 

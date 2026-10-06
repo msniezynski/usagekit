@@ -1,0 +1,39 @@
+{
+  "compatibility_date": "2026-09-27",
+  "vars": {
+    "NAMESPACE": "demo",
+    "REVISION": "initial",
+    "GATEWAY": "owner",
+  },
+  "secrets": {
+    "required": ["USAGEKIT_TOKEN"],
+  },
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true,
+    },
+  },
+  "preview_urls": false,
+  "name": "usagekit-p7-test-ledger",
+  "main": "owner.ts",
+  "workers_dev": false,
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "LEDGER",
+        "class_name": "UsageLedger",
+      },
+      {
+        "name": "REMOTE",
+        "class_name": "RemoteLedger",
+      },
+    ],
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["UsageLedger", "RemoteLedger"],
+    },
+  ],
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "usagekit-cloudflare-example",
+  "main": "worker.ts",
+  "compatibility_date": "2026-09-27",
+  "vars": {
+    "NAMESPACE": "demo",
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "LEDGER",
+        "class_name": "UsageLedger",
+      },
+    ],
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["UsageLedger"],
+    },
+  ],
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true,
+    },
+  },
+  "secrets": {
+    "required": ["USAGEKIT_TOKEN"],
+  },
+}

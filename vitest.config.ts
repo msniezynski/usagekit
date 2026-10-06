@@ -60,7 +60,11 @@ export default defineConfig({
         testTimeout: 60000,
         hookTimeout: 60000,
         environment: ["react", "registry"].includes(name) ? "jsdom" : "node",
-        include: [`packages/${name}/src/**/*.test.ts`, `packages/${name}/conformance/**/*.test.ts`],
+        include: [
+          `packages/${name}/src/**/*.test.ts`,
+          `packages/${name}/conformance/**/*.test.ts`,
+          ...(name === "store-d1" ? ["examples/cloudflare-worker/cloudflare.test.ts"] : []),
+        ],
       },
     })),
     coverage: {

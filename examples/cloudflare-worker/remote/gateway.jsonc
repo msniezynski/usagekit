@@ -1,0 +1,35 @@
+{
+  "compatibility_date": "2026-09-27",
+  "vars": {
+    "NAMESPACE": "demo",
+    "REVISION": "initial",
+    "GATEWAY": "owner",
+  },
+  "secrets": {
+    "required": ["USAGEKIT_TOKEN"],
+  },
+  "observability": {
+    "enabled": true,
+    "traces": {
+      "enabled": true,
+    },
+  },
+  "preview_urls": false,
+  "name": "usagekit-p7-test-gateway",
+  "main": "gateway.ts",
+  "workers_dev": true,
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "LEDGER",
+        "class_name": "UsageLedger",
+        "script_name": "usagekit-p7-test-ledger",
+      },
+      {
+        "name": "REMOTE",
+        "class_name": "RemoteLedger",
+        "script_name": "usagekit-p7-test-ledger",
+      },
+    ],
+  },
+}
