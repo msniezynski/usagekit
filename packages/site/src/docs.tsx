@@ -559,8 +559,9 @@ export function Docs() {
               icon={<Info size={16} strokeWidth={1.75} aria-hidden="true" />}
               title="React is not publicly installable from npm yet."
             >
-              <C>@usagekit/react</C>, <C>@usagekit/views</C> and the registry are private
-              workspaces. Use the checkout flow below.
+              <C>@usagekit/react</C> and <C>@usagekit/views</C> are in the unpublished 0.6.0
+              candidate, alongside <C>@usagekit/store-postgres</C>. The registry remains private
+              tooling. Use the checkout flow below until publication is verified.
             </Note>
             <p>
               From the repository root, with Node <strong>22.23.1</strong> and npm{" "}

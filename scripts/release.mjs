@@ -23,6 +23,7 @@ if (!values["dry-run"]) {
 run("npm", ["run", "check"], { stdio: "inherit" });
 run("npm", ["run", "build"], { stdio: "inherit" });
 checkPackages();
+run("npm", ["run", "check:consumer"], { stdio: "inherit" });
 assertClean();
 if (git(["rev-parse", "HEAD"]) !== head) throw new Error("HEAD changed during release checks.");
 if (values["dry-run"]) {

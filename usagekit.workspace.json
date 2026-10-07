@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "p8-release-preparation",
+  "status": "ui-postgres-release-preparation",
   "publication": "restricted-release",
   "projects": [
     {
@@ -140,6 +140,14 @@
       ],
       "purpose": "Static open-source project website, React library documentation and interactive examples.",
       "runtime": "web"
+    },
+    {
+      "name": "@usagekit/store-postgres",
+      "path": "packages/store-postgres",
+      "phase": "storage-adapters",
+      "allows": ["@usagekit/core", "@usagekit/store"],
+      "purpose": "Postgres atomic Store, migrations and transaction-bound host composition.",
+      "runtime": "node"
     }
   ],
   "testDependencies": [
@@ -160,7 +168,17 @@
     "@usagekit/proxy",
     "miniflare",
     "esbuild",
-    "@usagekit/store-d1"
+    "@usagekit/store-d1",
+    "pg",
+    "@prisma/adapter-pg"
   ],
-  "publishable": ["@usagekit/core", "@usagekit/store", "@usagekit/meter", "@usagekit/providers"]
+  "publishable": [
+    "@usagekit/core",
+    "@usagekit/store",
+    "@usagekit/meter",
+    "@usagekit/providers",
+    "@usagekit/views",
+    "@usagekit/react",
+    "@usagekit/store-postgres"
+  ]
 }

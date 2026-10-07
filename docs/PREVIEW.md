@@ -2,7 +2,8 @@
 
 The preview combines the project home, component and agent pages, prerendered docs, both interactive
 registry consumers and their shadcn JSON artifacts. It does not deploy a backend or publish
-the private React, views, server and registry workspaces.
+the React, views, server or registry workspaces. React and views are prepared for the
+unpublished 0.6.0 cohort; the server and registry tooling remain private.
 
 From the repository root, with the pinned Node/npm runtime:
 

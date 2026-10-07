@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: usagekit
+          POSTGRES_PASSWORD: disposable-fixture
+          POSTGRES_DB: usagekit_store_fixture
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U usagekit -d usagekit_store_fixture"
+          --health-interval 10s --health-timeout 5s --health-retries 6
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm install --global npm@10.9.3
+      - run: npm ci
+      # The unit suite deliberately excludes the separate real-database lane.
+      - run: npm run check:runtime && npm run check:workspace && npm run check:format && npm run typecheck && npm run test:unit && npm test
+      - run: npm run test:postgres
+        env:
+          USAGEKIT_POSTGRES_TEST_URL: postgresql://usagekit:disposable-fixture@127.0.0.1:5432/usagekit_store_fixture
+      - run: npm run test:cloudflare:example && npm run test:cloudflare:remote:local
+      - run: npm run build && npm run check:packages && npm run check:consumer

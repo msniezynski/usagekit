@@ -1,6 +1,6 @@
 # Consuming usagekit
 
-Use Node 22.23.1 and pin the four public packages to the same exact version.
+Use Node 22.23.1 and pin packages from a release cohort to the same exact version.
 The published cohort is 0.5.0; 0.4.0 is the preceding published version.
 
 ```sh
@@ -56,10 +56,11 @@ Skipped capabilities are not passed guarantees.
 
 ## Headless views and React components
 
-`@usagekit/views`, `@usagekit/react` and the component registry are private workspaces.
-They are usable locally in this repository but are not part of the published 0.5.0 cohort.
-Do not depend on anonymous npm installation of those names until a separate UI release is
-approved. Existing consumers of the four public runtime packages need no UI dependencies.
+`@usagekit/views` and `@usagekit/react` are prepared for the seven-package 0.6.0 cohort,
+alongside the new `@usagekit/store-postgres`. This candidate is not published yet.
+Use all seven reviewed tarballs together; do not mix 0.5.0 and 0.6.0 contracts. The component
+registry remains private tooling and distributes built shadcn JSON, rather than an npm package.
+Backend consumers need no React dependency unless they install the React package.
 
 From a checkout, run the root `npm ci` and `npm run build`. A workspace host can use
 `loadUsageSummary` and the other views directly, or share reads through `MeterProvider`
@@ -83,12 +84,29 @@ Use a stable, memoized host `BudgetWriter` to enable edits. Its server implement
 verify authorization, preserve allowed scope/unit/window and use budget version
 compare-and-swap. A timed-out write stays unknown until authoritative reconciliation;
 never translate a missing read into permission to retry. Read-only is the default, and
-customer credit authority remains in the host. See [UI](UI.md) for APIs, all twelve blocks,
+customer credit authority remains in the host. See [UI](UI.md) for APIs, all twenty blocks,
 shared cache behavior and writer outcomes.
 
 ## Release operators
 
-Only npm run release can publish core, store, meter and providers. Other workspaces stay private.
-Live release of this cohort requires clean main, its verified signed v0.5.0 tag, full checks and inspected tarballs.
+Only `npm run release` can publish the allow-listed core, store, meter, providers, views, react
+and store-postgres packages. Other workspaces stay private. The 0.6.0 candidate requires
+separate approval of its exact SHA, squash title and seven public versions before promotion.
+Live release requires clean main, its verified signed v0.6.0 tag, full checks, inspected
+tarballs and a token-free consumer installation that checks declarations and React rendering.
 A dry run on a clean branch builds and audits packages without checking live authorization or publishing.
 Apache-2.0 LICENSE and NOTICE are included in every tarball.
+
+## Trying the 0.6.0 candidate
+
+From its reviewed checkout, run `npm ci`, `npm run check`, `npm run build`,
+`npm run check:packages` and `npm run check:consumer`. The last command packs all seven
+packages, installs them into a disposable directory outside the repository with empty npm
+configuration, compiles a strict TypeScript consumer and renders React on the server. It
+uses the registry only for pinned external dependencies and never calls a provider.
+
+To use the candidate in your own test application, run `npm pack --workspace <name>` for
+each of the seven allow-listed packages and install those seven resulting tarballs together
+with React 19 if you use the UI. Avoid `npm link`: it can hide missing package files and
+resolve dependencies from the checkout. The existing 0.5.0 migration rules still apply to
+custom Stores and Meters; 0.6.0 adds adapters and UI without changing that accounting contract.

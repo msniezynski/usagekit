@@ -1,6 +1,19 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { publishArgs, validatePackFiles, validateReleaseIdentity } from "../lib/release.mjs";
+import {
+  privatePackageTerms,
+  publishArgs,
+  validatePackFiles,
+  validateReleaseIdentity,
+} from "../lib/release.mjs";
+
+test("public site source exceptions cannot leak a private term into a library tarball", () => {
+  const terms = privatePackageTerms(
+    "PrivateWord allow: packages/site/ docs/SITE.md\n\nOtherWord\n",
+  );
+  assert.deepEqual(terms, ["privateword", "otherword"]);
+  assert.throws(() => validatePackFiles(["dist/privateword.js"], terms));
+});
 
 test("release requires reviewed main and its annotated version tag", () => {
   const valid = { branch: "main", head: "a", tagCommit: "a", tagType: "tag" };
@@ -34,7 +47,7 @@ test("tarball audit rejects source, test files, maps, missing notices and privat
 });
 test("release publishes the allow-listed packages with public access", () => {
   const args = publishArgs();
-  assert.deepEqual(args.slice(0, 9), [
+  assert.deepEqual(args.slice(0, 15), [
     "publish",
     "--workspace",
     "@usagekit/core",
@@ -44,16 +57,32 @@ test("release publishes the allow-listed packages with public access", () => {
     "@usagekit/meter",
     "--workspace",
     "@usagekit/providers",
+    "--workspace",
+    "@usagekit/views",
+    "--workspace",
+    "@usagekit/react",
+    "--workspace",
+    "@usagekit/store-postgres",
   ]);
   assert.equal(args[args.indexOf("--access") + 1], "public");
   assert.equal(args.includes("restricted"), false);
   assert.equal(args[args.indexOf("--registry") + 1], "https://registry.npmjs.org/");
 });
-test("the 0.5.0 contract cohort stays aligned across public and private consumers", async () => {
+test("the 0.6.0 contract cohort stays aligned across public and private consumers", async () => {
   const { readFileSync } = await import("node:fs");
   const { releaseVersion } = await import("../lib/release.mjs");
-  assert.equal(releaseVersion, "0.5.0");
-  for (const name of ["core", "store", "meter", "http", "client", "views", "react", "providers"]) {
+  assert.equal(releaseVersion, "0.6.0");
+  for (const name of [
+    "core",
+    "store",
+    "meter",
+    "http",
+    "client",
+    "views",
+    "react",
+    "providers",
+    "store-postgres",
+  ]) {
     const manifest = JSON.parse(
       readFileSync(new URL(`../../packages/${name}/package.json`, import.meta.url), "utf8"),
     );

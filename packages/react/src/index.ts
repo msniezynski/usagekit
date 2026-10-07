@@ -1,3 +1,5 @@
+"use client";
+
 /** React hooks over the usagekit view models. No fetch and no primitives: hosts render the data. */
 export { MeterProvider, useMeterBinding } from "./context.js";
 export type { MeterBinding, SharedMeterBinding } from "./context.js";

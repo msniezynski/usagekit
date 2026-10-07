@@ -2,16 +2,11 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { run } from "./lib/git.mjs";
-import { publishable, validatePackFiles } from "./lib/release.mjs";
+import { privatePackageTerms, publishable, validatePackFiles } from "./lib/release.mjs";
 
 export function checkPackages({ requireBuild = true } = {}) {
   const termsFile = "docs/adr/private-terms.txt";
-  const terms = existsSync(termsFile)
-    ? readFileSync(termsFile, "utf8")
-        .split(/\r?\n/)
-        .map((t) => t.trim().toLowerCase())
-        .filter(Boolean)
-    : [];
+  const terms = existsSync(termsFile) ? privatePackageTerms(readFileSync(termsFile, "utf8")) : [];
   for (const name of publishable) {
     const directory = `packages/${name.split("/")[1]}`;
     if (!existsSync(`${directory}/dist/index.js`) && !requireBuild) continue;

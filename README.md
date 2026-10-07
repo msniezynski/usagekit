@@ -5,9 +5,9 @@ costs and application credits. Both BYOK and platform-funded keys are in scope.
 Host A uses Postgres and Prisma. Host B adds team-owned connections.
 Host C targets Cloudflare D1. A local server shares the embedded Meter contract.
 
-**Status: the 0.5.0 runtime packages are published. React metering and provider UI, headless hooks and the project website are available on the review branch.**
+**Status: runtime 0.5.0 is published. The 0.6.0 release candidate adds public headless views, React hooks and the durable Postgres adapter. It is not published yet.**
 Licensed under Apache-2.0. `@usagekit/core`, `store`, `meter` and `providers` 0.5.0 are published on registry.npmjs.org.
-`core`, `store`, `meter` and `providers` are the public npm release packages. Other workspaces remain private. See [consuming packages](docs/CONSUMING.md) and the [roadmap](docs/ROADMAP.md).
+The 0.6.0 candidate release allow-list contains `core`, `store`, `meter`, `providers`, `views`, `react` and `store-postgres`. Other workspaces remain private. Candidate publication needs exact-source owner approval. See [consuming packages](docs/CONSUMING.md) and the [roadmap](docs/ROADMAP.md).
 
 ## Start here
 
@@ -31,17 +31,19 @@ Consumers upgrading custom Stores or Meters must follow the [0.5.0 migration gui
 `npm ci` installs local hooks through `prepare`. Use `npm run setup` if scripts were disabled.
 Hooks prefer the pinned NVM binary. Otherwise PATH must satisfy the supported range.
 
-| Command                  | Purpose                                                                          |
-| ------------------------ | -------------------------------------------------------------------------------- |
-| `npm run check`          | Runtime, workspace/privacy checks, formatting, TypeScript, unit and policy tests |
-| `npm run format`         | Format source and documentation, excluding local ADRs                            |
-| `npm run typecheck`      | Check references and emit declarations into ignored `dist/`                      |
-| `npm run build`          | Build every workspace and the local server UI                                    |
-| `npm run registry:build` | Build the shadcn registry into `packages/registry/dist/r`                        |
-| `npm run site:dev`       | Run the project website locally at `http://127.0.0.1:5180`                       |
-| `npm run site:build`     | Build and prerender the static project website and documentation                 |
-| `npm test`               | Policy tests in disposable local repositories                                    |
-| `npm run setup`          | Install repository-local hooks and Git defaults                                  |
+| Command                  | Purpose                                                                                                        |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `npm run check`          | Runtime, workspace/privacy checks, formatting, TypeScript, unit and policy tests                               |
+| `npm run format`         | Format source and documentation, excluding local ADRs                                                          |
+| `npm run typecheck`      | Check references and emit declarations into ignored `dist/`                                                    |
+| `npm run build`          | Build every workspace and the local server UI                                                                  |
+| `npm run check:consumer` | Install the seven local tarballs without registry credentials; check declarations, exports and React rendering |
+| `npm run registry:build` | Build the shadcn registry into `packages/registry/dist/r`                                                      |
+| `npm run test:postgres`  | Real Postgres conformance, atomicity, scaling and restart checks in an owned fixture                           |
+| `npm run site:dev`       | Run the project website locally at `http://127.0.0.1:5180`                                                     |
+| `npm run site:build`     | Build and prerender the static project website and documentation                                               |
+| `npm test`               | Policy tests in disposable local repositories                                                                  |
+| `npm run setup`          | Install repository-local hooks and Git defaults                                                                |
 
 ## Working agreement
 
@@ -57,9 +59,9 @@ This README is the single source of workflow rules. Keep one root README.
    Main contains stable, reviewed, explicitly owner-approved versions only.
 6. Passing checks or implementing work does not authorize promotion, push, publication, deployment or release.
    Agents must never supply owner approval themselves.
-7. Publication of core, store, meter and providers runs only through `npm run release`; the packages are public.
+7. Publication of the seven allow-listed packages runs only through `npm run release`; the packages are public after the approved release.
    Public access follows the P3 exit gate. GitHub hosting still requires an explicit repository target.
-   Do not publish other workspaces or deploy services without separate authorization.
+   Do not publish a candidate before separate exact-SHA and version approval. Do not publish other workspaces or deploy services without separate authorization.
 8. Never bypass hooks. Fix the cause of a failure. Local guards are not a tamper-proof security boundary.
 
 The approved bootstrap is on local `main`. New work stays on task branches for review.
@@ -108,29 +110,30 @@ Full tests run through `npm run check` and during approved main promotion.
 Conformance runs unchanged against memory, embedded Meter, SQLite and the remote Meter over HTTP.
 The adapter converts typed validation failures to Store exceptions; other outcomes stay unchanged.
 Memory and remote-memory skip `durable` and `rollingWindows`. SQLite and Cloudflare skip only `rollingWindows`. Each run reports its skips.
-There is no pre-push hook. The release allow-list and publish guard restrict publication to the approved four packages.
+There is no pre-push hook. The release allow-list and publish guard restrict publication to the seven explicitly allow-listed packages. Release preparation does not grant publication authority.
 
 ## Workspace layout
 
 `usagekit.workspace.json` defines the existing inventory and allowed dependencies.
 
-| Workspace               | Current contents                                                                                        |
-| ----------------------- | ------------------------------------------------------------------------------------------------------- |
-| `packages/core`         | Meter interface, exact quantities and domain DTO types                                                  |
-| `packages/store`        | Atomic commands, in-memory store and factory-based conformance                                          |
-| `packages/meter`        | Embedded Meter with validation, policy and authorized reads                                             |
-| `packages/store-sqlite` | Durable transactions, migrations and admission projection                                               |
-| `packages/store-d1`     | Cloudflare Store with authoritative Durable Object SQLite storage; see [Cloudflare](docs/CLOUDFLARE.md) |
-| `packages/http`         | Web handlers, strict Valibot wire schemas and generated OpenAPI                                         |
-| `packages/client`       | Remote Meter with explicit accounting retries                                                           |
-| `packages/server`       | Loopback API, token auth, encrypted vault and the UI at `/`                                             |
-| `packages/proxy`        | Authenticated provider routing, budget enforcement, streamed receipts and crash recovery                |
-| `packages/cli`          | Serve, provider, budget, reporting and usage commands                                                   |
-| `packages/providers`    | Provider catalog, fixture conformance and wrapper-boundary lint rule                                    |
-| `packages/views`        | View models over the Meter: usage, budgets, header, coverage                                            |
-| `packages/react`        | React hooks and `MeterProvider` over the view models                                                    |
-| `packages/registry`     | shadcn blocks for Radix and Base UI, see [UI](docs/UI.md)                                               |
-| `packages/site`         | Static project website, React examples and getting-started documentation, see [site](docs/SITE.md)      |
+| Workspace                 | Current contents                                                                                                                 |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/core`           | Meter interface, exact quantities and domain DTO types                                                                           |
+| `packages/store`          | Atomic commands, in-memory store and factory-based conformance                                                                   |
+| `packages/meter`          | Embedded Meter with validation, policy and authorized reads                                                                      |
+| `packages/store-sqlite`   | Durable transactions, migrations and admission projection                                                                        |
+| `packages/store-postgres` | Postgres transactions, explicit migrations, pg/Prisma drivers and host transaction composition; see [Postgres](docs/POSTGRES.md) |
+| `packages/store-d1`       | Cloudflare Store with authoritative Durable Object SQLite storage; see [Cloudflare](docs/CLOUDFLARE.md)                          |
+| `packages/http`           | Web handlers, strict Valibot wire schemas and generated OpenAPI                                                                  |
+| `packages/client`         | Remote Meter with explicit accounting retries                                                                                    |
+| `packages/server`         | Loopback API, token auth, encrypted vault and the UI at `/`                                                                      |
+| `packages/proxy`          | Authenticated provider routing, budget enforcement, streamed receipts and crash recovery                                         |
+| `packages/cli`            | Serve, provider, budget, reporting and usage commands                                                                            |
+| `packages/providers`      | Provider catalog, fixture conformance and wrapper-boundary lint rule                                                             |
+| `packages/views`          | View models over the Meter: usage, budgets, header, coverage                                                                     |
+| `packages/react`          | React hooks and `MeterProvider` over the view models                                                                             |
+| `packages/registry`       | shadcn blocks for Radix and Base UI, see [UI](docs/UI.md)                                                                        |
+| `packages/site`           | Static project website, React examples and getting-started documentation, see [site](docs/SITE.md)                               |
 
 Future packages are listed in the [plan](docs/PLAN.md#4-package-grid), without placeholder directories.
 Host schema mappings stay in host repositories. Shared adapters provide mechanics only.

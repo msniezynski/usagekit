@@ -56,7 +56,10 @@ export default defineConfig({
       test: {
         name,
         silent: false,
-        exclude: ["packages/store/conformance/!(memory.conformance).test.ts"],
+        exclude: [
+          "packages/store/conformance/!(memory.conformance).test.ts",
+          ...(!process.env.USAGEKIT_POSTGRES_TEST_URL ? ["**/*.postgres.test.ts"] : []),
+        ],
         testTimeout: 60000,
         hookTimeout: 60000,
         environment: ["react", "registry"].includes(name) ? "jsdom" : "node",

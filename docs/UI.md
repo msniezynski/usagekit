@@ -1,8 +1,9 @@
 # UI layers
 
-The four public runtime packages are published at 0.5.0. `@usagekit/views`,
-`@usagekit/react` and the registry remain private workspaces. These UI components can be
-used from this checkout; distributing the UI packages requires separate publication approval.
+The four public runtime packages are published at 0.5.0. `@usagekit/react` and
+`@usagekit/views` join the seven-package 0.6.0 candidate. The registry
+remains a private tooling workspace whose built blocks are distributed as copyable JSON.
+Use reviewed tarballs until 0.6.0 publication is approved and independently verified.
 
 | Layer                  | Package or path                                      | Depends on                         | Runs in                   |
 | ---------------------- | ---------------------------------------------------- | ---------------------------------- | ------------------------- |
@@ -180,8 +181,9 @@ Each JSON artifact declares package dependencies, host primitives and all copied
 The manager bundles its editor; summary cards bundle their measurement card. Files land in
 `@/components/usagekit/` and import `@/components/ui/*`. Root `r/<name>.json` defaults to
 Radix. Tooltip triggers and selects have variant-specific files; other block source is shared.
-The shadcn CLI requests exact UI package versions, which currently need a local/private
-package source. These commands do not make unpublished UI packages publicly installable.
+The shadcn CLI requests exact 0.6.0 UI package versions. Until that candidate is published,
+install the reviewed local tarballs first and keep the registry consumer offline from npm.
+After publication, the public registry can resolve those exact dependencies anonymously.
 See [consuming packages](CONSUMING.md) for the usable checkout flow.
 
 To use another design system, copy every artifact file and replace the listed table, card,

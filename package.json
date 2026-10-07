@@ -2,7 +2,7 @@
   "name": "usagekit-workspace",
   "version": "0.0.0",
   "private": true,
-  "description": "Local usage and cost metering workspace with four public library packages.",
+  "description": "Local metering, provider administration, headless React UI and durable Postgres storage.",
   "license": "Apache-2.0",
   "packageManager": "npm@10.9.3",
   "engines": {
@@ -27,17 +27,19 @@
     "site:preview": "npm run preview --workspace @usagekit/site",
     "preview:build": "node scripts/build-preview.mjs",
     "test": "node --test scripts/tests/*.test.mjs",
-    "check": "npm run check:runtime && npm run check:workspace && npm run check:format && npm run typecheck && npm run test:unit && npm test && npm run test:cloudflare:example && npm run test:cloudflare:remote:local",
+    "check": "npm run check:runtime && npm run check:workspace && npm run check:format && npm run typecheck && npm run test:unit && npm run test:postgres && npm test && npm run test:cloudflare:example && npm run test:cloudflare:remote:local",
     "approve:main": "node scripts/approve-main.mjs",
     "prepublishOnly": "node scripts/publish-guard.mjs",
     "test:unit": "vitest run",
+    "test:postgres": "node scripts/test-postgres.mjs",
     "test:unit:watch": "vitest",
     "release": "node scripts/release.mjs",
     "check:packages": "node scripts/check-packages.mjs",
     "cloudflare:types": "wrangler types examples/cloudflare-worker/worker-configuration.d.ts --config examples/cloudflare-worker/wrangler.jsonc",
     "cloudflare:dev": "wrangler dev --local --config examples/cloudflare-worker/wrangler.jsonc",
     "test:cloudflare:example": "node examples/cloudflare-worker/smoke.mjs",
-    "test:cloudflare:remote:local": "node examples/cloudflare-worker/remote/validate-local.mjs"
+    "test:cloudflare:remote:local": "node examples/cloudflare-worker/remote/validate-local.mjs",
+    "check:consumer": "node scripts/check-consumer.mjs"
   },
   "devDependencies": {
     "@base-ui/react": "1.8.0",
@@ -68,7 +70,10 @@
     "vitest": "5.0.1",
     "miniflare": "5.20260925.0-alpha",
     "wrangler": "4.141.0",
-    "esbuild": "0.28.1"
+    "esbuild": "0.28.1",
+    "@prisma/client": "7.9.1",
+    "@prisma/adapter-pg": "7.9.1",
+    "prisma": "7.9.1"
   },
   "type": "module"
 }

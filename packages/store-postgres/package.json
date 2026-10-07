@@ -1,0 +1,36 @@
+{
+  "name": "@usagekit/store-postgres",
+  "version": "0.6.0",
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b",
+    "prepublishOnly": "node ../../scripts/publish-guard.mjs",
+    "prepack": "node ../../scripts/package-license.mjs"
+  },
+  "dependencies": {
+    "@usagekit/core": "0.6.0",
+    "@usagekit/store": "0.6.0",
+    "pg": "8.23.1",
+    "@types/pg": "8.23.1"
+  },
+  "description": "Atomic Postgres Store with pg/Prisma drivers, explicit migrations and host transaction composition.",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "restricted",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

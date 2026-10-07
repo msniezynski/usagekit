@@ -3,10 +3,26 @@ export const publishable = [
   "@usagekit/store",
   "@usagekit/meter",
   "@usagekit/providers",
+  "@usagekit/views",
+  "@usagekit/react",
+  "@usagekit/store-postgres",
 ];
 export const registry = "https://registry.npmjs.org/";
 /** Version of the publishable packages on this branch; the workspace check enforces it. */
-export const releaseVersion = "0.5.0";
+export const releaseVersion = "0.6.0";
+
+/** Source-path exceptions never exempt a private term inside a public tarball. */
+export function privatePackageTerms(content) {
+  return content
+    .split(/\r?\n/)
+    .map((line) =>
+      line
+        .split(/\s+allow:/i)[0]
+        .trim()
+        .toLowerCase(),
+    )
+    .filter(Boolean);
+}
 
 /** The packages are public. CLI flags take precedence over each manifest's publishConfig. */
 export function publishArgs() {
