@@ -3,7 +3,7 @@ import { Button } from "@base-ui/react/button";
 import { ArrowUpRight, Menu, Moon, Sun, X } from "lucide-react";
 import { BlocksSection } from "./blocks.js";
 import { BisibilityMark, Brand } from "./ui.js";
-import { npmOrg, runtimeVersion } from "./content.js";
+import { npmOrg, runtimeVersion, sourceRepo } from "./content.js";
 import { Docs } from "./docs.js";
 import { Hero } from "./hero.js";
 import { LiveMeterProvider } from "./live.js";
@@ -154,6 +154,9 @@ function Footer() {
           <a href="/components/">Components</a>
           <a href="/agents/">Agents</a>
           <a href="/docs/">Documentation</a>
+          <a href={sourceRepo}>
+            GitHub <ArrowUpRight size={13} aria-hidden="true" />
+          </a>
           <a href={npmOrg}>
             npm packages <ArrowUpRight size={13} aria-hidden="true" />
           </a>
@@ -166,7 +169,7 @@ function Footer() {
       </div>
       <div className="container">
         <p className="footer-note">
-          Runtime {runtimeVersion} is on npm. The React layer runs from the repository checkout.
+          Runtime {runtimeVersion} is on npm. React hooks and copyable blocks share the same Meter.
         </p>
       </div>
     </footer>

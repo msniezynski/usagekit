@@ -29,5 +29,14 @@
   "publishConfig": {
     "access": "restricted",
     "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/msniezynski/usagekit.git",
+    "directory": "packages/views"
+  },
+  "homepage": "https://usagekit.dev",
+  "bugs": {
+    "url": "https://github.com/msniezynski/usagekit/issues"
   }
 }

@@ -25,7 +25,7 @@ const sections = [
   { id: "getting-started", label: "Install the runtime" },
   { id: "packages", label: "Runtime packages" },
   { id: "storage", label: "Storage adapters" },
-  { id: "checkout", label: "React checkout" },
+  { id: "checkout", label: "React installation" },
   { id: "local-server", label: "Local server" },
   { id: "hooks", label: "Headless hooks" },
   { id: "components", label: "Components" },
@@ -460,8 +460,8 @@ export function Docs() {
           <Section id="getting-started" title="Install the runtime" onFollow={onFollow}>
             <p>
               Choose the layer you need. The four public runtime packages are available on npm at{" "}
-              <strong>{runtimeVersion}</strong>. The React and registry workspaces are currently
-              available from the repository checkout.
+              <strong>{runtimeVersion}</strong>. React, views and Postgres storage use the 0.6.0
+              cohort described in the React installation section below.
             </p>
             <div className="docs-block">
               <Install packages={installPackages} label="Install the runtime" />
@@ -554,19 +554,25 @@ export function Docs() {
             </p>
           </Section>
 
-          <Section id="checkout" title="React checkout setup" onFollow={onFollow}>
+          <Section id="checkout" title="React installation" onFollow={onFollow}>
             <Note
               icon={<Info size={16} strokeWidth={1.75} aria-hidden="true" />}
-              title="React is not publicly installable from npm yet."
+              title="Keep the runtime and UI on the same release cohort."
             >
-              <C>@usagekit/react</C> and <C>@usagekit/views</C> are in the unpublished 0.6.0
-              candidate, alongside <C>@usagekit/store-postgres</C>. The registry remains private
-              tooling. Use the checkout flow below until publication is verified.
+              <C>@usagekit/react</C>, <C>@usagekit/views</C> and <C>@usagekit/store-postgres</C>
+              belong to the 0.6.0 cohort. Check each exact version on npm before installing; use
+              reviewed tarballs for an unreleased candidate. Registry JSON is distributed from the
+              project website.
             </Note>
+            <Code lang="shell" title="Published 0.6.0 cohort" className="docs-block">
+              {`npm view @usagekit/react@0.6.0 version --registry https://registry.npmjs.org/
+# After the cohort is available on npm:
+npm install --save-exact @usagekit/core@0.6.0 @usagekit/store@0.6.0 @usagekit/meter@0.6.0 @usagekit/providers@0.6.0 @usagekit/views@0.6.0 @usagekit/react@0.6.0`}
+            </Code>
             <p>
-              From the repository root, with Node <strong>22.23.1</strong> and npm{" "}
-              <strong>10.9.3</strong>, install and build the local workspaces. This links the React
-              and view packages locally; it does not publish them.
+              To build an unreleased source checkout, from the repository root with Node{" "}
+              <strong>22.23.1</strong> and npm <strong>10.9.3</strong>, install and build the local
+              workspaces. This links the React and view packages locally; it does not publish them.
             </p>
             <Code lang="shell" title="Terminal" className="docs-block">
               {checkoutCommands}
@@ -658,7 +664,7 @@ export function Docs() {
               Run these commands from a configured consumer with the local UI packages available as
               described in <C>docs/CONSUMING.md</C>. shadcn installs into{" "}
               <C>@/components/usagekit/</C>; copied blocks reference your <C>@/components/ui/*</C>{" "}
-              primitives. These commands alone do not make unpublished UI packages available.
+              primitives. Registry commands copy components; npm publication is a separate step.
             </p>
             <p>
               Budget status shows used and reserved amounts separately. Measurement cards

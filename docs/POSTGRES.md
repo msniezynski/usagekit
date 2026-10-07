@@ -1,9 +1,10 @@
 # Postgres Store
 
-`@usagekit/store-postgres` is part of the unpublished 0.6.0 release candidate. It implements
+`@usagekit/store-postgres` belongs to the seven-package 0.6.0 cohort. It implements
 the complete Store contract, including billing imports, using normalized Postgres tables.
-Use it from this checkout after `npm ci` and `npm run build`. Anonymous npm installation
-requires a separately approved adapter release.
+Install the published exact version anonymously, or use the reviewed candidate tarballs
+when validating an unreleased checkout. See [consuming packages](CONSUMING.md) for the
+availability check and installation commands. A checkout build does not publish the adapter.
 
 ## Native pg pool
 

@@ -1,6 +1,6 @@
 # usagekit roadmap
 
-Established: 2026-09-24. Owner: Michal. Repository status reviewed: 2026-10-07.
+Established: 2026-09-24. Owner: Michal. Repository status reviewed: 2026-10-08.
 This is the bird's-eye view. [PLAN.md](PLAN.md) holds the
 engineering contract, constraints and stage exit gates; this file holds purpose, model,
 current position and the order of work. When they disagree, this file wins on order and scope,
@@ -135,11 +135,12 @@ maintain and a registry to test against both.
 
 ## 6. Where we are
 
-This is a local repository snapshot, not a live audit of npm, Cloudflare or a host deployment.
-Reviewed base: local `main` at `5fd29a1`, with approved P8 billing-import source.
-The four-package 0.5.0 cohort is published; its npm version and integrity metadata were
-verified without registry credentials on 2026-10-07. The React extension is implemented
-on `feat/react-meter-components`, separately from approved main and publication.
+This is a repository snapshot, not a live audit of npm, Cloudflare or a host deployment.
+Public source: <https://github.com/msniezynski/usagekit>. Website: <https://usagekit.dev>.
+The reviewed public main at `767a20c` contains the React UI, Postgres adapter and P8
+billing imports. The four-package 0.5.0 cohort was verified without registry credentials
+on 2026-10-07. The seven-package 0.6.0 cohort requires separate publication verification;
+source promotion, npm publication and host integration have distinct receipts.
 
 | Item                                 | State on 2026-10-07                                                                                                                                                                                                                                                                   |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -150,13 +151,14 @@ on `feat/react-meter-components`, separately from approved main and publication.
 | P6 local proxy                       | On `main`: routed provider dispatch, budget enforcement and crash recovery. See [PROXY](PROXY.md).                                                                                                                                                                                    |
 | P7 Cloudflare storage                | Approved on local `main`: authoritative SQLite-backed Durable Object storage and Worker example. Direct D1Database support remains unimplemented.                                                                                                                                     |
 | Library release                      | Public `core`, `store`, `meter` and `providers` 0.5.0 are published. Other workspaces remain private; public React distribution needs separate authorization.                                                                                                                         |
-| Repository hosting and CI            | No Git remote is configured. The public hosting/CI part of P4 remains outstanding.                                                                                                                                                                                                    |
+| Repository hosting and CI            | Public repository and GitHub Actions are configured. The first public run found a Cloudflare fixture race; its local regression fix passes. Fresh exact-head public CI remains a release gate.                                                                                        |
 | P3 host shadow and P8 cutover        | Current host PR, deployment, shadow observations and credit authority must be checked in the host repository before cutover. Library checks do not establish production readiness.                                                                                                    |
 | P8 billing import                    | Approved on local `main`: atomic imports, scoped request matching, immutable revisions, reconciliation, SQLite and Durable Object replay, HTTP and local parsing. Included in published 0.5.0. See [billing imports](BILLING-IMPORTS.md) and the [migration guide](MIGRATING-0.5.md). |
 
-Next: review the task commits for shared React metering and provider hooks, measurement
-cards, provider connection tools and allocation editors in both styles, plus the static
-project website. Hosts supply authorized budget-write and provider-management adapters;
+Next: finish the seven-package 0.6.0 publication, verify anonymous registry installs
+and both public shadcn variants, then complete the host React preview and merge.
+Shared metering/provider hooks, measurement cards, connection tools and allocation editors
+are implemented in both styles; the local Usagekit dashboard already uses shared blocks. Hosts supply authorized budget-write and provider-management adapters;
 read-only dashboards stay read-only. See [provider UI](PROVIDER-UI.md) and [the site](SITE.md).
 Promotion, UI package publication and website hosting are separate gates.
 Host integration and shadow evidence are

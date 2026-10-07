@@ -1,7 +1,12 @@
 # Consuming usagekit
 
 Use Node 22.23.1 and pin packages from a release cohort to the same exact version.
-The published cohort is 0.5.0; 0.4.0 is the preceding published version.
+The four-package 0.5.0 runtime cohort is published; 0.4.0 is its preceding version.
+The seven-package 0.6.0 source cohort adds views, React and Postgres storage.
+Verify every exact 0.6.0 version on npm before using the registry commands below;
+use reviewed local tarballs for an unpublished candidate.
+
+Source: <https://github.com/msniezynski/usagekit>. Documentation and registry: <https://usagekit.dev>.
 
 ```sh
 npm install --save-exact @usagekit/core@0.5.0 @usagekit/store@0.5.0 @usagekit/meter@0.5.0 @usagekit/providers@0.5.0
@@ -56,17 +61,40 @@ Skipped capabilities are not passed guarantees.
 
 ## Headless views and React components
 
-`@usagekit/views` and `@usagekit/react` are prepared for the seven-package 0.6.0 cohort,
-alongside the new `@usagekit/store-postgres`. This candidate is not published yet.
-Use all seven reviewed tarballs together; do not mix 0.5.0 and 0.6.0 contracts. The component
-registry remains private tooling and distributes built shadcn JSON, rather than an npm package.
+`@usagekit/views` and `@usagekit/react` belong to the seven-package 0.6.0 cohort,
+alongside `@usagekit/store-postgres`. Keep packages on the same exact cohort; do not mix
+0.5.0 and 0.6.0 contracts. The component registry is private build tooling that distributes
+public shadcn JSON, rather than an npm package.
+
+Check availability without credentials:
+
+```sh
+for package in core store meter providers views react store-postgres; do
+  npm view "@usagekit/$package@0.6.0" version --registry https://registry.npmjs.org/
+done
+```
+
+After all seven versions are available, install the packages your application needs:
+
+```sh
+npm install --save-exact @usagekit/core@0.6.0 @usagekit/store@0.6.0 @usagekit/meter@0.6.0 @usagekit/providers@0.6.0 @usagekit/views@0.6.0 @usagekit/react@0.6.0
+# Optional server-side Postgres storage:
+npm install --save-exact @usagekit/store-postgres@0.6.0
+# Choose the primitive family configured in your shadcn application:
+npx shadcn add https://usagekit.dev/r/radix/budget-manager-panel.json
+# Or: npx shadcn add https://usagekit.dev/r/base/budget-manager-panel.json
+```
+
+If a version is unavailable, use the reviewed seven-tarball candidate workflow below.
+A successful website deployment does not establish npm publication.
 Backend consumers need no React dependency unless they install the React package.
 
 From a checkout, run the root `npm ci` and `npm run build`. A workspace host can use
 `loadUsageSummary` and the other views directly, or share reads through `MeterProvider`
 and the React hooks. The copied blocks use host primitives for either Radix/New York or
 Base UI/base-vega. Registry artifacts contain their dependency manifest and bundled
-component files; the CLI still needs a local/private source for the UI packages.
+component files. Published UI dependencies resolve anonymously from npm; unreleased
+candidates require the reviewed tarballs before copying blocks.
 
 For a complete local example without package downloads:
 

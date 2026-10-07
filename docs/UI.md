@@ -1,9 +1,10 @@
 # UI layers
 
-The four public runtime packages are published at 0.5.0. `@usagekit/react` and
-`@usagekit/views` join the seven-package 0.6.0 candidate. The registry
-remains a private tooling workspace whose built blocks are distributed as copyable JSON.
-Use reviewed tarballs until 0.6.0 publication is approved and independently verified.
+The four-package runtime cohort is published at 0.5.0. `@usagekit/react` and
+`@usagekit/views` belong to the seven-package 0.6.0 cohort. The registry remains
+private build tooling whose blocks are distributed as public copyable JSON.
+Verify exact npm versions before installing a cohort; use reviewed tarballs for unreleased
+candidates. See [consuming packages](CONSUMING.md) for both workflows.
 
 | Layer                  | Package or path                                      | Depends on                         | Runs in                   |
 | ---------------------- | ---------------------------------------------------- | ---------------------------------- | ------------------------- |

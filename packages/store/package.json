@@ -49,5 +49,14 @@
     "fast-check": {
       "optional": true
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/msniezynski/usagekit.git",
+    "directory": "packages/store"
+  },
+  "homepage": "https://usagekit.dev",
+  "bugs": {
+    "url": "https://github.com/msniezynski/usagekit/issues"
   }
 }

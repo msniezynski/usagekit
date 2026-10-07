@@ -64,7 +64,12 @@ afterAll(async () => {
   await mf?.dispose();
   rmSync(dir, { recursive: true, force: true });
 });
-async function fixture() {
+async function fixture(
+  hooks: {
+    beforeRequest?: (method: string, budgets: Budget[]) => Promise<void>;
+    afterRequest?: (method: string, budgets: Budget[]) => void;
+  } = {},
+) {
   await start();
   const id = crypto.randomUUID(),
     clock = createManualClock(),
@@ -77,16 +82,12 @@ async function fixture() {
     storageRowsWritten: 0,
   };
   const seen = new Map<string, string>();
-  const call = async (method: string, args: unknown[] = [], worker = "a") => {
-    const changed = budgets.filter(
-      (b) => seen.get(`${b.scope.namespace}:${b.id}:${b.version}`) !== encode(b),
-    );
-    // Record before awaiting, so concurrent commands don't all rewrite fixtures.
-    for (const b of changed) seen.set(`${b.scope.namespace}:${b.id}:${b.version}`, encode(b));
+  const transport = async (method: string, args: unknown[], changed: Budget[], worker: string) => {
     // Miniflare 5 ReplaceWorkersTypes incorrectly collapses Fetcher to Request with DOM types.
     const gateway = (await (await start()).getWorker(worker)) as unknown as {
       fetch(url: string, init: RequestInit): Promise<Response>;
     };
+    await hooks.beforeRequest?.(method, changed);
     const response = await gateway.fetch(`http://test/${id}`, {
       method: "POST",
       body: encode({ method, args, now: clock.now().toISOString(), budgets: changed }),
@@ -102,7 +103,29 @@ async function fixture() {
       if (payload.error.field) throw new InvalidInput(payload.error.field, payload.error.reason);
       throw new Error(payload.error.message);
     }
+    hooks.afterRequest?.(method, changed);
     return payload.result;
+  };
+  let pendingBudgets: Promise<void> | undefined;
+  const call = async (method: string, args: unknown[] = [], worker = "a") => {
+    while (pendingBudgets) await pendingBudgets;
+    const changed = budgets
+      .filter((b) => seen.get(`${b.scope.namespace}:${b.id}:${b.version}`) !== encode(b))
+      .map((b) => structuredClone(b));
+    if (changed.length) {
+      // Finish fixture setup before any competing command can reach the object.
+      // Only setup is shared; Store commands still race through independent requests.
+      const pending = transport("$metrics", [], changed, worker).then(() => {
+        for (const b of changed) seen.set(`${b.scope.namespace}:${b.id}:${b.version}`, encode(b));
+      });
+      pendingBudgets = pending;
+      try {
+        await pending;
+      } finally {
+        if (pendingBudgets === pending) pendingBudgets = undefined;
+      }
+    }
+    return transport(method, args, [], worker);
   };
   const store = new Proxy({} as Store, {
     get: (_, method) =>
@@ -143,6 +166,24 @@ runStoreScalingConformance(async () => {
   f.budgets.push(budget({ limit: null }));
   await f.store.reserve(input({ operationId: "warmup" }));
   return f;
+});
+
+test("concurrent commands see fixture budgets even when transport reorders requests", async () => {
+  let otherCommandFinished!: () => void;
+  const otherCommand = new Promise<void>((resolve) => {
+    otherCommandFinished = resolve;
+  });
+  const f = await fixture({
+    beforeRequest: async (method, budgets) => {
+      if (method === "reserve" && budgets.length) await otherCommand;
+    },
+    afterRequest: (method, budgets) => {
+      if (method === "reserve" && !budgets.length) otherCommandFinished();
+    },
+  });
+  f.budgets.push(budget({ limit: { value: 0n, scale: 0, unit: "requests" } }));
+  const results = await Promise.all([f.store.reserve(input()), f.store.reserve(input())]);
+  expect(results.map((result) => result.outcome)).toEqual(["exceeded", "exceeded"]);
 });
 
 test("two independent Workers race on the same object and shared pool", async () => {

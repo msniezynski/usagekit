@@ -75,5 +75,13 @@
     "@prisma/adapter-pg": "7.9.1",
     "prisma": "7.9.1"
   },
-  "type": "module"
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/msniezynski/usagekit.git"
+  },
+  "homepage": "https://usagekit.dev",
+  "bugs": {
+    "url": "https://github.com/msniezynski/usagekit/issues"
+  }
 }

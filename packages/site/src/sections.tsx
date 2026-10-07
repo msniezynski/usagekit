@@ -700,7 +700,8 @@ const faqs: readonly { question: string; answer: ReactNode }[] = [
     answer: (
       <>
         {pkg("@usagekit/core")}, {pkg("store")}, {pkg("meter")} and {pkg("providers")}{" "}
-        {runtimeVersion} are on npm. React, views and the registry run from a repository checkout.
+        {runtimeVersion} are on npm. React, views and Postgres storage use the 0.6.0 cohort; see the
+        installation guide for registry availability and checkout setup.
       </>
     ),
   },

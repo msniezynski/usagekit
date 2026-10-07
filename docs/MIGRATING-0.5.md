@@ -6,9 +6,9 @@ Upgrade the public `core`, `store`, `meter` and `providers` packages together, w
 0.5.0 dependency versions. HTTP, client, views and React workspaces follow the same source
 cohort but remain private; this release publishes only the four allow-listed packages.
 
-The source is approved on local main. The release candidate is unpublished until the owner
-approves its reviewed SHA and squash title, then separately authorizes publication through
-`npm run release` on clean main with its verified signed `v0.5.0` tag. A local tarball, passing
+The four-package 0.5.0 cohort is published on registry.npmjs.org. New candidates still
+require owner approval of the reviewed SHA, squash title and publication through
+`npm run release` on clean main with a verified signed version tag. A local tarball, passing
 dry-run or host test does not establish registry publication or production cutover.
 
 ## Validate an unpublished cohort

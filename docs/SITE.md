@@ -69,9 +69,11 @@ views equal the live views of the seeded Meter and replays the sample story.
 There are no analytics, network data dependencies, fabricated testimonials or
 unpublished-package installation claims. Mona Sans and Geist Mono are bundled from
 their `@fontsource-variable` packages (OFL-1.1); there are no external font
-requests. Runtime packages link to their npm pages. No GitHub URL is invented
-while the repository has no hosting target. The React layer, views, registry,
-SQLite and Cloudflare adapters are described as repository workspaces.
+requests. Runtime packages link to their npm pages. Source links point to
+<https://github.com/msniezynski/usagekit>; the website is <https://usagekit.dev>.
+React, views and Postgres storage belong to the 0.6.0 cohort; installation guidance
+distinguishes published packages from unreleased checkout candidates. Registry tooling,
+SQLite and Cloudflare adapters remain repository workspaces.
 
 ## Build and accessibility
 

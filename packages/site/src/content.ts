@@ -1,5 +1,6 @@
 /** Facts shared by the homepage and the docs. Keep them true to the repository. */
 export const runtimeVersion = "0.5.0";
+export const sourceRepo = "https://github.com/msniezynski/usagekit";
 export const npmOrg = "https://www.npmjs.com/org/usagekit";
 export const npmPackage = (name: string) => `https://www.npmjs.com/package/@usagekit/${name}`;
 

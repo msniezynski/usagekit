@@ -33,7 +33,7 @@ async function checkStaticTree(path) {
 }
 
 function navigation() {
-  return '<a href="/">Usagekit</a><a href="/components/">Components</a><a href="/agents/">Agents</a><a href="/docs/">Docs</a><a href="/examples/">Examples</a><a href="/examples/new-york/">New York</a><a href="/examples/base/">Base UI</a><a href="https://github.com/usagekit">GitHub organization</a>';
+  return '<a href="/">Usagekit</a><a href="/components/">Components</a><a href="/agents/">Agents</a><a href="/docs/">Docs</a><a href="/examples/">Examples</a><a href="/examples/new-york/">New York</a><a href="/examples/base/">Base UI</a><a href="https://github.com/msniezynski/usagekit">Source on GitHub</a>';
 }
 
 const bannerCss = `
@@ -74,13 +74,13 @@ function examplesHtml(items) {
 <style>
 ${bannerCss}
 *{box-sizing:border-box}body{margin:0;background:#faf9f4;color:#292c25;font:16px/1.6 system-ui,sans-serif}main{max-width:1200px;margin:0 auto;padding:64px 24px}h1{font-size:clamp(36px,7vw,64px);line-height:1.05;letter-spacing:-.04em;margin:0 0 24px;max-width:800px}h2{font-size:28px;margin:48px 0 12px}p{max-width:780px}.eyebrow{font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#535b49}a{color:#35551d;text-underline-offset:4px}a:focus-visible,button:focus-visible,.table-wrap:focus-visible{outline:3px solid #587438;outline-offset:4px}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin:32px 0}.card{display:block;border:1px solid #c9cebf;border-radius:16px;padding:28px;color:inherit;text-decoration:none;background:#f0f1e8}.card strong{display:block;font-size:24px}.card span{display:block;margin:12px 0;color:#4d5544}.card em{font-style:normal;text-decoration:underline;color:#35551d}.note{border-left:3px solid #8a9e71;padding:8px 20px;background:#f0f1e8}.table-wrap{overflow:auto;border:1px solid #c9cebf;border-radius:12px}table{border-collapse:collapse;width:100%;min-width:600px}th,td{text-align:left;padding:16px 20px;border-bottom:1px solid #d9ddcf}thead{background:#eef0e5}th[scope=row]{font-weight:600;min-width:300px}small{display:block;font-weight:400;color:#535b49;font-size:13px;line-height:1.6;margin-top:4px;max-width:600px}td{white-space:nowrap}button{font:inherit;font-size:13px;margin-left:14px;border:1px solid #adb7a1;border-radius:6px;background:#fff;padding:7px 10px;color:#30392a;cursor:pointer}#copy-status{min-height:26px}#install-command{display:block;white-space:pre-wrap;overflow-wrap:anywhere;margin:16px 0;font:14px/1.6 ui-monospace,monospace;color:#30392a}footer{padding-top:40px;color:#535b49;font-size:14px}@media(max-width:640px){main{padding:40px 20px}.cards{grid-template-columns:1fr}.card{padding:22px}}
-</style></head><body><header class="preview-banner"><nav aria-label="Preview navigation">${navigation()}</nav><p>Static preview · Browser-only fixtures · Checkout-only UI packages</p></header><main>
+</style></head><body><header class="preview-banner"><nav aria-label="Preview navigation">${navigation()}</nav><p>Static preview · Browser-only fixtures · React and views · 0.6.0 cohort</p></header><main>
 <p class="eyebrow">Usagekit / Component examples</p><h1>One metering model. Two ways to make it yours.</h1><p>Try the actual Usagekit React hooks and all ${items.length} registry blocks with local metering, budgets and provider-management fixtures. The examples use the same component sources that the registry copies into your app.</p>
 <div class="cards">${variants.map((variant) => `<a class="card" href="/examples/${variant.route}/"><strong>${escapeHtml(variant.label)}</strong><span>Explore usage, limits, budgets and provider controls with sample data.</span><em>Open interactive example →</em></a>`).join("")}</div>
 <div class="note"><p>Each example runs in memory in your browser. Changes reset on reload; there is no durable backend, provider request or billing action. Credential fields accept demo values only.</p></div>
-<h2>Copy a block into your app</h2><p>These JSON artifacts are ready for the shadcn CLI. Choose the variant that matches your configured consumer app. <code>@usagekit/react</code> and <code>@usagekit/views</code> are still private workspaces: install their local packages first, as described in <a href="/docs/">the checkout instructions</a>. Hosting the registry does not publish those npm packages.</p><p>The install command below uses this preview's own origin.</p>
+<h2>Copy a block into your app</h2><p>These JSON artifacts are ready for the shadcn CLI. Choose the variant that matches your configured consumer app. Install <code>@usagekit/react</code>, <code>@usagekit/views</code> and their dependencies from the same 0.6.0 cohort first. Use published npm versions or reviewed candidate tarballs as described in <a href="/docs/#checkout">the installation guide</a>. Hosting the registry does not publish npm packages.</p><p>The install command below uses this preview's own origin.</p>
 <p id="copy-status" role="status" aria-live="polite">Choose a block to get its install command.</p><code id="install-command"></code><div class="table-wrap" role="region" aria-label="Component registry" tabindex="0"><table><thead><tr><th scope="col">Block</th><th scope="col">New York / Radix</th><th scope="col">Base UI / Vega</th></tr></thead><tbody>${rows}</tbody></table></div>
-<footer><p>Apache-2.0 · <a href="/LICENSE">License</a> · <a href="https://github.com/usagekit">Usagekit organization</a> · <a href="https://bisibility.com">Bisibility example integration</a></p><p>Bisibility uses Usagekit metering; React provider-panel adoption is being prepared and verified locally.</p></footer>
+<footer><p>Apache-2.0 · <a href="/LICENSE">License</a> · <a href="https://github.com/msniezynski/usagekit">Usagekit source</a> · <a href="https://bisibility.com">Bisibility example integration</a></p><p>Bisibility uses Usagekit metering; React provider-panel adoption is being prepared and verified locally.</p></footer>
 </main><script>
 document.querySelectorAll('[data-install]').forEach(function(button){button.addEventListener('click',async function(){var command='npx shadcn add '+new URL(button.dataset.install,location.origin).href;document.getElementById('install-command').textContent=command;try{await navigator.clipboard.writeText(command);document.getElementById('copy-status').textContent='Install command copied.';}catch{document.getElementById('copy-status').textContent='Select and copy the install command shown below.';}});});
 </script></body></html>\n`;
@@ -163,7 +163,7 @@ async function buildPreview() {
       ),
       backend: "none",
       examples: "browser-only in-memory fixtures",
-      uiPackages: "checkout-only; unpublished",
+      uiPackages: "0.6.0 cohort; registry availability verified separately",
       registryBlocksPerVariant: index.items.length,
       routes: [
         "/",

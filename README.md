@@ -5,9 +5,11 @@ costs and application credits. Both BYOK and platform-funded keys are in scope.
 Host A uses Postgres and Prisma. Host B adds team-owned connections.
 Host C targets Cloudflare D1. A local server shares the embedded Meter contract.
 
-**Status: runtime 0.5.0 is published. The 0.6.0 release candidate adds public headless views, React hooks and the durable Postgres adapter. It is not published yet.**
+**Release lines: runtime 0.5.0 is published. The 0.6.0 source cohort adds headless views, React hooks and the durable Postgres adapter.**
 Licensed under Apache-2.0. `@usagekit/core`, `store`, `meter` and `providers` 0.5.0 are published on registry.npmjs.org.
-The 0.6.0 candidate release allow-list contains `core`, `store`, `meter`, `providers`, `views`, `react` and `store-postgres`. Other workspaces remain private. Candidate publication needs exact-source owner approval. See [consuming packages](docs/CONSUMING.md) and the [roadmap](docs/ROADMAP.md).
+The 0.6.0 release allow-list contains `core`, `store`, `meter`, `providers`, `views`, `react` and `store-postgres`. Other workspaces remain private. See [consuming packages](docs/CONSUMING.md) for registry availability and candidate validation. Candidate publication needs exact-source owner approval.
+
+[Project website](https://usagekit.dev) · [Source](https://github.com/msniezynski/usagekit) · [Issues](https://github.com/msniezynski/usagekit/issues) · [Roadmap](docs/ROADMAP.md)
 
 ## Start here
 
