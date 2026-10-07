@@ -1,0 +1,1 @@
+../../radix/budget-manager-panel/budget-manager-panel.tsx

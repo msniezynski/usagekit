@@ -1,0 +1,335 @@
+/* Owner: agents-page agent. The agents page around AgentsSection: header, questions, closing. */
+
+.agp-code {
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--fg);
+  background: var(--bg-muted);
+  font-size: 0.86em;
+  white-space: nowrap;
+}
+.agp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/*
+ * Header: the h1 runs across the page. The lede and the terminal sit on the media-right split,
+ * so the terminal starts on the same vertical as the dashboard in the section below.
+ */
+.agp-hero {
+  padding-block: 88px 96px;
+}
+.agp-hero-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  grid-template-areas:
+    "title title"
+    "side term";
+  gap: 40px 64px;
+  align-items: start;
+}
+.agp-title {
+  grid-area: title;
+  max-width: 13em;
+  font-size: clamp(40px, 6vw, 72px);
+  font-stretch: var(--wide);
+  font-weight: 640;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+}
+.agp-side {
+  grid-area: side;
+  display: grid;
+  justify-items: start;
+  gap: 28px;
+}
+.agp-lede {
+  max-width: 52ch;
+  color: var(--fg-muted);
+  font-size: var(--text-lg);
+  line-height: 1.55;
+}
+
+/* The terminal: commands in ink, output muted, the address in ink. */
+.agp-term {
+  grid-area: term;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  box-shadow: var(--shadow-md);
+}
+.agp-term-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 44px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+}
+.agp-term-title {
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+.agp-term-label {
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+}
+.agp-term-body {
+  margin: 0;
+  padding: 18px 20px 20px;
+  color: var(--fg-muted);
+  font-size: 13px;
+  line-height: 1.75;
+  /* Long lines wrap instead of scrolling, so the page never scrolls sideways. */
+  white-space: pre-wrap;
+}
+.agp-line {
+  display: block;
+}
+.agp-line.is-note {
+  color: var(--fg-subtle);
+}
+.agp-line.is-command {
+  color: var(--fg);
+  font-weight: 500;
+}
+.agp-prompt {
+  color: var(--fg-subtle);
+  font-weight: 400;
+  user-select: none;
+}
+.agp-secret {
+  color: var(--fg-muted);
+}
+.agp-url {
+  color: var(--fg);
+}
+
+/* Questions: the intro on the 5fr column, the answers on the 7fr column. */
+.agp-faq-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 32px 64px;
+  align-items: start;
+}
+.agp-faq-intro {
+  position: sticky;
+  top: calc(var(--header-h) + 40px);
+  display: grid;
+  gap: 16px;
+}
+.agp-faq-more {
+  max-width: 34ch;
+  color: var(--fg-muted);
+  font-size: var(--text-base);
+  line-height: 1.6;
+}
+.agp-faq-docs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: -6px;
+  font-size: var(--text-base);
+}
+.agp-faq-list {
+  border-top: 1px solid var(--line);
+  interpolate-size: allow-keywords;
+}
+.agp-faq-item {
+  border-bottom: 1px solid var(--line);
+}
+.agp-faq-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 2px;
+  font-size: var(--text-lg);
+  font-weight: 550;
+  letter-spacing: -0.015em;
+  line-height: 1.4;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+.agp-faq-question::-webkit-details-marker {
+  display: none;
+}
+.agp-faq-question:focus-visible {
+  outline-offset: 4px;
+}
+.agp-faq-mark {
+  position: relative;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--fg-muted);
+  transition: color var(--fast);
+}
+.agp-faq-question:hover .agp-faq-mark,
+.agp-faq-item[open] .agp-faq-mark {
+  color: var(--fg);
+}
+.agp-faq-mark::before,
+.agp-faq-mark::after {
+  content: "";
+  position: absolute;
+  top: 6.25px;
+  left: 0;
+  width: 14px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: currentColor;
+  transition: transform var(--base) var(--ease-out);
+}
+.agp-faq-mark::after {
+  transform: rotate(90deg);
+}
+.agp-faq-item[open] .agp-faq-mark::after {
+  transform: rotate(0deg);
+}
+.agp-faq-answer {
+  max-width: 64ch;
+  padding: 0 40px 26px 2px;
+  color: var(--fg-muted);
+  font-size: var(--text-md);
+  line-height: 1.65;
+}
+.agp-faq-answer .link {
+  color: var(--fg);
+}
+.agp-faq-item::details-content {
+  block-size: 0;
+  overflow-y: clip;
+  transition:
+    block-size var(--base) var(--ease-out),
+    content-visibility var(--base) allow-discrete;
+}
+.agp-faq-item[open]::details-content {
+  block-size: auto;
+}
+
+/* Closing: it follows the white questions, so it opens on a hairline instead of more white. */
+.agp-close {
+  padding-top: 0;
+}
+.agp-close-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: 32px 64px;
+  align-items: end;
+  padding-top: calc(var(--section-y) - 16px);
+  border-top: 1px solid var(--line);
+}
+.agp-close-title {
+  font-size: clamp(40px, 6vw, 72px);
+  font-stretch: var(--wide);
+  font-weight: 640;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+}
+.agp-close-side {
+  display: grid;
+  gap: 24px;
+  padding-bottom: 4px;
+}
+.agp-close-lede {
+  max-width: 40ch;
+  color: var(--fg-muted);
+  font-size: var(--text-lg);
+  line-height: 1.55;
+}
+
+/* Two even columns where the 5fr column gets too narrow for the lede. */
+@media (min-width: 1000px) and (max-width: 1190px) {
+  .agp-hero-inner {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 48px;
+  }
+}
+@media (max-width: 999px) {
+  .agp-hero-inner {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "title"
+      "side"
+      "term";
+    gap: 28px;
+  }
+  .agp-term {
+    margin-top: 12px;
+  }
+}
+@media (max-width: 900px) {
+  .agp-faq-grid,
+  .agp-close-inner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .agp-faq-intro {
+    position: static;
+  }
+  .agp-close-inner {
+    align-items: start;
+  }
+}
+@media (max-width: 760px) {
+  .agp-hero {
+    padding-block: 56px 64px;
+  }
+  .agp-hero-inner {
+    gap: 20px;
+  }
+  .agp-side {
+    gap: 24px;
+  }
+  .agp-lede,
+  .agp-close-lede {
+    font-size: var(--text-md);
+  }
+  .agp-term-bar {
+    padding-inline: 14px;
+  }
+  .agp-term-body {
+    padding: 14px 14px 16px;
+  }
+  .agp-faq-question {
+    padding-block: 18px;
+    font-size: var(--text-md);
+  }
+  .agp-faq-answer {
+    padding-right: 24px;
+    font-size: var(--text-base);
+  }
+}
+/* The plus and minus marks are drawn with backgrounds, which forced colors would erase. */
+@media (forced-colors: active) {
+  .agp-faq-mark::before,
+  .agp-faq-mark::after {
+    forced-color-adjust: none;
+    background: CanvasText;
+  }
+}
+
+/* Phones: the address line stays on one line, and the note keeps 4.5:1 at the smaller size. */
+@media (max-width: 480px) {
+  .agp-term-body {
+    font-size: 12px;
+  }
+  .agp-line.is-note {
+    color: var(--fg-muted);
+  }
+  .agp-side .agp-actions {
+    justify-self: stretch;
+  }
+  .agp-actions .btn {
+    flex: 1 1 auto;
+  }
+}

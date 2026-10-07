@@ -114,6 +114,314 @@
         }
       ],
       "docs": "Rebind for hosts without shadcn: @/components/ui/table (Table, TableHeader, TableBody, TableRow, TableHead, TableCell); @/components/ui/badge (Badge). Data comes from @usagekit/views; the Panel export reads it with @usagekit/react inside a MeterProvider."
+    },
+    {
+      "name": "measurement-card",
+      "type": "registry:block",
+      "title": "Measurement card",
+      "description": "One exact measurement with known, estimated, unknown or unavailable certainty.",
+      "registryDependencies": ["card", "badge"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/measurement-card/measurement-card.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/measurement-card.tsx"
+        }
+      ],
+      "docs": "Host primitives: @/components/ui/card, @/components/ui/badge. Bundled component dependencies copy to @components/usagekit/. Panel exports require MeterProvider; budget writes require a server-authorized BudgetWriter and canManageBudgets."
+    },
+    {
+      "name": "usage-summary-cards",
+      "type": "registry:block",
+      "title": "Usage summary cards",
+      "description": "Complete usage totals by unit, with exact quantities and independent certainty.",
+      "registryDependencies": ["card", "badge"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/usage-summary-cards/usage-summary-cards.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-summary-cards.tsx"
+        },
+        {
+          "path": "registry/radix/measurement-card/measurement-card.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/measurement-card.tsx"
+        }
+      ],
+      "docs": "Host primitives: @/components/ui/card, @/components/ui/badge. Bundled component dependencies copy to @components/usagekit/. Panel exports require MeterProvider; budget writes require a server-authorized BudgetWriter and canManageBudgets."
+    },
+    {
+      "name": "cost-summary-card",
+      "type": "registry:block",
+      "title": "Cost summary card",
+      "description": "Provider cost separated by funding and cost owner, with honest incomplete states.",
+      "registryDependencies": ["card", "badge"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/cost-summary-card/cost-summary-card.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/cost-summary-card.tsx"
+        },
+        {
+          "path": "registry/radix/measurement-card/measurement-card.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/measurement-card.tsx"
+        }
+      ],
+      "docs": "Host primitives: @/components/ui/card, @/components/ui/badge. Bundled component dependencies copy to @components/usagekit/. Panel exports require MeterProvider; budget writes require a server-authorized BudgetWriter and canManageBudgets."
+    },
+    {
+      "name": "budget-editor",
+      "type": "registry:block",
+      "title": "Budget editor",
+      "description": "Read-only by default; exact-string limits and alerts through an authorized host writer.",
+      "registryDependencies": ["card", "button", "input", "label"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/budget-editor/budget-editor.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/budget-editor.tsx"
+        }
+      ],
+      "docs": "Host primitives: @/components/ui/card, @/components/ui/button, @/components/ui/input, @/components/ui/label. Bundled component dependencies copy to @components/usagekit/. Panel exports require MeterProvider; budget writes require a server-authorized BudgetWriter and canManageBudgets."
+    },
+    {
+      "name": "budget-manager-panel",
+      "type": "registry:block",
+      "title": "Budget manager",
+      "description": "View definitions, edit existing budgets and create from trusted host templates.",
+      "registryDependencies": ["card", "button", "input", "label"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/budget-manager-panel/budget-manager-panel.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/budget-manager-panel.tsx"
+        },
+        {
+          "path": "registry/radix/budget-editor/budget-editor.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/budget-editor.tsx"
+        }
+      ],
+      "docs": "Host primitives: @/components/ui/card, @/components/ui/button, @/components/ui/input, @/components/ui/label. Bundled component dependencies copy to @components/usagekit/. Panel exports require MeterProvider; budget writes require a server-authorized BudgetWriter and canManageBudgets."
+    },
+    {
+      "name": "provider-card",
+      "type": "registry:block",
+      "title": "Provider card",
+      "description": "Connection status, funding, credential health and explicit enable or credential-test actions.",
+      "registryDependencies": ["badge", "button", "card"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/provider-card/provider-card.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-card.tsx"
+        },
+        {
+          "path": "registry/radix/provider-feedback/provider-feedback.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-feedback.tsx"
+        }
+      ],
+      "docs": "Host primitives: @/components/ui/badge, @/components/ui/button, @/components/ui/card. Bundled components copy to @components/usagekit/. Wrap panels in ProviderManagementProvider with a verified host binding. Read-only by default; credentials travel only in the explicit action argument. The host must authorize every read and action."
+    },
+    {
+      "name": "provider-connect-form",
+      "type": "registry:block",
+      "title": "Provider connect form",
+      "description": "Ephemeral credential fields with explicit test, connect, reconnect and confirmed disconnect.",
+      "registryDependencies": ["button", "card", "input", "label"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/provider-connect-form/provider-connect-form.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-connect-form.tsx"
+        },
+        {
+          "path": "registry/radix/provider-feedback/provider-feedback.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-feedback.tsx"
+        }
+      ],
+      "docs": "Host primitives: @/components/ui/button, @/components/ui/card, @/components/ui/input, @/components/ui/label. Bundled components copy to @components/usagekit/. Wrap panels in ProviderManagementProvider with a verified host binding. Read-only by default; credentials travel only in the explicit action argument. The host must authorize every read and action."
+    },
+    {
+      "name": "provider-source-selector",
+      "type": "registry:block",
+      "title": "Provider source selector",
+      "description": "Explicit own-key or platform funding change with revision checks and confirmation.",
+      "registryDependencies": ["button", "card"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/provider-source-selector/provider-source-selector.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-source-selector.tsx"
+        },
+        {
+          "path": "registry/radix/provider-feedback/provider-feedback.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-feedback.tsx"
+        }
+      ],
+      "docs": "Host primitives: @/components/ui/button, @/components/ui/card. Bundled components copy to @components/usagekit/. Wrap panels in ProviderManagementProvider with a verified host binding. Read-only by default; credentials travel only in the explicit action argument. The host must authorize every read and action."
+    },
+    {
+      "name": "provider-rate-editor",
+      "type": "registry:block",
+      "title": "Provider rate editor",
+      "description": "Exact rate inputs with manual, measured and list provenance and host fallback.",
+      "registryDependencies": ["button", "card", "input", "label"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/provider-rate-editor/provider-rate-editor.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-rate-editor.tsx"
+        },
+        {
+          "path": "registry/radix/provider-feedback/provider-feedback.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-feedback.tsx"
+        }
+      ],
+      "docs": "Host primitives: @/components/ui/button, @/components/ui/card, @/components/ui/input, @/components/ui/label. Bundled components copy to @components/usagekit/. Wrap panels in ProviderManagementProvider with a verified host binding. Read-only by default; credentials travel only in the explicit action argument. The host must authorize every read and action."
+    },
+    {
+      "name": "provider-chain-editor",
+      "type": "registry:block",
+      "title": "Provider chain editor",
+      "description": "Accessible fallback reordering, enable controls and one revision-checked order save.",
+      "registryDependencies": ["badge", "button", "card"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/provider-chain-editor/provider-chain-editor.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-chain-editor.tsx"
+        },
+        {
+          "path": "registry/radix/provider-feedback/provider-feedback.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-feedback.tsx"
+        }
+      ],
+      "docs": "Host primitives: @/components/ui/badge, @/components/ui/button, @/components/ui/card. Bundled components copy to @components/usagekit/. Wrap panels in ProviderManagementProvider with a verified host binding. Read-only by default; credentials travel only in the explicit action argument. The host must authorize every read and action."
+    },
+    {
+      "name": "provider-balance-card",
+      "type": "registry:block",
+      "title": "Provider balance card",
+      "description": "Separate provider and host wallet balances, freshness and independent request quote figures.",
+      "registryDependencies": ["badge", "button", "card"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/provider-balance-card/provider-balance-card.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-balance-card.tsx"
+        },
+        {
+          "path": "registry/radix/provider-feedback/provider-feedback.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-feedback.tsx"
+        }
+      ],
+      "docs": "Host primitives: @/components/ui/badge, @/components/ui/button, @/components/ui/card. Bundled components copy to @components/usagekit/. Wrap panels in ProviderManagementProvider with a verified host binding. Read-only by default; credentials travel only in the explicit action argument. The host must authorize every read and action."
+    },
+    {
+      "name": "provider-allocation-editor",
+      "type": "registry:block",
+      "title": "Provider allocation editor",
+      "description": "Independent own and platform allocations for app and programmatic use, with exact balance helpers.",
+      "registryDependencies": ["button", "card", "input", "label"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/provider-allocation-editor/provider-allocation-editor.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-allocation-editor.tsx"
+        },
+        {
+          "path": "registry/radix/provider-feedback/provider-feedback.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-feedback.tsx"
+        },
+        {
+          "path": "registry/radix/provider-allocation-row/provider-allocation-row.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-allocation-row.tsx"
+        }
+      ],
+      "docs": "Host primitives: @/components/ui/button, @/components/ui/card, @/components/ui/input, @/components/ui/label. Bundled components copy to @components/usagekit/. Wrap panels in ProviderManagementProvider with a verified host binding. Read-only by default; credentials travel only in the explicit action argument. The host must authorize every read and action."
+    },
+    {
+      "name": "provider-manager-panel",
+      "type": "registry:block",
+      "title": "Provider manager panel",
+      "description": "Complete provider management over stored host evidence and explicit, server-authorized actions.",
+      "registryDependencies": ["badge", "button", "card", "input", "label"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/provider-manager-panel/provider-manager-panel.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-manager-panel.tsx"
+        },
+        {
+          "path": "registry/radix/provider-card/provider-card.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-card.tsx"
+        },
+        {
+          "path": "registry/radix/provider-connect-form/provider-connect-form.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-connect-form.tsx"
+        },
+        {
+          "path": "registry/radix/provider-source-selector/provider-source-selector.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-source-selector.tsx"
+        },
+        {
+          "path": "registry/radix/provider-rate-editor/provider-rate-editor.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-rate-editor.tsx"
+        },
+        {
+          "path": "registry/radix/provider-chain-editor/provider-chain-editor.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-chain-editor.tsx"
+        },
+        {
+          "path": "registry/radix/provider-balance-card/provider-balance-card.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-balance-card.tsx"
+        },
+        {
+          "path": "registry/radix/provider-allocation-editor/provider-allocation-editor.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-allocation-editor.tsx"
+        },
+        {
+          "path": "registry/radix/provider-feedback/provider-feedback.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-feedback.tsx"
+        },
+        {
+          "path": "registry/radix/provider-allocation-row/provider-allocation-row.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-allocation-row.tsx"
+        }
+      ],
+      "docs": "Host primitives: @/components/ui/badge, @/components/ui/button, @/components/ui/card, @/components/ui/input, @/components/ui/label. Bundled components copy to @components/usagekit/. Wrap panels in ProviderManagementProvider with a verified host binding. Read-only by default; credentials travel only in the explicit action argument. The host must authorize every read and action."
     }
   ]
 }

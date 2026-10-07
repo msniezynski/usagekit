@@ -1,0 +1,129 @@
+/* Design tokens. Light by default, dark through data-theme or the system preference. */
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --bg-subtle: #fafafa;
+  --bg-muted: #f2f2f2;
+  --bg-inverse: #0a0a0a;
+  --fg: #0a0a0a;
+  --fg-muted: #5c5c5c;
+  --fg-subtle: #717171;
+  --fg-inverse: #fafafa;
+  --line: #ebebeb;
+  --line-strong: #d9d9d9;
+  --accent: #f0561d;
+  --accent-ink: #c2410c;
+  --accent-soft: #fff1ea;
+  --ok: #0f7a3d;
+  --warn: #9a5b00;
+  --danger: #d92d20;
+  --hatch: var(--accent);
+  --track: #f0f0f0;
+  --code-string: #0f7b52;
+  --code-keyword: #b4235a;
+  --code-number: #b45309;
+  --code-fn: #5b3fd1;
+  --code-type: #0b6fb8;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.05);
+  --shadow-md: 0 1px 2px rgb(0 0 0 / 0.04), 0 6px 16px -6px rgb(0 0 0 / 0.08);
+  --shadow-lg:
+    0 1px 1px rgb(0 0 0 / 0.03), 0 10px 24px -10px rgb(0 0 0 / 0.1),
+    0 32px 64px -32px rgb(0 0 0 / 0.16);
+  --inset: inset 0 1px 0 rgb(255 255 255 / 0.6);
+
+  --font-sans:
+    "Mona Sans Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --wide: 108%;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-md: 16px;
+  --text-lg: 18px;
+  --text-xl: 21px;
+  --text-2xl: 24px;
+  --text-3xl: 36px;
+  --text-4xl: 48px;
+  --text-display: clamp(44px, 6.4vw, 84px);
+
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --page: 1200px;
+  --gutter: 32px;
+  --header-h: 60px;
+  --section-y: 128px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --fast: 140ms;
+  --base: 240ms;
+}
+@media (max-width: 760px) {
+  :root {
+    --gutter: 16px;
+    --section-y: 80px;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a0a0a;
+  --bg-subtle: #111111;
+  --bg-muted: #191919;
+  --bg-inverse: #fafafa;
+  --fg: #ededed;
+  --fg-muted: #a3a3a3;
+  --fg-subtle: #808080;
+  --fg-inverse: #0a0a0a;
+  --line: #1f1f1f;
+  --line-strong: #2e2e2e;
+  --accent: #ff6a2c;
+  --accent-ink: #ff8a5c;
+  --accent-soft: #2a1408;
+  --ok: #3dd07a;
+  --warn: #f2b13d;
+  --danger: #ff6b5e;
+  --track: #1a1a1a;
+  --code-string: #6ad3a0;
+  --code-keyword: #ff7ab2;
+  --code-number: #ffb86c;
+  --code-fn: #b9a4ff;
+  --code-type: #7cc4ff;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.5);
+  --shadow-md: 0 1px 2px rgb(0 0 0 / 0.5), 0 8px 20px -8px rgb(0 0 0 / 0.7);
+  --shadow-lg: 0 1px 1px rgb(0 0 0 / 0.6), 0 24px 64px -24px rgb(0 0 0 / 0.9);
+  --inset: inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --bg: #0a0a0a;
+    --bg-subtle: #111111;
+    --bg-muted: #191919;
+    --bg-inverse: #fafafa;
+    --fg: #ededed;
+    --fg-muted: #a3a3a3;
+    --fg-subtle: #808080;
+    --fg-inverse: #0a0a0a;
+    --line: #1f1f1f;
+    --line-strong: #2e2e2e;
+    --accent: #ff6a2c;
+    --accent-ink: #ff8a5c;
+    --accent-soft: #2a1408;
+    --ok: #3dd07a;
+    --warn: #f2b13d;
+    --danger: #ff6b5e;
+    --track: #1a1a1a;
+    --code-string: #6ad3a0;
+    --code-keyword: #ff7ab2;
+    --code-number: #ffb86c;
+    --code-fn: #b9a4ff;
+    --code-type: #7cc4ff;
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.5);
+    --shadow-md: 0 1px 2px rgb(0 0 0 / 0.5), 0 8px 20px -8px rgb(0 0 0 / 0.7);
+    --shadow-lg: 0 1px 1px rgb(0 0 0 / 0.6), 0 24px 64px -24px rgb(0 0 0 / 0.9);
+    --inset: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  }
+}

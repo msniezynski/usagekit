@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { resolve } from "node:path";
+import { relative, resolve, sep } from "node:path";
 import { git } from "./git.mjs";
 
 function filesUnder(dir) {
@@ -16,10 +16,17 @@ export function checkPrivateTerms(root) {
     console.log("private-terms check skipped");
     return;
   }
-  const terms = readFileSync(termsFile, "utf8")
+  // One term per line. "term allow: packages/site/ docs/SITE.md" permits it only under those
+  // repository paths; a trailing slash allows a directory, otherwise the exact file.
+  const rules = readFileSync(termsFile, "utf8")
     .split(/\r?\n/)
-    .map((term) => term.trim().toLowerCase())
-    .filter(Boolean);
+    .map((line) => {
+      const [term = "", allow = ""] = line.split(/\s+allow:/i);
+      return { term: term.trim().toLowerCase(), allow: allow.split(/\s+/).filter(Boolean) };
+    })
+    .filter((rule) => rule.term);
+  const permitted = (rule, path) =>
+    rule.allow.some((entry) => (entry.endsWith("/") ? path.startsWith(entry) : path === entry));
   const tracked = git(["ls-files", "-z"], { cwd: root }).split("\0").filter(Boolean);
   const paths = new Set(tracked.map((path) => resolve(root, path)));
   for (const path of ["docs/PLAN.md", "README.md"]) paths.add(resolve(root, path));
@@ -28,7 +35,9 @@ export function checkPrivateTerms(root) {
       for (const path of filesUnder(resolve(root, dir))) paths.add(path);
   }
   const check = (content, path) => {
-    if (terms.some((term) => content.toLowerCase().includes(term)))
+    const file = relative(root, resolve(root, path)).split(sep).join("/");
+    const text = content.toLowerCase();
+    if (rules.some((rule) => text.includes(rule.term) && !permitted(rule, file)))
       throw new Error(`Private term found in ${path}. Move private evidence to ignored ADRs.`);
   };
   // Check staged contents too, so a clean worktree cannot conceal an unsafe index.

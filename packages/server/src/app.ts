@@ -9,6 +9,9 @@ import type { SqliteStore } from "@usagekit/store-sqlite";
 import type { createAuth } from "./auth.js";
 import type { Vault } from "./vault.js";
 import { uiFile } from "./ui.js";
+import { providerManagementRoutes } from "./provider-management/routes.js";
+import type { createProviderManagement } from "./provider-management/service.js";
+import { reconcileBudget } from "./budget-reconciliation.js";
 export function createApp({
   meter,
   store,
@@ -19,7 +22,9 @@ export function createApp({
   catalog,
   record,
   proxy,
+  providerManagement,
 }: {
+  providerManagement?: ReturnType<typeof createProviderManagement>;
   proxy?: (request: Request) => Promise<Response>;
   catalog?: Catalog;
   record?: ReturnType<typeof createRecorder>;
@@ -62,6 +67,7 @@ export function createApp({
   app.get("/health", (c) =>
     c.json({ ok: true, version: "0.0.0", durable: true, vaultUnlocked: vault.unlocked }),
   );
+  if (providerManagement) providerManagementRoutes(app, providerManagement, auth);
   if (proxy) app.all("/proxy/*", (c) => proxy(c.req.raw));
   const handler = createUsageHandlers({ meter, authenticate: auth.authenticate });
   app.all("/v1/*", (c) => handler(c.req.raw));
@@ -99,6 +105,8 @@ export function createApp({
     if (tags === null) return c.json({ error: "invalid_request" }, 400);
     const metadata = connectionMetadata(b, catalog);
     if (!metadata) return c.json({ error: "invalid_connection_policy" }, 400);
+    if (providerManagement?.mutationBlocked())
+      return c.json({ error: "provider_command_unresolved" }, 409);
     vault.put(b.provider as string, b.connectionId as string, b.secret as string, tags, metadata);
     return c.json(vault.list().find((entry) => entry.connectionId === b.connectionId));
   });
@@ -117,6 +125,8 @@ export function createApp({
     });
   });
   app.delete("/providers/connections/:id", (c) => {
+    if (providerManagement?.mutationBlocked())
+      return c.json({ error: "provider_command_unresolved" }, 409);
     vault.remove(c.req.param("id"));
     return c.json({ removed: true });
   });
@@ -156,6 +166,17 @@ export function createApp({
     if (saved.outcome === "invalid") return c.json({ error: "invalid_budget" }, 400);
     if (saved.outcome === "conflict") return c.json(saved, 409);
     return new Response(encodeWire(b), { headers: { "Content-Type": "application/json" } });
+  });
+  app.post("/budgets/reconcile", async (c) => {
+    const access = await auth.authenticate(c.req.raw);
+    if (!access?.canManageBudgets) return c.json({ outcome: "forbidden" }, 403);
+    let raw: unknown;
+    try {
+      raw = await c.req.json();
+    } catch {
+      return c.json({ error: "invalid_request" }, 400);
+    }
+    return reconcileBudget(store, access, raw);
   });
   app.get("/token/path", (c) => c.json({ path: configPath }));
   app.post("/token/rotate", (c) => c.json({ token: auth.rotate() }));

@@ -63,6 +63,31 @@ test("private terms cover untracked source, tracked files and staged-only conten
   checkPrivateTerms(cwd);
 });
 
+test("a private term can be allowed under listed paths only", (t) => {
+  const cwd = temporary(t);
+  git(["init", "-b", "chore/fixture"], { cwd });
+  mkdirSync(join(cwd, "docs/adr"), { recursive: true });
+  mkdirSync(join(cwd, "packages/site"), { recursive: true });
+  mkdirSync(join(cwd, "packages/core"), { recursive: true });
+  writeFileSync(
+    join(cwd, "docs/adr/private-terms.txt"),
+    "InternalExample allow: packages/site/ docs/SITE.md\nOtherSecret\n",
+  );
+  writeFileSync(join(cwd, "packages/site/page.tsx"), "Built with InternalExample");
+  writeFileSync(join(cwd, "docs/SITE.md"), "InternalExample is public here");
+  git(["add", "docs/SITE.md"], { cwd });
+  checkPrivateTerms(cwd);
+  writeFileSync(join(cwd, "packages/site/other.tsx"), "othersecret");
+  assert.throws(() => checkPrivateTerms(cwd), /Private term found/);
+  rmSync(join(cwd, "packages/site/other.tsx"));
+  writeFileSync(join(cwd, "packages/core/index.ts"), "internalexample");
+  assert.throws(() => checkPrivateTerms(cwd), /Private term found/);
+  rmSync(join(cwd, "packages/core/index.ts"));
+  writeFileSync(join(cwd, "docs/OTHER.md"), "InternalExample");
+  git(["add", "docs/OTHER.md"], { cwd });
+  assert.throws(() => checkPrivateTerms(cwd), /Private term found/);
+});
+
 test("node:fs compiles under Node config and fails under web config", (t) => {
   const cwd = temporary(t);
   const root = fileURLToPath(new URL("../../", import.meta.url));

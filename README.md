@@ -5,8 +5,8 @@ costs and application credits. Both BYOK and platform-funded keys are in scope.
 Host A uses Postgres and Prisma. Host B adds team-owned connections.
 Host C targets Cloudflare D1. A local server shares the embedded Meter contract.
 
-**Status: P8 billing-import source is approved on local main; the 0.5.0 package cohort is being prepared for release.**
-Licensed under Apache-2.0. The repository records the published 0.4.0 release under `@usagekit` on registry.npmjs.org; 0.5.0 is a local candidate until separately published.
+**Status: the 0.5.0 runtime packages are published. React metering and provider UI, headless hooks and the project website are available on the review branch.**
+Licensed under Apache-2.0. `@usagekit/core`, `store`, `meter` and `providers` 0.5.0 are published on registry.npmjs.org.
 `core`, `store`, `meter` and `providers` are the public npm release packages. Other workspaces remain private. See [consuming packages](docs/CONSUMING.md) and the [roadmap](docs/ROADMAP.md).
 
 ## Start here
@@ -38,6 +38,8 @@ Hooks prefer the pinned NVM binary. Otherwise PATH must satisfy the supported ra
 | `npm run typecheck`      | Check references and emit declarations into ignored `dist/`                      |
 | `npm run build`          | Build every workspace and the local server UI                                    |
 | `npm run registry:build` | Build the shadcn registry into `packages/registry/dist/r`                        |
+| `npm run site:dev`       | Run the project website locally at `http://127.0.0.1:5180`                       |
+| `npm run site:build`     | Build and prerender the static project website and documentation                 |
 | `npm test`               | Policy tests in disposable local repositories                                    |
 | `npm run setup`          | Install repository-local hooks and Git defaults                                  |
 
@@ -128,6 +130,7 @@ There is no pre-push hook. The release allow-list and publish guard restrict pub
 | `packages/views`        | View models over the Meter: usage, budgets, header, coverage                                            |
 | `packages/react`        | React hooks and `MeterProvider` over the view models                                                    |
 | `packages/registry`     | shadcn blocks for Radix and Base UI, see [UI](docs/UI.md)                                               |
+| `packages/site`         | Static project website, React examples and getting-started documentation, see [site](docs/SITE.md)      |
 
 Future packages are listed in the [plan](docs/PLAN.md#4-package-grid), without placeholder directories.
 Host schema mappings stay in host repositories. Shared adapters provide mechanics only.
@@ -136,6 +139,7 @@ The npm organization is `usagekit`. Registry authentication belongs outside cons
 Web projects extend `tsconfig.base.json`; Node projects extend `tsconfig.node.json`.
 Checks reject unknown directories, dependency cycles and imports bypassing package boundaries.
 The local terms file `docs/adr/private-terms.txt` protects private names in indexed and scanned project files.
+A line `term allow: packages/site/ docs/SITE.md` permits that term only under the listed paths; a trailing slash allows a directory.
 Without that ignored file, checks print `private-terms check skipped` and continue.
 Tracked ADR files remain forbidden even when the terms file is absent.
 

@@ -1,0 +1,80 @@
+/* Components page: the page header above the live blocks. */
+
+/*
+ * The h1 runs across the page; the lede and the actions below it sit on the 7fr / 5fr split of
+ * .section-heading, so they line up with the blocks heading that follows.
+ */
+.cmp-hero {
+  padding-block: 88px 80px;
+}
+.cmp-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  grid-template-areas:
+    "title title"
+    "lede side";
+  gap: 36px 64px;
+  align-items: start;
+}
+/* 12em keeps the break after "usage," at every width where two lines fit. */
+.cmp-title {
+  grid-area: title;
+  max-width: 12em;
+  font-size: clamp(40px, 6vw, 72px);
+  font-stretch: var(--wide);
+  font-weight: 640;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+}
+.cmp-lede {
+  grid-area: lede;
+  max-width: 56ch;
+  color: var(--fg-muted);
+  font-size: var(--text-lg);
+  line-height: 1.55;
+}
+.cmp-side {
+  display: grid;
+  grid-area: side;
+  justify-items: start;
+  gap: 16px;
+  padding-top: 2px;
+}
+.cmp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.cmp-note {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  text-wrap: balance;
+}
+
+@media (max-width: 900px) {
+  .cmp-inner {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "title"
+      "lede"
+      "side";
+    gap: 24px;
+  }
+  .cmp-side {
+    padding-top: 8px;
+  }
+}
+@media (max-width: 760px) {
+  .cmp-hero {
+    padding-block: 56px 64px;
+  }
+  .cmp-lede {
+    font-size: var(--text-md);
+  }
+}
+@media (max-width: 480px) {
+  .cmp-actions .btn {
+    flex: 1 1 auto;
+  }
+}

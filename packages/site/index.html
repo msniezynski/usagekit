@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta
+      name="description"
+      content="Open-source TypeScript metering for paid provider calls. Reserve budget before dispatch, settle exact costs from receipts, and show usage with React hooks and copyable shadcn blocks."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Usagekit: open-source usage metering for paid API calls" />
+    <meta
+      property="og:description"
+      content="Exact usage, budgets that hold before dispatch, and React interfaces you own. Open source under Apache-2.0."
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Usagekit: open-source usage metering for paid API calls</title>
+    <script>
+      (function () {
+        var stored = null;
+        try {
+          stored = localStorage.getItem("usagekit-theme");
+        } catch (error) {}
+        var dark =
+          stored === "dark" ||
+          (stored !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.dataset.theme = dark ? "dark" : "light";
+        document
+          .querySelector('meta[name="theme-color"]')
+          .setAttribute("content", dark ? "#0a0a0a" : "#ffffff");
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"><!--app-html--></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

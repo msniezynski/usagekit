@@ -1,11 +1,13 @@
 import { useMemo } from "react";
-import type { BudgetAlertCrossed, UsageQuery } from "@usagekit/core";
+import type { BudgetAlertCrossed, DefinedBudgetsQuery, UsageQuery } from "@usagekit/core";
 import {
   loadBudgetsView,
   loadCoverageView,
   loadExceptionsView,
-  loadHeaderStatus,
+  headerStatusFromBudgets,
   loadUsageView,
+  loadUsageSummary,
+  loadDefinedBudgetsView,
   withCrossings,
 } from "@usagekit/views";
 import type {
@@ -17,6 +19,9 @@ import type {
   ExceptionsView,
   HeaderStatus,
   UsageView,
+  UsageSummaryInput,
+  UsageSummaryView,
+  DefinedBudgetsView,
 } from "@usagekit/views";
 import { serialize, useView } from "./use-view.js";
 import type { Binding, ViewResult } from "./use-view.js";
@@ -29,6 +34,12 @@ export const useCoverageView = (options: Binding & CoverageInput): ViewResult<Co
   useView(loadCoverageView, options);
 export const useExceptionsView = (options: Binding & ExceptionsInput): ViewResult<ExceptionsView> =>
   useView(loadExceptionsView, options);
+export const useUsageSummary = (
+  options: Binding & UsageSummaryInput,
+): ViewResult<UsageSummaryView> => useView(loadUsageSummary, options);
+export const useDefinedBudgets = (
+  options: Binding & DefinedBudgetsQuery,
+): ViewResult<DefinedBudgetsView> => useView(loadDefinedBudgetsView, options);
 
 /**
  * Header status for the visible bounds. crossings from the last command are merged into the
@@ -39,11 +50,11 @@ export function useHeaderStatus(
     Omit<BudgetsInput, "crossings"> & { crossings?: readonly BudgetAlertCrossed[] },
 ): ViewResult<HeaderStatus> {
   const { crossings = [], ...rest } = options;
-  const result = useView(loadHeaderStatus, rest);
+  const result = useBudgetsView(rest);
   // Crossings compare by content, so an inline array does not recompute on every render.
   const crossingsKey = serialize(crossings);
   const data = useMemo(
-    () => (result.data ? withCrossings(result.data, crossings) : null),
+    () => (result.data ? withCrossings(headerStatusFromBudgets(result.data), crossings) : null),
     [result.data, crossingsKey],
   );
   return { ...result, data };

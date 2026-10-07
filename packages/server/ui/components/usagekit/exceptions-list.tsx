@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 
 export const exceptionsListLabels = {
+  title: "Needs attention",
   operation: "Operation",
   provider: "Provider",
   principal: "Principal",
@@ -64,7 +65,11 @@ export function ExceptionsList({
       </p>
     );
   return (
-    <Table>
+    <Table
+      tabIndex={0}
+      aria-label={labels.title}
+      className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
+    >
       <TableHeader>
         <TableRow>
           <TableHead>{labels.operation}</TableHead>
@@ -108,5 +113,13 @@ export function ExceptionsListPanel({
   ...input
 }: ExceptionsInput & Pick<ExceptionsListProps, "labels" | "formatAge">) {
   const result = useExceptionsView(input);
+  if (result.state === "unavailable" || result.state === "forbidden")
+    return (
+      <p role="alert" className="text-sm text-muted-foreground">
+        {result.state === "forbidden"
+          ? (labels?.forbidden ?? exceptionsListLabels.forbidden)
+          : (labels?.failed ?? exceptionsListLabels.failed)}
+      </p>
+    );
   return <ExceptionsList view={result.data} labels={labels} formatAge={age} />;
 }

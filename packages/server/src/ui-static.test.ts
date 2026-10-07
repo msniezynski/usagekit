@@ -74,11 +74,26 @@ test("the UI uses the base registry blocks and base primitives unchanged", () =>
     "exceptions-list",
     "usage-filters",
     "connection-list",
+    "budget-editor",
+    "budget-manager-panel",
+    "provider-card",
+    "provider-connect-form",
+    "provider-rate-editor",
+    "provider-feedback",
   ])
     expect(readFileSync(join(server, "ui/components/usagekit", `${block}.tsx`), "utf8")).toBe(
       readFileSync(join(registry, "registry/base", block, `${block}.tsx`), "utf8"),
     );
-  for (const primitive of ["table", "card", "badge", "tooltip", "select", "button"])
+  for (const primitive of [
+    "table",
+    "card",
+    "badge",
+    "tooltip",
+    "select",
+    "button",
+    "input",
+    "label",
+  ])
     expect(readFileSync(join(server, "ui/components/ui", `${primitive}.tsx`), "utf8")).toBe(
       readFileSync(join(registry, "consumers/base/components/ui", `${primitive}.tsx`), "utf8"),
     );

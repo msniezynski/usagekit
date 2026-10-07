@@ -7,6 +7,19 @@ export const blockNames = [
   "exceptions-list",
   "usage-filters",
   "connection-list",
+  "measurement-card",
+  "usage-summary-cards",
+  "cost-summary-card",
+  "budget-editor",
+  "budget-manager-panel",
+  "provider-card",
+  "provider-connect-form",
+  "provider-source-selector",
+  "provider-rate-editor",
+  "provider-chain-editor",
+  "provider-balance-card",
+  "provider-allocation-editor",
+  "provider-manager-panel",
 ] as const;
 export type BlockName = (typeof blockNames)[number];
 export const variants = ["radix", "base"] as const;

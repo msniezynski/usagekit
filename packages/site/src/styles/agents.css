@@ -1,0 +1,701 @@
+/* Owner: agents section agent. usagekit serve for agents: setup steps, the dashboard, the wire. */
+
+/* A full-bleed band like Blocks and Install. It overlaps whatever follows by one pixel, so two
+   bands in a row share a single hairline. */
+.agt {
+  position: relative;
+  z-index: 1;
+  margin-bottom: -1px;
+  border-block: 1px solid var(--line);
+  background: var(--bg-subtle);
+}
+.agt .code {
+  background: var(--bg);
+}
+.agt-code {
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--fg);
+  background: var(--bg-muted);
+  font-size: 0.86em;
+  white-space: nowrap;
+}
+/* The heading follows the media-right split, so the lede starts on the dashboard's edge. */
+@media (min-width: 1191px) {
+  .agt .section-heading {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  }
+}
+
+.agt-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 56px 64px;
+  align-items: start;
+}
+
+/* Steps: a real sequence, so the numbers sit on one rail. */
+.agt-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.agt-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 6px 16px;
+  padding-bottom: 40px;
+}
+/* The code row takes any spare height, so paired steps end their code boxes together. */
+.agt-step:has(.code) {
+  grid-template-rows: auto auto 1fr;
+}
+.agt-step > :not(.agt-step-num) {
+  grid-column: 2;
+}
+.agt-step:last-child {
+  padding-bottom: 0;
+}
+.agt-step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 32px;
+  bottom: 8px;
+  left: 11.5px;
+  border-left: 1px solid var(--line-strong);
+}
+.agt-step-num {
+  grid-row: 1;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--fg);
+  background: var(--bg);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1;
+}
+.agt-step-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 24px;
+}
+.agt-step-text {
+  max-width: 52ch;
+  color: var(--fg-muted);
+  font-size: var(--text-base);
+  line-height: 1.6;
+}
+.agt-step-text .link {
+  color: var(--fg);
+}
+.agt-step .code {
+  margin-top: 10px;
+}
+
+.agt-media {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* The dashboard in a quiet browser frame. Its pages lay out by the frame's own width. */
+.agt-frame {
+  container: agt-frame / inline-size;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  box-shadow: var(--shadow-md);
+}
+.agt-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  height: 44px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-subtle);
+}
+.agt-address {
+  grid-column: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 240px;
+  height: 26px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  color: var(--fg-muted);
+  background: var(--bg);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+.agt-bar-label {
+  justify-self: end;
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+.agt-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.agt-nav-tab {
+  position: relative;
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--fg-muted);
+  background: transparent;
+  font-size: var(--text-sm);
+  font-weight: 550;
+  transition:
+    color var(--fast),
+    background-color var(--fast);
+}
+.agt-nav-tab:hover {
+  color: var(--fg);
+  background: var(--bg-muted);
+}
+.agt-nav-tab[aria-selected="true"] {
+  color: var(--fg-inverse);
+  background: var(--bg-inverse);
+}
+
+/* Every page keeps its place in one cell, so the frame keeps its height between tabs. Inactive
+   pages are inert (out of the tab order and the accessibility tree) and invisible. */
+.agt-pages {
+  display: grid;
+}
+.agt-page {
+  grid-area: 1 / 1;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+  padding: 20px;
+}
+.agt-page[inert] {
+  visibility: hidden;
+}
+/* On narrow frames the pages differ most in height, so the frame follows the open page. */
+@container agt-frame (max-width: 559px) {
+  .agt-page[inert] {
+    display: none;
+  }
+}
+.agt-page:focus-visible {
+  outline-offset: -2px;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+.agt-pages[data-switched] .agt-page:not([inert]) {
+  animation: agt-page-in 220ms var(--ease-out);
+}
+@keyframes agt-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.agt-card {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 18px 20px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  box-shadow: var(--shadow-sm);
+}
+.agt-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.agt-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+.agt-meta {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+.agt-card-head .agt-meta {
+  margin-top: 1px;
+}
+.agt-foot {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+/* Overview: the header status over usage detail and coverage, side by side when they fit */
+.agt-overview {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+@container agt-frame (min-width: 560px) {
+  .agt-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .agt-overview > .agt-status-row {
+    grid-column: 1 / -1;
+  }
+}
+/* The note sits at the foot of the card when its neighbour is taller. */
+.agt-card.is-usage {
+  grid-template-rows: auto auto 1fr;
+}
+.agt-card.is-usage .agt-foot {
+  align-self: end;
+}
+.agt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.agt-table th,
+.agt-table td {
+  padding: 9px 0;
+  text-align: left;
+  vertical-align: baseline;
+}
+.agt-table :is(th, td) + :is(th, td) {
+  padding-left: 16px;
+}
+.agt-table thead th {
+  padding-top: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+.agt-table tbody th {
+  color: var(--fg);
+  font-weight: 550;
+}
+.agt-table tbody td {
+  color: var(--fg-muted);
+}
+.agt-table tbody tr:last-child :is(th, td) {
+  padding-bottom: 0;
+}
+.agt-table .is-num {
+  text-align: right;
+}
+.agt-table tbody .is-num {
+  color: var(--fg);
+  font-weight: 550;
+}
+.agt-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+.agt-cov {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.agt-cov-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+}
+.agt-cov-label {
+  color: var(--fg-muted);
+}
+.agt-cov-bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--track);
+}
+.agt-cov-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--fg);
+}
+.agt-cov-count {
+  font-weight: 550;
+  text-align: right;
+}
+.agt-cov-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+/* Budgets: the budget-card figures and keys */
+.agt-rows {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.agt-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+.agt-row dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fg-muted);
+}
+.agt-row dd {
+  margin: 0;
+  font-weight: 550;
+}
+.agt-key {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+.agt-key.is-used {
+  background: var(--fg);
+}
+.agt-key.is-reserved {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--hatch) 0 1.5px,
+    color-mix(in oklab, var(--hatch) 20%, transparent) 1.5px 3.5px
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--hatch) 55%, transparent);
+}
+.agt-key.is-headroom {
+  background: var(--track);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+.agt-key.is-none {
+  visibility: hidden;
+}
+/* A pending reservation keeps its hatching but does not march. */
+.agt .meter-reserved {
+  animation: none;
+}
+
+/* Exceptions and connections: one record with labelled facts */
+.agt-item {
+  display: grid;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.agt-item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+.agt-id {
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+.agt-kind .badge-dot {
+  background: var(--accent);
+}
+.agt-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 16px;
+  margin: 0;
+}
+.agt-facts.is-four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.agt-facts dt {
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+.agt-facts dd {
+  margin: 2px 0 0;
+  color: var(--fg);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* What the agent gets back: two responses, status line and headers */
+.agt-wire {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+}
+.agt-wire-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 44px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+}
+.agt-wire-title {
+  color: var(--fg);
+  font-size: var(--text-sm);
+  font-weight: 550;
+}
+.agt-wire-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.agt-res {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: 4px 20px;
+  padding: 16px 20px;
+}
+.agt-res + .agt-res {
+  border-top: 1px solid var(--line);
+}
+.agt-res-when {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  line-height: 22px;
+}
+.agt-res-body {
+  display: grid;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 22px;
+}
+.agt-res-status {
+  color: var(--fg);
+}
+.agt-http {
+  font-weight: 600;
+}
+.agt-http.is-ok {
+  color: var(--ok);
+}
+.agt-http.is-denied {
+  color: var(--danger);
+}
+.agt-res-code {
+  margin-left: 4px;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--fg);
+  background: var(--bg-subtle);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+.agt-headers {
+  margin: 0;
+}
+.agt-headers > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+}
+.agt-headers dt {
+  color: var(--fg-muted);
+}
+.agt-headers dt::after {
+  content: ":";
+}
+.agt-headers dd {
+  margin: 0;
+  color: var(--fg);
+}
+.agt-res-note {
+  margin-top: 4px;
+  color: var(--fg-muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+/* Three plain guarantees */
+.agt-points {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 48px;
+  margin: 96px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.agt-point {
+  padding-top: 18px;
+  border-top: 1px solid var(--line-strong);
+}
+.agt-point p {
+  max-width: 42ch;
+  color: var(--fg-muted);
+  font-size: var(--text-base);
+  line-height: 1.6;
+}
+.agt-point strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+/* Below the heading's split the commands would scroll beside the dashboard, so they stack. */
+@media (max-width: 1190px) {
+  .agt-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* Wide enough for both commands side by side: the first two steps pair up, and the third leads
+   straight into the dashboard below it. Paired code boxes end on the same line. */
+@media (min-width: 1000px) and (max-width: 1190px) {
+  /* The lede starts where the second step does. */
+  .agt .section-heading {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 48px;
+  }
+  .agt-steps {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 40px 48px;
+  }
+  .agt-step {
+    padding-bottom: 0;
+  }
+  .agt-step::before {
+    display: none;
+  }
+  .agt-step:last-child {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 900px) {
+  .agt-points {
+    grid-template-columns: minmax(0, 1fr);
+    margin-top: 72px;
+  }
+  .agt-point {
+    padding-block: 16px 18px;
+  }
+  .agt-point + .agt-point {
+    border-top-color: var(--line);
+  }
+}
+@media (max-width: 760px) {
+  .agt-grid {
+    gap: 48px;
+  }
+  /* The number leads its title; text and code take the full width. */
+  .agt-step {
+    padding-bottom: 36px;
+  }
+  .agt-step::before {
+    display: none;
+  }
+  .agt-step > :is(.agt-step-text, .code) {
+    grid-column: 1 / -1;
+  }
+  .agt-bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding-inline: 12px;
+  }
+  .agt-address {
+    grid-column: 1;
+    justify-self: start;
+    min-width: 0;
+  }
+  .agt-nav {
+    gap: 2px;
+    padding: 8px;
+  }
+  /* Compact pills, with a 40px hit area. */
+  .agt-nav-tab {
+    height: 32px;
+    padding-inline: 9px;
+  }
+  .agt-nav-tab::after {
+    content: "";
+    position: absolute;
+    inset: -4px 0;
+  }
+  .agt-page {
+    padding: 14px;
+  }
+  .agt-card {
+    padding: 16px;
+  }
+  .agt-cov-row {
+    grid-template-columns: 88px minmax(0, 1fr) 32px;
+    gap: 12px;
+  }
+  .agt-facts,
+  .agt-facts.is-four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .agt-res {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 14px 16px;
+  }
+  .agt-res-body {
+    font-size: 12px;
+  }
+  .agt-points {
+    margin-top: 56px;
+  }
+}
+
+@media (forced-colors: active) {
+  .agt-cov-bar,
+  .agt-key {
+    forced-color-adjust: none;
+    outline: 1px solid CanvasText;
+  }
+  .agt-cov-bar > span,
+  .agt-key.is-used {
+    background: CanvasText;
+  }
+  .agt-key.is-reserved {
+    background: repeating-linear-gradient(-45deg, Highlight 0 1.5px, transparent 1.5px 3.5px);
+  }
+  .agt-nav-tab[aria-selected="true"] {
+    forced-color-adjust: none;
+    color: HighlightText;
+    background: Highlight;
+  }
+}

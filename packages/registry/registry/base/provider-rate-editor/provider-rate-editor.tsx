@@ -1,0 +1,1 @@
+../../radix/provider-rate-editor/provider-rate-editor.tsx

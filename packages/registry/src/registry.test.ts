@@ -10,7 +10,7 @@ const root = resolve(import.meta.dirname, "..");
 const repo = resolve(root, "../..");
 const read = (path: string) => JSON.parse(readFileSync(path, "utf8"));
 const version = (name: string) => read(join(repo, "packages", name, "package.json")).version;
-const primitives = ["table", "card", "badge", "tooltip", "select", "button"];
+const primitives = ["table", "card", "badge", "tooltip", "select", "button", "input", "label"];
 let out: string;
 
 beforeAll(() => {
@@ -23,7 +23,7 @@ beforeAll(() => {
 afterAll(() => rmSync(out, { recursive: true, force: true }));
 
 describe("registry build", () => {
-  test("writes seven defaults and one directory per variant", () => {
+  test("writes all defaults and one directory per variant", () => {
     expect(readdirSync(join(out, "r")).sort()).toEqual(
       [...blockNames.map((n) => `${n}.json`), "base", "radix"].sort(),
     );
@@ -71,7 +71,8 @@ describe("registry build", () => {
         for (const file of data.files) {
           expect(file.type).toBe("registry:component");
           expect(file.target).toMatch(/^@components\/usagekit\/[a-z-]+\.tsx$/);
-          expect(file.path).toBe(`registry/${variant}/${name}/${name}.tsx`);
+          expect(file.path).toMatch(new RegExp(`^registry/${variant}/[a-z-]+/[a-z-]+\\.tsx$`));
+          expect(file.target).toBe(`@components/usagekit/${file.path.split("/").at(-1)}`);
           expect(file.content).toBe(readFileSync(join(root, file.path), "utf8"));
         }
       }
@@ -104,16 +105,29 @@ describe("registry sources", () => {
     const index = read(join(root, "registry.json")).items as {
       name: string;
       registryDependencies: string[];
+      files: { path: string; target: string }[];
     }[];
-    for (const { name, path } of sources) {
-      const text = readFileSync(path, "utf8");
+    for (const { name, variant } of sources) {
+      const definition = index.find((i) => i.name === name)!;
+      const text = definition.files
+        .map((file) =>
+          readFileSync(join(root, file.path.replace("/radix/", `/${variant}/`)), "utf8"),
+        )
+        .join("\n");
       expect(text).not.toMatch(/@radix-ui|@base-ui|from "radix-ui"/);
       const deps = index.find((i) => i.name === name)!.registryDependencies;
       const specifiers = [...text.matchAll(/from "([^"]+)"/g)].map((m) => m[1]!);
       for (const s of specifiers) {
         const ui = /^@\/components\/ui\/([a-z-]+)$/.exec(s);
         if (ui) expect(deps).toContain(ui[1]);
-        else expect(s).toMatch(/^(react|@usagekit\/(core|views|react))$/);
+        else if (s.startsWith("@/components/usagekit/")) {
+          const bundled = read(join(root, "registry.json")).items.find(
+            (i: { name: string }) => i.name === name,
+          ).files;
+          expect(
+            bundled.some((f: { target: string }) => f.target === s.replace("@/", "@") + ".tsx"),
+          ).toBe(true);
+        } else expect(s).toMatch(/^(react|@usagekit\/(core|views|react))$/);
       }
       for (const dep of deps) expect(specifiers).toContain(`@/components/ui/${dep}`);
     }

@@ -1,0 +1,28 @@
+{
+  "name": "@usagekit/site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "description": "Static Usagekit project website, React showcase and getting-started documentation.",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5180 --strictPort",
+    "build": "node build.mjs",
+    "preview": "vite preview --host 127.0.0.1 --port 5180 --strictPort",
+    "typecheck": "tsc -b",
+    "prepublishOnly": "node ../../scripts/deny-publish.mjs"
+  },
+  "dependencies": {
+    "@base-ui/react": "1.8.0",
+    "@fontsource-variable/geist-mono": "5.3.0",
+    "@fontsource-variable/mona-sans": "5.3.0",
+    "@usagekit/core": "0.5.0",
+    "@usagekit/meter": "0.5.0",
+    "@usagekit/react": "0.5.0",
+    "@usagekit/store": "0.5.0",
+    "@usagekit/views": "0.5.0",
+    "lucide-react": "1.48.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  }
+}

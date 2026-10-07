@@ -1,6 +1,6 @@
 # usagekit roadmap
 
-Established: 2026-09-24. Owner: Michal. Repository status reviewed: 2026-10-06.
+Established: 2026-09-24. Owner: Michal. Repository status reviewed: 2026-10-07.
 This is the bird's-eye view. [PLAN.md](PLAN.md) holds the
 engineering contract, constraints and stage exit gates; this file holds purpose, model,
 current position and the order of work. When they disagree, this file wins on order and scope,
@@ -92,9 +92,10 @@ UI is layered so a host takes exactly as much as fits:
 2. **Hooks.** `@usagekit/react` over the same view models for hosts with a `Meter` on the
    client (remote Meter over HTTP). Server-rendered hosts skip this layer and call view models
    from server code.
-3. **Reference components.** A shadcn registry: usage table, budget card, exceptions queue,
-   period and scope filter, header status, connection list. Each block exists for Radix and for
-   Base UI, styled with semantic tokens in the `new-york` style. Hosts copy blocks into their
+3. **Reference components.** A shadcn registry: usage table, measurement and cost cards,
+   budget cards and editors, exceptions queue, period and scope filter, header status,
+   connection list. Each block exists for Radix (`new-york`) and Base UI (`base-vega`),
+   styled with semantic tokens. Hosts copy blocks into their
    tree with `shadcn add`; the copied code imports the host's own `@/components/ui/*`
    primitives. A host with its own design system reads the block and rebinds primitives or
    writes its own component over the view model.
@@ -135,23 +136,29 @@ maintain and a registry to test against both.
 ## 6. Where we are
 
 This is a local repository snapshot, not a live audit of npm, Cloudflare or a host deployment.
-Reviewed base: local `main` at `1e5c25b`, with approved P8 billing-import source.
-The `chore/p8-release-prep` branch prepares the 0.5.0 cohort; it does not assert publication.
+Reviewed base: local `main` at `5fd29a1`, with approved P8 billing-import source.
+The four-package 0.5.0 cohort is published; its npm version and integrity metadata were
+verified without registry credentials on 2026-10-07. The React extension is implemented
+on `feat/react-meter-components`, separately from approved main and publication.
 
-| Item                                 | State on 2026-10-06                                                                                                                                                                                                                                                                                   |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P1 core, store, meter                | On `main`: embedded Meter, shared conformance suite and property tests.                                                                                                                                                                                                                               |
-| P2 SQLite, HTTP, client, server, CLI | On `main`: durable local storage, authenticated API and CLI, encrypted vault, reservation expiry and restart recovery.                                                                                                                                                                                |
-| P4 contract and UI                   | On `main`: source and tag budgets, soft/hard limits, view models, React hooks, Radix/Base UI registry and local server UI. Host adoption is a separate check. See [UI](UI.md).                                                                                                                        |
-| P5 provider catalog                  | On `main`, tagged `v0.4.0`: descriptors, pricing, fixture extraction/recording and the wrapper boundary.                                                                                                                                                                                              |
-| P6 local proxy                       | On `main`: routed provider dispatch, budget enforcement and crash recovery. See [PROXY](PROXY.md).                                                                                                                                                                                                    |
-| P7 Cloudflare storage                | Approved on local `main`: authoritative SQLite-backed Durable Object storage and Worker example. Direct D1Database support remains unimplemented.                                                                                                                                                     |
-| Library release                      | The repository records the public 0.4.0 release of `core`, `store`, `meter` and `providers`. The same four packages target the local 0.5.0 candidate; publication requires separate exact-SHA approval and release authorization. Other workspaces remain private.                                    |
-| Repository hosting and CI            | No Git remote is configured. The public hosting/CI part of P4 remains outstanding.                                                                                                                                                                                                                    |
-| P3 host shadow and P8 cutover        | Current host PR, deployment, shadow observations and credit authority must be checked in the host repository before cutover. Library checks do not establish production readiness.                                                                                                                    |
-| P8 billing import                    | Approved on local `main`: atomic imports, scoped request matching, immutable revisions, reconciliation, SQLite and Durable Object replay, HTTP and local parsing. Included in the unpublished 0.5.0 candidate. See [billing imports](BILLING-IMPORTS.md) and the [migration guide](MIGRATING-0.5.md). |
+| Item                                 | State on 2026-10-07                                                                                                                                                                                                                                                                   |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P1 core, store, meter                | On `main`: embedded Meter, shared conformance suite and property tests.                                                                                                                                                                                                               |
+| P2 SQLite, HTTP, client, server, CLI | On `main`: durable local storage, authenticated API and CLI, encrypted vault, reservation expiry and restart recovery.                                                                                                                                                                |
+| P4 contract and UI                   | On `main`: source and tag budgets, soft/hard limits, view models, React hooks, Radix/Base UI registry and local server UI. Host adoption is a separate check. See [UI](UI.md).                                                                                                        |
+| P5 provider catalog                  | On `main`, tagged `v0.4.0`: descriptors, pricing, fixture extraction/recording and the wrapper boundary.                                                                                                                                                                              |
+| P6 local proxy                       | On `main`: routed provider dispatch, budget enforcement and crash recovery. See [PROXY](PROXY.md).                                                                                                                                                                                    |
+| P7 Cloudflare storage                | Approved on local `main`: authoritative SQLite-backed Durable Object storage and Worker example. Direct D1Database support remains unimplemented.                                                                                                                                     |
+| Library release                      | Public `core`, `store`, `meter` and `providers` 0.5.0 are published. Other workspaces remain private; public React distribution needs separate authorization.                                                                                                                         |
+| Repository hosting and CI            | No Git remote is configured. The public hosting/CI part of P4 remains outstanding.                                                                                                                                                                                                    |
+| P3 host shadow and P8 cutover        | Current host PR, deployment, shadow observations and credit authority must be checked in the host repository before cutover. Library checks do not establish production readiness.                                                                                                    |
+| P8 billing import                    | Approved on local `main`: atomic imports, scoped request matching, immutable revisions, reconciliation, SQLite and Durable Object replay, HTTP and local parsing. Included in published 0.5.0. See [billing imports](BILLING-IMPORTS.md) and the [migration guide](MIGRATING-0.5.md). |
 
-Next: validate the 0.5.0 cohort and its host migration, then obtain exact-candidate release approval.
+Next: review the task commits for shared React metering and provider hooks, measurement
+cards, provider connection tools and allocation editors in both styles, plus the static
+project website. Hosts supply authorized budget-write and provider-management adapters;
+read-only dashboards stay read-only. See [provider UI](PROVIDER-UI.md) and [the site](SITE.md).
+Promotion, UI package publication and website hosting are separate gates.
 Host integration and shadow evidence are
 being checked in the host repository, with funding identity and balance ownership retained per
 execution. P8 still requires real-database crash tests, reconciled holds, a rehearsed rollback,

@@ -173,7 +173,11 @@ test("provider routes never leak plaintext to responses, logs, config or databas
     await request("/v1/operations/reserve", "POST", { secret: marker });
     await request("/providers/connections/c", "DELETE");
     expect(output.join("\n") + bodies.join("\n")).not.toContain(marker);
-    for (const file of readdirSync(dir)) {
+    for (const file of readdirSync(dir, { recursive: true }) as string[]) {
+      if (statSync(join(dir, file)).isDirectory()) {
+        expect(statSync(join(dir, file)).mode & 0o777).toBe(0o700);
+        continue;
+      }
       expect(readFileSync(join(dir, file)).includes(Buffer.from(marker))).toBe(false);
       expect(statSync(join(dir, file)).mode & 0o777).toBe(0o600);
     }

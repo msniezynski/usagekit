@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 
 export const connectionListLabels = {
+  title: "Connections",
   label: "Connection",
   provider: "Provider",
   funding: "Funding",
@@ -39,7 +40,11 @@ export function ConnectionList({ connections, labels: custom }: ConnectionListPr
   const labels = { ...connectionListLabels, ...custom };
   const rows = connections.map(toRow);
   return (
-    <Table>
+    <Table
+      tabIndex={0}
+      aria-label={labels.title}
+      className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
+    >
       <TableHeader>
         <TableRow>
           <TableHead>{labels.label}</TableHead>

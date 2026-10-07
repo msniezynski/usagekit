@@ -19,6 +19,7 @@ run(
   ],
   { stdio: "inherit" },
 );
+run("npm", ["run", "build", "--workspace", "@usagekit/site"], { stdio: "inherit" });
 for (const name of ["core", "store", "meter"])
   for (const file of ["LICENSE", "NOTICE"]) cpSync(file, `packages/${name}/${file}`);
 run("npm", ["rebuild", "@usagekit/cli"], { stdio: "inherit" });

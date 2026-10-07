@@ -1,89 +1,210 @@
 # UI layers
 
-usagekit ships four UI layers. Take as many as fit the host. Backend only stays complete.
+The four public runtime packages are published at 0.5.0. `@usagekit/views`,
+`@usagekit/react` and the registry remain private workspaces. These UI components can be
+used from this checkout; distributing the UI packages requires separate publication approval.
 
-| Layer            | Package or path                                      | Depends on        | Runs in                  |
-| ---------------- | ---------------------------------------------------- | ----------------- | ------------------------ |
-| View models      | `@usagekit/views`                                    | `@usagekit/core`  | Server code and browsers |
-| Hooks            | `@usagekit/react`                                    | views, React 19   | Browsers with a Meter    |
-| Reference blocks | `packages/registry` (shadcn)                         | hooks, host `ui/` | The host's React tree    |
-| Pages            | Host code; `packages/server/ui` for the local server | blocks            | The host                 |
+| Layer                  | Package or path                                      | Depends on                         | Runs in                   |
+| ---------------------- | ---------------------------------------------------- | ---------------------------------- | ------------------------- |
+| Headless views         | `@usagekit/views`                                    | core                               | Servers and browsers      |
+| Hooks and shared cache | `@usagekit/react`                                    | views, React 19                    | A React tree with a Meter |
+| Copyable blocks        | `packages/registry`                                  | hooks, the host's `ui/` primitives | The host's React tree     |
+| Pages                  | Host code; `packages/server/ui` for the local server | Selected blocks                    | The host                  |
 
-## When to use each
+Authentication, verified access, routes, budget persistence and customer credit balances
+belong to the host. A backend-only consumer does not need any UI layer.
 
-- **View models, always.** Money text, certainty, unavailable states and cursors are where
-  hand-written panels go wrong. Server-rendered hosts call them from server code and stop here.
-- **Hooks** when the browser holds a Meter, usually `createRemoteMeter` against a read-only
-  mount (`createUsageHandlers({ commands: false })`). Wrap pages in `MeterProvider`.
-- **Blocks** when the host uses shadcn primitives or wants a starting point to copy.
-- **Pages** are always the host's: authentication, authorization, audit, routing, copy.
+## Headless views
 
-## View model contract
+Every loader takes a Meter, verified `AccessContext` and input. Use these on the server
+without React, or render the returned models with your own design system.
 
-Every loader takes a `Meter`, a verified `AccessContext` and an input, and returns data.
+| Loader                   | Input                                                    | Returns              |
+| ------------------------ | -------------------------------------------------------- | -------------------- |
+| `loadUsageView`          | `UsageQuery`                                             | `UsageView`          |
+| `loadUsageSummary`       | usage query without cursor/grouping; optional `maxPages` | `UsageSummaryView`   |
+| `loadBudgetsView`        | scope, surface, units, pools, source, crossings          | `BudgetsView`        |
+| `loadDefinedBudgetsView` | `DefinedBudgetsQuery`                                    | `DefinedBudgetsView` |
+| `loadHeaderStatus`       | same as applicable budgets                               | `HeaderStatus`       |
+| `loadCoverageView`       | scope, from, to, optional coverage source                | `CoverageView`       |
+| `loadExceptionsView`     | scope, from, to, limit, cursor                           | `ExceptionsView`     |
 
-| Loader               | Input                                           | Returns          |
-| -------------------- | ----------------------------------------------- | ---------------- |
-| `loadUsageView`      | `UsageQuery`                                    | `UsageView`      |
-| `loadBudgetsView`    | scope, surface, units, pools, source, crossings | `BudgetsView`    |
-| `loadHeaderStatus`   | same as budgets                                 | `HeaderStatus`   |
-| `loadCoverageView`   | scope, from, to, optional `CoverageSource`      | `CoverageView`   |
-| `loadExceptionsView` | scope, from, to, limit, cursor                  | `ExceptionsView` |
+```ts
+import { loadUsageSummary, loadDefinedBudgetsView } from "@usagekit/views";
 
-- Amounts are `{ text, unit, certainty }` built with `formatQuantity` and `formatMoney` from
-  core. They are never numbers. Money uses the unit `cents` with four fractional digits.
-- `"unavailable"` marks a figure that is missing, forbidden or redacted. It is never zero.
-  An unknown figure has certainty `unknown` and empty text; render your own label.
-- `state` is `ok`, `empty`, `forbidden` or `unavailable`. A Meter that throws or answers
-  `invalid` gives `unavailable` with a `problem`. Redacted shared budgets stay visible as rows
-  with `redacted: true`, level `unavailable` and no figures.
-- Header levels: `exceeded` at the limit (or the hard limit of an `allow` budget), `warning`
-  past the soft limit, at any crossed alert, or at 80 percent when no alerts exist. Pass the
-  `alerts` of the last reserve, settle or correct as `crossings` to refresh in the same request.
-- Exceptions come from `Meter.listOperations`: expired undispatched reservations, expired
-  dispatch leases, and pending work awaiting evidence, with age at the page's `asOf`.
-- `BudgetRow.bar` gives bar geometry as percent text, so no component converts text to numbers.
-
-## Registry blocks
-
-Seven blocks: `usage-table`, `budget-card`, `header-status`, `coverage-summary`,
-`exceptions-list`, `usage-filters`, `connection-list`. Each exports a component over a view
-model and a `...Panel` that reads it with the matching hook. Labels are props with English
-defaults. Styling uses semantic tokens only.
-
-```sh
-npm run registry:build                       # packages/registry/dist/r
-npx shadcn add ./packages/registry/dist/r/radix/usage-table.json   # Radix hosts (new-york)
-npx shadcn add ./packages/registry/dist/r/base/usage-table.json    # Base UI hosts (base-vega)
+const summary = await loadUsageSummary(meter, verifiedAccess, {
+  scope: verifiedScope,
+  from: "2026-10-01T00:00:00.000Z",
+  to: "2026-11-01T00:00:00.000Z",
+  units: ["requests", "tokens", "customer_cents"],
+});
+const definitions = await loadDefinedBudgetsView(meter, verifiedAccess, {
+  scope: verifiedScope,
+});
 ```
 
-`r/<name>.json` defaults to Radix. Files land in `@components/usagekit/` and import the host's
-own `@/components/ui/*` primitives; the CLI installs `@usagekit/react`, `views` and `core`.
-Only `budget-card`, `header-status` (tooltip trigger) and `usage-filters` (select) differ
-between the two families; the other blocks are one shared file.
+Amounts contain exact `text`, `unit` and `certainty`; never convert the text to a number.
+Money uses cents with four fractional digits. Measured zero, estimated values, unknown
+measurements and unavailable figures have separate presentations. Unknown has empty text;
+unavailable is not zero. A forbidden or failed read must not display stale figures.
 
-## Rebinding for a host design system
+Summary loading follows bounded pagination with one watermark and observation time.
+`complete: false` makes totals unavailable rather than presenting a partial sum as complete.
+`rowCount` counts aggregate rows, not operations. Provider `cost` and funding/cost-owner
+breakdowns stay separate from the optional `customer_cents` measurement; this UI does not
+calculate customer charges or wallet balances.
 
-Each item's `docs` lists the primitives it imports. To rebind:
+Budget status shows used and reserved amounts separately. A block budget is exceeded at
+its limit; an allow budget warns at its soft limit and is exceeded at its hard limit.
+Alert crossings and the default 80 percent warning are shown without changing admission.
+Redacted shared budgets remain visible without amounts. Exceptions expose expired
+reservations, expired leases and pending work with age at the page's `asOf`.
 
-1. Copy the block file, or read it from `dist/r/<variant>/<name>.json`.
-2. Replace each `@/components/ui/<name>` import with your component of the same role: table
-   parts, card parts, badge, button, tooltip parts, select parts.
-3. Keep the view model props and the label objects; keep amount text as given.
-4. Or skip the blocks and write your own component over the view model and hooks.
+## React hooks and shared reads
 
-## Coverage port
+Wrap related panels in one `MeterProvider`. The default per-provider cache shares equal
+reads, has a 30 second stale time and retains at most 128 inactive entries. A host can supply
+one stable `createMeterQueryClient({ staleTimeMs, maxEntries })` instance explicitly.
+Keys include Meter identity, verified access, loader and query. Changing scope, account or
+Meter immediately isolates the rendered state; old requests cannot fill the new binding.
 
-The store keeps no per-state request counter yet. `loadCoverageView` takes an optional
-`CoverageSource` with `counts(scope, from, to)` returning bigint counts for `metered`,
-`passthrough`, `unpriced`, `cached` and `rate_limited`. Without it, the view reports the
-meter's own metered requests and marks the other states unavailable. The local server fills
-this port when the proxy and the per-state counter exist (P5 and P6);
-`createMemoryCoverageSource` serves tests and demos. The Meter read always runs first, so the
-port never widens access.
+Hooks return `data`, `state`, `error`, `refresh()` and `refreshing`. Initial loading differs
+from an unavailable or forbidden read. Refreshing can retain valid data within the same
+binding. Use `queryClient.invalidate(meter, verifiedAccess)` after external accounting
+changes; successful budget mutations invalidate that binding automatically.
 
-## Local server UI
+```tsx
+import { useMemo } from "react";
+import { MeterProvider, createMeterQueryClient } from "@usagekit/react";
+import type { BudgetWriter } from "@usagekit/react";
+import { saveAuthorizedBudget, reconcileAuthorizedBudget } from "./budget-api";
 
-`npm run build` builds `packages/server/ui` into `packages/server/dist/ui`, served at `/`.
-It uses the Base UI blocks. The token is entered once, kept in memory and sent as a bearer
-header; reloading the page asks again.
+function UsagePage({ meter, verifiedAccess, children }) {
+  const queryClient = useMemo(() => createMeterQueryClient(), []);
+  const budgetWriter = useMemo<BudgetWriter>(
+    () => ({ save: saveAuthorizedBudget, reconcile: reconcileAuthorizedBudget }),
+    [],
+  );
+  return (
+    <MeterProvider
+      meter={meter}
+      access={verifiedAccess}
+      queryClient={queryClient}
+      budgetWriter={budgetWriter}
+    >
+      {children}
+    </MeterProvider>
+  );
+}
+```
+
+Keep the writer stable across renders. Read access is still enforced by the Meter and the
+host transport; a browser-supplied scope or `canManageBudgets` is not server authorization.
+A remote Meter may use a read-only `createUsageHandlers({ commands: false })` mount.
+The budget writer is a separate host adapter, not a new Meter write endpoint.
+
+## Budget editing
+
+`useBudgetEditor` and `BudgetEditor` accept an existing Budget, or a host-authored
+`BudgetTemplate` containing id, version, scope, surface, unit and window. Version zero is a
+create template; a save builds version one. Editing builds the next version. The draft
+contains exact decimal strings for limit, optional hard limit and alert quantities. It
+cannot change the trusted scope, unit, id or window.
+
+Editing is disabled by default. Both a writer and `canManageBudgets` are required to enable
+it. The host writer must independently authorize the caller, validate the allowed template
+and perform version compare-and-swap in its own persistence transaction.
+
+The writer returns `saved`, `conflict`, `invalid`, `forbidden` or `unavailable`. A conflict
+keeps the draft; the manager offers an explicit reload of the latest version before a new
+edit. Invalid input shows the field and reason without calling the writer. Choosing Block
+or No limit clears an incompatible hard limit. Percent alerts remain visible so an
+unlimited budget can remove them or choose quantity thresholds.
+
+A pending or ambiguous save freezes the submitted values and disables duplicate writes,
+reset and draft edits. An ambiguous result offers **Check save status**. The writer's
+`reconcile` may confirm saved, conflict or explicitly not saved. Without it, a defined-budget
+read can confirm the exact saved version or a conflict; an absent or older row cannot prove
+that the write did not happen. Replacing a writer or remounting an editor does not clear an
+unknown write. No automatic write retry, budget deletion or wallet mutation is supplied.
+
+`BudgetManagerPanel` lists definitions and opens the selected editor. Creation choices come
+only from the host's matching version-zero templates. Pass `budgetTitles`, template titles
+and labels to provide application copy; all strings have English defaults.
+
+## Copyable registry blocks
+
+Both Radix/New York and Base UI/base-vega contain the same twenty blocks:
+
+| Block                        | Purpose                                                  |
+| ---------------------------- | -------------------------------------------------------- |
+| `measurement-card`           | One exact figure with certainty                          |
+| `usage-summary-cards`        | Complete totals by measurement unit                      |
+| `cost-summary-card`          | Provider cost and funding/cost-owner breakdown           |
+| `usage-table`                | Detail and cursor pagination                             |
+| `budget-card`                | Applicable budget usage, reservations, alerts and bounds |
+| `budget-editor`              | View or edit one trusted definition/template             |
+| `budget-manager-panel`       | Browse, reload, edit and create from host templates      |
+| `header-status`              | Compact applicable-budget status, including empty state  |
+| `coverage-summary`           | Tracked and untracked coverage                           |
+| `exceptions-list`            | Work needing evidence or recovery                        |
+| `usage-filters`              | Controlled period and scope choices                      |
+| `connection-list`            | Funding, tags and plan per connection                    |
+| `provider-card`              | Connection status, availability and explicit actions     |
+| `provider-connect-form`      | Draft credentials, test, connect and reconnect           |
+| `provider-source-selector`   | Own-key or platform funding with explicit confirmation   |
+| `provider-rate-editor`       | Exact rates, measured/manual/list provenance and editing |
+| `provider-chain-editor`      | Enable connections and edit fallback ordering            |
+| `provider-balance-card`      | Separate provider or host-wallet balance and freshness   |
+| `provider-allocation-editor` | Funding-by-surface limits and availability suggestions   |
+| `provider-manager-panel`     | Compose connection, rate, funding and allocation tools   |
+
+Provider blocks use a separate host-owned `ProviderManagementPort`. They do not infer
+provider credentials, connection ownership, prices or wallet balances from Meter reads.
+Headless hooks provide connection, balance, quote and allocation reads plus explicit
+administrative actions. See [provider UI](PROVIDER-UI.md) for the adapter contract,
+concurrency, reconciliation and exact-limit semantics.
+
+Data-driven blocks expose pure components and hook-backed Panels where applicable.
+Filters and connection lists take host data. Styling uses the host's semantic tokens;
+there is no bundled stylesheet or second theme. Labels, accessible field names and titles
+are overridable. Error, forbidden and empty states are distinct from loading.
+
+```sh
+npm run registry:build
+npx shadcn add ./packages/registry/dist/r/radix/budget-manager-panel.json
+npx shadcn add ./packages/registry/dist/r/base/usage-summary-cards.json
+```
+
+Each JSON artifact declares package dependencies, host primitives and all copied files.
+The manager bundles its editor; summary cards bundle their measurement card. Files land in
+`@/components/usagekit/` and import `@/components/ui/*`. Root `r/<name>.json` defaults to
+Radix. Tooltip triggers and selects have variant-specific files; other block source is shared.
+The shadcn CLI requests exact UI package versions, which currently need a local/private
+package source. These commands do not make unpublished UI packages publicly installable.
+See [consuming packages](CONSUMING.md) for the usable checkout flow.
+
+To use another design system, copy every artifact file and replace the listed table, card,
+badge, button, tooltip, select, input and label imports with equivalent host primitives.
+Keep the view model semantics, exact text and accessible labels.
+
+## Local showcases and coverage
+
+After the root `npm ci`, prepare complete local dashboards without downloads or publication:
+
+```sh
+node packages/registry/consumers/prepare.mjs
+```
+
+The command prints two Vite invocations for `http://127.0.0.1:5177` (Radix) and
+`http://127.0.0.1:5178` (Base UI). Both use the copied blocks, one in-memory Meter,
+sample host adapters, light/dark controls and a view-only switch. Fixtures and generated
+copies stay local; they make no provider calls. Use them for desktop/mobile review.
+
+`loadCoverageView` accepts a `CoverageSource` for bigint counts of metered, passthrough,
+unpriced, cached and rate-limited requests. Without it, the Meter's tracked requests are
+shown and other counts remain unavailable. The Meter read authorizes the scope before the
+coverage port runs. `createMemoryCoverageSource` is available for tests and demos.
+
+The existing local server builds its Base UI page with `npm run build` and serves it at `/`.
+Its bearer token is kept in memory; reloading asks for it again.

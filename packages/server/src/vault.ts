@@ -1,8 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
-import { randomBytes, scryptSync, createCipheriv, createDecipheriv } from "node:crypto";
+import { randomBytes, randomUUID, scryptSync, createCipheriv, createDecipheriv } from "node:crypto";
 import { writePrivate } from "./config.js";
 /** tags are connection labels the CLI snapshots into each reservation scope; never secret. */
 export type ConnectionMetadata = {
+  label?: string;
   plan?: string;
   manualPrices?: Readonly<Record<string, { unit: string; value: string; scale: number }>>;
   overage?: boolean;
@@ -13,24 +14,26 @@ type Listed = ConnectionMetadata & {
   connectionId: string;
   tags?: readonly string[];
 };
-type Entry = Listed & { secret: string };
+type Entry = Listed & { secret: string; revision: string };
 type Envelope = {
   version: 1;
   salt: string;
   iv: string;
   tag: string;
   ciphertext: string;
-  index: Listed[];
+  index: (Listed & { revision?: string })[];
 };
 const listed = ({
   provider,
   connectionId,
+  label,
   tags,
   plan,
   tracking,
   manualPrices,
   overage,
 }: Entry): Listed => ({
+  ...(label ? { label } : {}),
   ...(plan ? { plan } : {}),
   ...(tracking ? { tracking } : {}),
   ...(manualPrices ? { manualPrices } : {}),
@@ -49,19 +52,20 @@ export function createVault(path: string) {
     if (!key) throw new Error("VaultLocked");
     return key;
   };
-  const save = () => {
+  const save = (next = entries) => {
     const iv = randomBytes(12),
       cipher = createCipheriv("aes-256-gcm", requireKey(), iv),
-      ciphertext = Buffer.concat([cipher.update(JSON.stringify(entries), "utf8"), cipher.final()]);
+      ciphertext = Buffer.concat([cipher.update(JSON.stringify(next), "utf8"), cipher.final()]);
     const envelope: Envelope = {
       version: 1,
       salt: salt!.toString("base64"),
       iv: iv.toString("base64"),
       tag: cipher.getAuthTag().toString("base64"),
       ciphertext: ciphertext.toString("base64"),
-      index: entries.map(listed),
+      index: next.map((entry) => ({ ...listed(entry), revision: entry.revision })),
     };
     writePrivate(path, JSON.stringify(envelope));
+    entries = next;
   };
   return {
     get unlocked() {
@@ -91,8 +95,8 @@ export function createVault(path: string) {
         }
         key = candidate;
         salt = nextSalt;
-        entries = decoded;
-        if (!stored) save();
+        entries = decoded.map((entry) => ({ ...entry, revision: entry.revision ?? randomUUID() }));
+        if (!stored || decoded.some((entry) => !entry.revision)) save();
       } catch {
         throw new Error("VaultUnlockFailed");
       }
@@ -109,18 +113,19 @@ export function createVault(path: string) {
         throw new Error("InvalidConnection");
       if (entries.some((e) => e.connectionId === connectionId && e.provider !== provider))
         throw new Error("ConnectionProviderMismatch");
-      entries = [
+      const next = [
         ...entries.filter((e) => e.connectionId !== connectionId),
         {
           ...entries.find((e) => e.connectionId === connectionId),
           provider,
           connectionId,
           secret,
+          revision: randomUUID(),
           ...(tags ? { tags } : {}),
           ...metadata,
         },
       ];
-      save();
+      save(next);
     },
     get(provider: string, connectionId: string) {
       requireKey();
@@ -129,12 +134,30 @@ export function createVault(path: string) {
       return entry.secret;
     },
     list(): Listed[] {
-      return key ? entries.map(listed) : (read()?.index ?? []);
+      return key
+        ? entries.map(listed)
+        : (read()?.index ?? []).map(({ revision: _revision, ...entry }) => entry);
+    },
+    describe(): (Listed & { revision?: string })[] {
+      return key
+        ? entries.map((entry) => ({ ...listed(entry), revision: entry.revision }))
+        : (read()?.index ?? []);
+    },
+    update(connectionId: string, metadata: ConnectionMetadata) {
+      requireKey();
+      if (!entries.some((entry) => entry.connectionId === connectionId))
+        throw new Error("ConnectionNotFound");
+      save(
+        entries.map((entry) =>
+          entry.connectionId === connectionId
+            ? { ...entry, ...metadata, revision: randomUUID() }
+            : entry,
+        ),
+      );
     },
     remove(connectionId: string) {
       requireKey();
-      entries = entries.filter((e) => e.connectionId !== connectionId);
-      save();
+      save(entries.filter((e) => e.connectionId !== connectionId));
     },
     lock() {
       key?.fill(0);

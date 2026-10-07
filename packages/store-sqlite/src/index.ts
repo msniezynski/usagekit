@@ -7,7 +7,7 @@ import { migrate } from "./migrate.js";
 import { canonical } from "./util.js";
 import { find } from "./records.js";
 import { commands } from "./commands.js";
-import { currentBudgets, insertBudget, selected, status } from "./budgets.js";
+import { currentBudgets, decodeBudget, insertBudget, selected, status } from "./budgets.js";
 import { usageReader } from "./reads.js";
 import { operationsReader } from "./operations.js";
 import { counters } from "./counters.js";
@@ -21,6 +21,8 @@ export type SqliteStore = Store & {
   close(): void;
   putBudget(budget: Budget): BudgetWriteResult;
   listBudgets(): Budget[];
+  /** Immutable version evidence for an administrative write; absence proves no outcome. */
+  getBudgetVersion(namespace: string, id: string, version: number): Budget | null;
 };
 export function createSqliteStore({
   path,
@@ -87,6 +89,15 @@ export function createSqliteStore({
         })
         .immediate(),
     listBudgets: () => read(() => currentBudgets(db)),
+    getBudgetVersion: (namespace, id, version) =>
+      read(() => {
+        const row = db
+          .prepare(
+            "SELECT budget_json FROM budgets WHERE namespace=? AND budget_id=? AND version=?",
+          )
+          .get(namespace, id, version) as { budget_json: string } | undefined;
+        return row ? decodeBudget(row.budget_json) : null;
+      }),
     getOperation: async (ref) => read(() => find(db, ref)?.op ?? null),
     aggregate: async (q) => aggregate(q),
     listOperations: async (q) => listOperations(q),

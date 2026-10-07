@@ -126,6 +126,20 @@
       "allows": ["@usagekit/core", "@usagekit/store"],
       "purpose": "Cloudflare adapter with authoritative SQLite-backed Durable Object storage.",
       "runtime": "web"
+    },
+    {
+      "name": "@usagekit/site",
+      "path": "packages/site",
+      "phase": "website",
+      "allows": [
+        "@usagekit/core",
+        "@usagekit/store",
+        "@usagekit/meter",
+        "@usagekit/views",
+        "@usagekit/react"
+      ],
+      "purpose": "Static open-source project website, React library documentation and interactive examples.",
+      "runtime": "web"
     }
   ],
   "testDependencies": [

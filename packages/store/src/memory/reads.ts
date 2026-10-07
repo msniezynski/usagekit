@@ -168,7 +168,7 @@ const byCreation = (a: Operation, b: Operation) =>
 export function listOperations(s: State, q: OperationsQuery): OperationsPage {
   const { cursor, ...query } = q;
   const identity = canonical(query),
-    cursors = (s.operationCursors ??= new Map());
+    cursors: NonNullable<State["operationCursors"]> = (s.operationCursors ??= new Map());
   let snapshot;
   if (cursor) {
     snapshot = cursors.get(cursor);

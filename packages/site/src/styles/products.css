@@ -1,0 +1,309 @@
+/* Owner: products agent. Two ways to use usagekit: in your product, or in front of your agents. */
+
+/* A full-bleed band between the white hero and the white lifecycle section. It overlaps the next
+   section by one pixel, so its bottom edge and the lifecycle's opening hairline are one line. */
+.prod {
+  position: relative;
+  z-index: 1;
+  margin-bottom: -1px;
+  border-block: 1px solid var(--line);
+  background: var(--bg-subtle);
+}
+
+/* The panels sit on the heading's text-right split, so the second starts where the lede does.
+   Each panel spans both rows of a subgrid: the copy and the stage edges line up across them. */
+.prod-grid {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  grid-template-rows: auto auto;
+  column-gap: 64px;
+}
+.prod-panel {
+  grid-row: span 2;
+  display: grid;
+  grid-template-rows: subgrid;
+  row-gap: 0;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Copy */
+.prod-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 32px 32px 28px;
+}
+.prod-title {
+  font-size: var(--text-2xl);
+  font-stretch: var(--wide);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+/* Both panels keep the narrow panel's measure, so their copy wraps alike and the rows stay even:
+   the 5fr column, less its padding and borders. */
+.prod-text,
+.prod-note {
+  max-width: calc((100cqw - 64px) * 5 / 12 - 66px);
+}
+.prod-text {
+  margin-top: 10px;
+  color: var(--fg-muted);
+  font-size: var(--text-md);
+  line-height: 1.6;
+}
+.prod-note {
+  margin-top: 12px;
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+/* Links share one line across the panels, at the foot of the copy row. */
+.prod-more {
+  margin-top: auto;
+  padding-top: 20px;
+}
+.prod-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  color: var(--fg);
+  font-size: var(--text-base);
+  font-weight: 550;
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: text-decoration-color var(--fast);
+}
+.prod-link:hover {
+  text-decoration-color: currentColor;
+}
+
+/* Stage: the specimen under the copy */
+.prod-stage {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+  margin: 0;
+  padding: 28px 32px 32px;
+  border-top: 1px solid var(--line);
+  background: var(--bg-subtle);
+}
+.prod-caption {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+/* The usage card, read live from the page's Meter */
+.prod-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 18px 20px 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  box-shadow: var(--shadow-sm);
+}
+.prod-missing {
+  padding-bottom: 18px;
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+}
+.prod-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.prod-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+}
+.prod-card-desc {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+.prod-card-reading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin-top: 4px;
+}
+.prod-card-used {
+  font-size: 32px;
+  font-stretch: var(--wide);
+  font-weight: 560;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+.prod-card-of {
+  color: var(--fg-muted);
+  font-size: var(--text-base);
+}
+.prod-card .meter-bar {
+  margin-top: 2px;
+}
+/* The hatching marches only while a request is in flight, not while one is pending. */
+.prod-card[data-flight="false"] .meter-reserved {
+  animation: none;
+}
+.prod-figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 6px -20px 0;
+  padding: 14px 20px 16px;
+  border-top: 1px solid var(--line);
+}
+.prod-figures dt {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+.prod-figures dd {
+  margin: 2px 0 0;
+  font-size: var(--text-md);
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.prod-tick {
+  display: inline-block;
+}
+.prod-tick[data-changed] {
+  animation: prod-tick 420ms var(--ease-out);
+}
+@keyframes prod-tick {
+  from {
+    opacity: 0.25;
+    transform: translateY(0.3em);
+  }
+}
+
+/* The exchange: two proxy responses, as the agent receives them */
+.prod-wire {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  box-shadow: var(--shadow-sm);
+}
+.prod-wire-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2px 12px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.prod-wire-req {
+  min-width: 0;
+  color: var(--fg);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+.prod-wire-method {
+  color: var(--fg-muted);
+}
+.prod-tag {
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+.prod-wire-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 22px;
+}
+/* Status line, then the header or body that matters, set under the reason phrase. */
+.prod-res {
+  display: grid;
+  grid-template-columns: 3ch minmax(0, 1fr);
+  gap: 2px 12px;
+  padding: 12px 16px;
+}
+.prod-res + .prod-res {
+  border-top: 1px solid var(--line);
+}
+.prod-http {
+  font-weight: 600;
+}
+.prod-http.is-ok {
+  color: var(--ok);
+}
+.prod-http.is-denied {
+  color: var(--danger);
+}
+/* On the smallest phones a line wraps after the colon, never inside a name. */
+.prod-res-detail {
+  grid-column: 2;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+.prod-res-key {
+  color: var(--fg-muted);
+}
+
+/* One column once the narrow panel can no longer hold a response line on one line. */
+@media (max-width: 1023px) {
+  .prod-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    gap: 16px;
+  }
+  .prod-panel {
+    grid-row: auto;
+    grid-template-rows: auto 1fr;
+  }
+  .prod-text,
+  .prod-note {
+    max-width: 560px;
+  }
+}
+@media (max-width: 760px) {
+  .prod-copy {
+    padding: 24px 20px;
+  }
+  .prod-more {
+    padding-top: 12px;
+  }
+  /* A full touch target for each panel's link. */
+  .prod-link {
+    min-height: 40px;
+  }
+  .prod-stage {
+    padding: 20px 16px 24px;
+  }
+  .prod-card {
+    padding: 16px 16px 0;
+  }
+  .prod-figures {
+    margin-inline: -16px;
+    padding: 12px 16px 14px;
+  }
+  .prod-card-used {
+    font-size: 28px;
+  }
+}

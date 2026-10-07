@@ -1,68 +1,77 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import type { AccessContext, Meter } from "@usagekit/core";
 import type { Problem, ViewState } from "@usagekit/views";
 import { useMeterBinding } from "./context.js";
+import { createMeterQueryClient, defaultMeterQueryClient, bindingKey } from "./query-client.js";
+import type { MeterQueryClient, QuerySnapshot } from "./query-client.js";
+import { serialize } from "./keys.js";
+export { serialize } from "./keys.js";
 
 export type HookState = "loading" | ViewState;
 export type ViewResult<T> = {
   data: T | null;
   state: HookState;
   error: Problem | null;
-  /** Loads again with the same inputs; the previous data stays until the answer arrives. */
+  refreshing: boolean;
   refresh: () => void;
 };
-export type Binding = { meter?: Meter; access?: AccessContext };
+export type Binding = { meter?: Meter; access?: AccessContext; queryClient?: MeterQueryClient };
 type Loaded = { state: ViewState; problem: Problem | null };
+const empty: QuerySnapshot<never> = { data: null, error: null, fetching: false };
 
-/** JSON with bigint as decimal text, so equal inputs give equal keys across renders. */
-export const serialize = (value: unknown): string =>
-  JSON.stringify(value, (_key, v: unknown) => (typeof v === "bigint" ? `${v}n` : v)) ?? "";
-
-/**
- * Shared loader: re-runs when the Meter identity or the serialized access and inputs change,
- * and drops every answer that is not the latest request's.
- */
+/** Equal reads share an entry; a changed binding or query selects an empty entry immediately. */
 export function useView<I, T extends Loaded>(
   load: (meter: Meter, access: AccessContext, input: I) => Promise<T>,
   options: Binding & I,
 ): ViewResult<T> {
   const binding = useMeterBinding();
-  const { meter: explicitMeter, access: explicitAccess, ...rest } = options;
+  const {
+    meter: explicitMeter,
+    access: explicitAccess,
+    queryClient: explicitClient,
+    ...input
+  } = options;
   const meter = explicitMeter ?? binding?.meter;
   const access = explicitAccess ?? binding?.access;
-  const input = rest as unknown as I;
-  const key = serialize([access, input]);
-  const [result, setResult] = useState<{ key: string; data: T } | null>(null);
-  const [error, setError] = useState<Problem | null>(null);
-  const [nonce, setNonce] = useState(0);
-  const latest = useRef(0);
-  const inputRef = useRef(input);
-  inputRef.current = input;
+  const local = useRef<MeterQueryClient | null>(null);
+  if (!local.current) local.current = createMeterQueryClient();
+  const client =
+    explicitClient ??
+    binding?.queryClient ??
+    (meter ? defaultMeterQueryClient(meter) : local.current);
+  const key = meter && access ? `${bindingKey(meter, access)}:${serialize(input)}` : "missing";
+  const entry = useMemo(
+    () => (meter && access ? client.entry(meter, access, load, input as I) : null),
+    [client, load, key],
+  );
+  const subscribe = useCallback(
+    (listener: () => void) => (entry ? client.subscribe(entry, listener) : () => {}),
+    [client, entry],
+  );
+  const snapshot = useCallback(() => entry?.snapshot ?? empty, [entry]);
+  const result = useSyncExternalStore(subscribe, snapshot, snapshot);
   useEffect(() => {
-    const id = ++latest.current;
-    if (!meter || !access) {
-      setError({ kind: "error", message: "No Meter: pass meter and access or use MeterProvider" });
-      return;
-    }
-    setError(null);
-    load(meter, access, inputRef.current).then(
-      (data) => {
-        if (id === latest.current) setResult({ key, data });
-      },
-      (reason: unknown) => {
-        if (id === latest.current)
-          setError({
-            kind: "error",
-            message: reason instanceof Error ? reason.message : String(reason),
-          });
-      },
-    );
-    return () => {
-      if (id === latest.current) latest.current++;
+    if (entry) client.ensure(entry);
+  }, [client, entry]);
+  const refresh = useCallback(() => {
+    if (entry) client.refresh(entry);
+  }, [client, entry]);
+  if (!meter || !access)
+    return {
+      data: null,
+      state: "unavailable",
+      error: { kind: "error", message: "No Meter: pass meter and access or use MeterProvider" },
+      refreshing: false,
+      refresh,
     };
-  }, [meter, key, nonce, load]);
-  const refresh = useCallback(() => setNonce((n) => n + 1), []);
-  if (error) return { data: result?.data ?? null, state: "unavailable", error, refresh };
-  if (!result) return { data: null, state: "loading", error: null, refresh };
-  return { data: result.data, state: result.data.state, error: result.data.problem, refresh };
+  if (result.error)
+    return { data: null, state: "unavailable", error: result.error, refreshing: false, refresh };
+  const data = result.data;
+  return {
+    data,
+    state: data?.state ?? "loading",
+    error: data?.problem ?? null,
+    refreshing: result.fetching && !!data,
+    refresh,
+  };
 }

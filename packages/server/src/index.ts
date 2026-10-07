@@ -15,6 +15,8 @@ import { createAuth } from "./auth.js";
 import { createVault } from "./vault.js";
 import { createApp } from "./app.js";
 import { defaultUiRoot } from "./ui.js";
+import { createProviderManagement } from "./provider-management/service.js";
+import { acquireServerLock } from "./server-lock.js";
 export type ServerConfig = {
   configDir?: string;
   port?: number;
@@ -36,17 +38,48 @@ export async function startServer(options: ServerConfig = {}) {
   const host = options.host ?? "127.0.0.1";
   if (!["127.0.0.1", "::1", "localhost"].includes(host))
     throw new Error(options.allowRemote ? "NotSupported: remote TLS" : "LoopbackOnly");
+  const configDir = options.configDir ?? defaultConfigDir();
+  const release = acquireServerLock(configDir);
+  let cleanup = () => {};
+  try {
+    return await startOwnedServer({ ...options, configDir }, host, release, (next) => {
+      cleanup = next;
+    });
+  } catch (error) {
+    try {
+      cleanup();
+    } finally {
+      release();
+    }
+    throw error;
+  }
+}
+
+async function startOwnedServer(
+  options: ServerConfig,
+  host: string,
+  release: () => void,
+  registerCleanup: (cleanup: () => void) => void,
+) {
   const dir = options.configDir ?? defaultConfigDir(),
     loaded = loadConfig(dir),
     auth = createAuth(loaded.config, loaded.path),
     vault = createVault(join(dir, "vault.enc")),
     clock = options.clock ?? { now: () => new Date() };
+  registerCleanup(() => vault.lock());
   if (loaded.firstToken)
     (options.onToken ?? ((token) => console.log(`usagekit token (shown once): ${token}`)))(
       loaded.firstToken,
     );
   if (options.passphrase) vault.unlock(options.passphrase);
   const store = createSqliteStore({ path: join(dir, "usage.db"), clock });
+  registerCleanup(() => {
+    try {
+      store.close();
+    } finally {
+      vault.lock();
+    }
+  });
   const catalog = createCatalog({
     providers: [dataforseo, serpapi],
     enabled: options.enabledProviders ?? ["dataforseo", "serpapi"],
@@ -63,6 +96,12 @@ export async function startServer(options: ServerConfig = {}) {
           : null,
     }),
     app = createApp({
+      providerManagement: createProviderManagement({
+        store,
+        vault,
+        catalog,
+        now: () => clock.now(),
+      }),
       proxy: createProviderProxy({
         meter,
         catalog,
@@ -115,8 +154,6 @@ export async function startServer(options: ServerConfig = {}) {
       instance.once("error", reject);
     });
   } catch (error) {
-    store.close();
-    vault.lock();
     throw error;
   }
   const address = server.address();
@@ -136,14 +173,22 @@ export async function startServer(options: ServerConfig = {}) {
       if (stopped) return;
       stopped = true;
       clearInterval(sweepTimer);
-      await maintenance?.catch(() => {});
-      await new Promise<void>((resolve, reject) =>
-        server.close((error) => (error ? reject(error) : resolve())),
-      );
-      store.close();
-      vault.lock();
+      try {
+        await maintenance?.catch(() => {});
+        await new Promise<void>((resolve, reject) =>
+          server.close((error) => (error ? reject(error) : resolve())),
+        );
+      } finally {
+        try {
+          store.close();
+        } finally {
+          vault.lock();
+          release();
+        }
+      }
     },
   };
 }
 
 export type { ConnectionMetadata } from "./vault.js";
+export { ServerOwnershipError } from "./server-lock.js";

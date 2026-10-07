@@ -1,0 +1,552 @@
+/* Owner: storage agent. The Store contract: one transaction, the live record, adapters, proof. */
+
+/* Opens on a hairline after the white lifecycle section, like the other white-to-white joins. */
+.store {
+  --store-rule-y: calc(var(--section-y) - 16px);
+  padding-top: 0;
+}
+.store-inner {
+  padding-top: var(--store-rule-y);
+  border-top: 1px solid var(--line);
+}
+.store[id] {
+  scroll-margin-top: calc(39px - var(--store-rule-y));
+}
+.store-bisibility {
+  margin: 0 4px 0 3px;
+  vertical-align: -1px;
+  color: var(--fg);
+}
+.store-bisibility-name {
+  color: var(--fg);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.store-block {
+  margin-top: 96px;
+}
+.store .section-heading + .store-block {
+  margin-top: 0;
+}
+.store-h3 {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  line-height: 1.25;
+}
+.store-intro {
+  display: grid;
+  gap: 10px;
+  max-width: 80ch;
+  margin-bottom: 28px;
+}
+.store-text {
+  max-width: 62ch;
+  color: var(--fg-muted);
+  font-size: var(--text-base);
+  line-height: 1.6;
+}
+.store-small {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+.store-code {
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  color: var(--fg);
+  background: var(--bg-muted);
+  font-size: 0.86em;
+  white-space: nowrap;
+}
+.store-mono {
+  font-family: var(--font-mono);
+  font-size: 0.93em;
+  white-space: nowrap;
+}
+
+/* One command, one transaction: the schema on the left, the live record on the right. The record
+   column's text starts on the page's text column (the 7fr / 5fr split with a 64px gap). */
+.store-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  box-shadow: var(--shadow-sm);
+}
+.store-tx {
+  min-width: 0;
+  padding: 32px calc(64px * 7 / 12) 32px 32px;
+}
+.store-tx-sql {
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+  line-height: 20px;
+}
+.store-tx-sql code {
+  letter-spacing: 0.02em;
+}
+.store-tx-rows {
+  position: relative;
+  margin: 10px 0 10px 4px;
+  padding: 2px 0 2px 24px;
+  border-left: 1px solid var(--line-strong);
+  list-style: none;
+}
+.store-tx-rows::before,
+.store-tx-rows::after {
+  content: "";
+  position: absolute;
+  left: -1px;
+  width: 9px;
+  border-top: 1px solid var(--line-strong);
+}
+.store-tx-rows::before {
+  top: 0;
+}
+.store-tx-rows::after {
+  bottom: 0;
+}
+.store-tx-row {
+  display: grid;
+  grid-template-columns: 136px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 2px 20px;
+  padding: 11px 0 12px;
+  border-top: 1px solid var(--line);
+}
+.store-tx-row:first-child {
+  border-top: 0;
+}
+.store-tx-table {
+  color: var(--fg);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+.store-tx-purpose {
+  color: var(--fg-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.store-tx-note {
+  max-width: 64ch;
+  margin-top: 20px;
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.store-record {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 28px 32px 32px calc(64px * 5 / 12);
+  border-left: 1px solid var(--line);
+  background: var(--bg-subtle);
+}
+.store-record-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.store-record-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.store-record-id {
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+.store-record-note {
+  margin-top: 4px;
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+.store-record-empty {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 16px 0;
+  border-block: 1px solid var(--line);
+  color: var(--fg-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.store-record-empty .store-mono {
+  color: var(--fg);
+}
+.store-blocked {
+  color: var(--danger);
+  font-weight: 500;
+}
+.store-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--fast);
+}
+.store-link:hover {
+  text-decoration-color: currentColor;
+}
+.store-fields {
+  margin: 20px 0 0;
+  border-top: 1px solid var(--line);
+}
+.store-field {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 16px;
+  padding: 8px 0 9px;
+  border-bottom: 1px solid var(--line);
+}
+.store-field dt {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+}
+.store-field dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  min-width: 0;
+  margin: 0;
+  color: var(--fg);
+  font-size: 14px;
+}
+.store-state {
+  font-size: var(--text-sm);
+}
+.store-state[data-state="pending"] {
+  color: var(--warn);
+}
+.store-held {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+}
+.store-hatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--hatch) 0 1.5px,
+    color-mix(in oklab, var(--hatch) 18%, transparent) 1.5px 4px
+  );
+}
+.store-receipts {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.store-receipts li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 10px;
+}
+.store-receipt-id {
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+}
+.store-none {
+  color: var(--fg-muted);
+}
+
+.store-trail {
+  margin-top: 18px;
+}
+.store-steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.store-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: var(--text-sm);
+}
+.store-step + .store-step::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: 14.5px;
+  height: 8px;
+  border-left: 1px solid var(--line-strong);
+}
+.store-step-v {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  height: 22px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-xs);
+  color: var(--fg-muted);
+  background: var(--bg);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1;
+}
+.store-step-state {
+  min-width: 0;
+  color: var(--fg-muted);
+}
+.store-step-cmd {
+  color: var(--fg-muted);
+  text-align: right;
+}
+.store-step-via {
+  font-family: var(--font-sans);
+}
+.store-step[data-status="current"] .store-step-v {
+  border-color: var(--fg);
+  color: var(--fg-inverse);
+  background: var(--fg);
+}
+.store-step[data-status="current"] .store-step-state {
+  color: var(--fg);
+}
+.store-step[data-status="current"] [data-state="pending"] {
+  color: var(--warn);
+}
+.store-step[data-status="next"] .store-step-v {
+  border-style: dashed;
+  color: var(--fg-subtle);
+  background: transparent;
+}
+.store-step[data-status="next"] .store-step-state,
+.store-step[data-status="next"] .store-step-cmd {
+  color: var(--fg-subtle);
+}
+.store-trail-note {
+  margin-top: 14px;
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+/* Guarantees: a quiet list with run-in titles under the transaction. */
+.store-guarantees {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0 48px;
+  margin: 40px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.store-guarantee {
+  padding: 16px 0 20px;
+  border-top: 1px solid var(--line);
+}
+.store-guarantee p {
+  color: var(--fg-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.store-guarantee strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+
+/* Adapters beside the proof: a tight list with hairlines on the 5fr column, code on the 7fr. */
+.store-split {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 40px 64px;
+  align-items: start;
+}
+.store-options {
+  display: grid;
+  align-content: start;
+  gap: 20px;
+  min-width: 0;
+}
+.store-adapters {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+.store-adapter {
+  display: grid;
+  align-content: start;
+  gap: 3px;
+  padding: 15px 0 17px;
+  border-bottom: 1px solid var(--line);
+}
+.store-adapter-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+}
+.store-adapter-name {
+  font-size: var(--text-base);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.store-adapter-durable {
+  color: var(--fg);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+.store-adapter-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 16px;
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+.store-adapter-entry {
+  color: var(--fg);
+}
+.store-adapter-home {
+  color: var(--fg-muted);
+}
+.store-adapter-note {
+  margin-top: 3px;
+  color: var(--fg-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.store-adapter-note .store-mono,
+.store-tx-note .store-mono {
+  color: var(--fg);
+}
+.store-proof {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .store-guarantees {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 40px;
+  }
+}
+/* Below this the sample would scroll beside the list, so the list goes two-up above it. */
+@media (max-width: 1080px) {
+  .store-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .store-adapters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 40px;
+    border-top: 0;
+  }
+  .store-adapter {
+    border-top: 1px solid var(--line);
+    border-bottom: 0;
+  }
+}
+@media (max-width: 900px) {
+  .store-block {
+    margin-top: 72px;
+  }
+  .store-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .store-tx {
+    padding: 28px 28px 28px;
+  }
+  .store-record {
+    padding: 24px 28px 28px;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+}
+@media (max-width: 760px) {
+  .store-block {
+    margin-top: 64px;
+  }
+  .store-h3 {
+    font-size: var(--text-lg);
+  }
+  .store-tx {
+    padding: 22px 18px 22px;
+  }
+  .store-record {
+    padding: 20px 18px 22px;
+  }
+  .store-tx-rows {
+    padding-left: 18px;
+  }
+  .store-tx-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 12px;
+    align-items: baseline;
+    padding-block: 8px;
+  }
+  .store-tx-purpose {
+    font-size: var(--text-sm);
+  }
+  .store-guarantees {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 24px;
+  }
+  .store-adapter-note {
+    font-size: var(--text-sm);
+  }
+  .store-link {
+    min-height: 40px;
+  }
+  .store-adapters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 380px) {
+  .store-step {
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 2px 12px;
+  }
+  .store-step-cmd {
+    grid-column: 2;
+    text-align: left;
+  }
+  .store-step + .store-step::before {
+    display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .store-hatch {
+    forced-color-adjust: none;
+    background: repeating-linear-gradient(-45deg, Highlight 0 1.5px, transparent 1.5px 4px);
+  }
+  .store-step[data-status="current"] .store-step-v {
+    forced-color-adjust: none;
+    border-color: CanvasText;
+    color: Canvas;
+    background: CanvasText;
+  }
+}

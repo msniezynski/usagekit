@@ -16,6 +16,7 @@ export const headerStatusLabels = {
   unlimited: "unlimited",
   unavailable: "unavailable",
   unknown: "unknown",
+  empty: "No budgets apply.",
   loading: "Loading status",
   failed: "Status unavailable",
   forbidden: "Status hidden",
@@ -52,7 +53,11 @@ function Pill({
     <Tooltip>
       <TooltipTrigger
         render={
-          <Badge variant="outline" data-level={bound.level} className={levelClass[bound.level]} />
+          <Badge
+            variant="outline"
+            data-level={bound.level}
+            className={`h-auto min-h-5 max-w-full whitespace-normal break-all ${levelClass[bound.level]}`}
+          />
         }
       >
         {`${amount(bound.remaining, labels)} ${labels.of} ${amount(bound.of, labels)} ${bound.unit} ${labels.left}`}
@@ -88,14 +93,26 @@ export function HeaderStatusBar({
         {status.state === "forbidden" ? labels.forbidden : labels.failed}
       </span>
     );
+  if (status.state === "empty")
+    return (
+      <span role="status" className="text-xs text-muted-foreground">
+        {labels.empty}
+      </span>
+    );
   return (
     <TooltipProvider>
-      <div className="flex flex-wrap items-center gap-2" data-level={status.level}>
+      <div
+        className="flex min-w-0 max-w-full flex-wrap items-center gap-2"
+        data-level={status.level}
+      >
         {status.bounds.map((bound) => (
           <Pill key={bound.budgetId} bound={bound} labels={labels} formatTime={formatTime} />
         ))}
         {status.hidden > 0 && (
-          <Badge variant="outline" className="text-muted-foreground">
+          <Badge
+            variant="outline"
+            className="h-auto min-h-5 max-w-full whitespace-normal break-all text-muted-foreground"
+          >
             {`${status.hidden} ${labels.hidden}`}
           </Badge>
         )}
@@ -114,5 +131,13 @@ export function HeaderStatusPanel({
   crossings?: readonly BudgetAlertCrossed[];
 } & Pick<HeaderStatusBarProps, "labels" | "formatTime">) {
   const result = useHeaderStatus(crossings ? { ...input, crossings } : input);
+  if (result.state === "unavailable" || result.state === "forbidden")
+    return (
+      <p role="alert" className="text-sm text-muted-foreground">
+        {result.state === "forbidden"
+          ? (labels?.forbidden ?? headerStatusLabels.forbidden)
+          : (labels?.failed ?? headerStatusLabels.failed)}
+      </p>
+    );
   return <HeaderStatusBar status={result.data} labels={labels} formatTime={formatTime} />;
 }

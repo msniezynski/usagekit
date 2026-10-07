@@ -42,34 +42,42 @@ export function CoverageSummary({ view, labels: custom }: CoverageSummaryProps) 
           ? labels.empty
           : null;
   return (
-    <Card>
+    <Card className="min-w-0 w-full">
       <CardHeader>
         <CardTitle>{labels.title}</CardTitle>
         <CardDescription>{labels.description}</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+      <CardContent className="flex min-w-0 flex-col gap-3">
         {message || !view ? (
           <p role="status" className="text-sm text-muted-foreground">
             {message}
           </p>
         ) : (
           <>
-            <dl className="grid grid-cols-3 gap-x-4 gap-y-1 text-sm">
+            <dl className="space-y-2 text-sm">
               {view.entries.map((entry) => (
-                <div key={entry.state} className="contents" data-state={entry.state}>
-                  <dt className="text-muted-foreground">{labels[entry.state as CoverageState]}</dt>
-                  <dd className="text-right tabular-nums">
+                <div
+                  key={entry.state}
+                  className="grid grid-cols-2 gap-x-4 sm:grid-cols-3"
+                  data-state={entry.state}
+                >
+                  <dt className="min-w-0 break-words text-muted-foreground">
+                    {labels[entry.state as CoverageState]}
+                  </dt>
+                  <dd className="min-w-0 text-right tabular-nums break-all">
                     {entry.count === "unavailable" ? labels.unavailable : entry.count}
                   </dd>
-                  <dd className="text-right tabular-nums text-muted-foreground">
+                  <dd className="col-start-2 min-w-0 text-right tabular-nums break-all text-muted-foreground sm:col-start-auto">
                     {entry.share === null ? "" : `${entry.share}%`}
                   </dd>
                 </div>
               ))}
               {view.total !== null && (
-                <div className="contents">
+                <div className="grid grid-cols-2 gap-x-4 sm:grid-cols-3">
                   <dt className="font-medium">{labels.total}</dt>
-                  <dd className="text-right font-medium tabular-nums">{view.total}</dd>
+                  <dd className="min-w-0 text-right font-medium tabular-nums break-all">
+                    {view.total}
+                  </dd>
                   <dd />
                 </div>
               )}
@@ -94,5 +102,13 @@ export function CoverageSummaryPanel({
   ...input
 }: CoverageInput & Pick<CoverageSummaryProps, "labels">) {
   const result = useCoverageView(input);
+  if (result.state === "unavailable" || result.state === "forbidden")
+    return (
+      <p role="alert" className="text-sm text-muted-foreground">
+        {result.state === "forbidden"
+          ? (labels?.forbidden ?? coverageSummaryLabels.forbidden)
+          : (labels?.failed ?? coverageSummaryLabels.failed)}
+      </p>
+    );
   return <CoverageSummary view={result.data} labels={labels} />;
 }

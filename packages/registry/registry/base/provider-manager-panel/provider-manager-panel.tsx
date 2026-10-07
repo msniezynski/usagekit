@@ -1,0 +1,1 @@
+../../radix/provider-manager-panel/provider-manager-panel.tsx

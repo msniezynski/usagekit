@@ -26,6 +26,11 @@ Use `--config-dir <directory>` for another instance. Use the same directory afte
 The first start prints the local bearer token once. Save it outside shell history in a password manager.
 Subsequent starts do not print it. The config stores only its SHA-256 hash.
 Startup errors distinguish occupied ports, invalid config and failed vault unlock without printing sensitive details.
+
+One server owns a config directory at a time. The private `.server-lock` directory is acquired
+before loading the vault. A live owner rejects a second server; a proven exited owner can be
+recovered. Malformed ownership and interrupted recovery fail closed. Inspect those cases locally
+instead of removing a live server's lock. Normal shutdown releases ownership.
 In a second terminal, read it without echo and export it:
 
 ```sh
@@ -61,6 +66,41 @@ Provider tests validate format only. `network: false` means no provider authenti
 `usagekit provider remove --connection c1` removes the stored key, preserving accounting history.
 Secret plaintext is absent from responses, logs, SQLite, config and encrypted vault bytes.
 An existing connection ID cannot silently change provider; same-provider key rotation remains supported.
+
+## Dashboard controls
+
+Open `/` on the local server and enter its bearer token. The dashboard keeps the token in
+tab memory, verifies its administrative binding with the server and shares `MeterProvider`
+and `ProviderManagementProvider` across pages. It uses the same Base UI registry blocks as
+other applications, with no provider requests on page load.
+
+Connections supports own-key connect, rotation, disconnect, explicit format checks and exact
+manual prices. A format check does not authenticate with the provider. Unsupported hosted
+wallets, allocation matrices, enable controls and fallback policies are not offered.
+Budgets supports existing definitions and new monthly principal or connection limits, including
+exact amounts, overage, hard limits and alerts. Usage is preserved when a limit changes.
+
+The administrative provider API has four authenticated routes:
+
+- `GET /providers/management/binding` supplies a persisted host-qualified scope and token revision.
+- `POST /providers/management/read` accepts `{query}` and reads retained, content-free evidence.
+- `POST /providers/management/commands` accepts `{command,secrets?}` once, with a stable command ID.
+- `POST /providers/management/reconcile` accepts the original `{command}`, without credentials.
+
+Connection revisions change on both dashboard and legacy CLI mutations. Provider commands
+commit an intent into `usage.db` before touching the encrypted vault, then retain the neutral
+result. Repeating the original command returns its stored result. Changing its body under the
+same ID is rejected. Credential material never enters the command journal.
+
+If a crash occurs between the vault write and journal completion, the result stays unknown
+after restart. The server blocks additional provider mutations, including legacy routes;
+reconciliation never retries the write or infers failure from an absent connection. There is
+currently no automatic repair for an incomplete administrative intent. Keep the instance for
+operator investigation instead of deleting journal rows or resubmitting with a new command ID.
+
+`POST /budgets/reconcile` accepts the original budget definition. Its immutable stored version
+proves an exact saved definition or a version conflict, even if newer edits exist. An absent
+version leaves the result unknown. Reads and reconciliation perform no provider I/O.
 
 ## Budget and cooperating scripts
 

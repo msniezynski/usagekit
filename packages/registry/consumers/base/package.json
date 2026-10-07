@@ -15,7 +15,9 @@
     "react": "*",
     "react-dom": "*",
     "tailwind-merge": "*",
-    "tw-animate-css": "*"
+    "tw-animate-css": "*",
+    "@usagekit/store": "*",
+    "@usagekit/meter": "*"
   },
   "devDependencies": {
     "@tailwindcss/vite": "*",

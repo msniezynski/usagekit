@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { Certainty, UsageQuery } from "@usagekit/core";
-import { useUsageView } from "@usagekit/react";
+import type { Certainty, Meter, UsageQuery } from "@usagekit/core";
+import { serialize, useMeterBinding, useUsageView } from "@usagekit/react";
 import type { Amount, Figure, UsageView } from "@usagekit/views";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,10 @@ import {
 } from "@/components/ui/table";
 
 export const usageTableLabels = {
+  title: "Usage detail",
   cost: "Cost",
+  customerCharges: "Customer charges",
+  cents: "cents",
   certainty: "Certainty",
   unknownOperations: "Unknown operations",
   measured: "Measured",
@@ -41,7 +44,7 @@ const certaintyVariant = {
 function figure(value: Figure | Amount, labels: UsageTableLabels): string {
   if (value === "unavailable") return labels.unavailable;
   if (value.certainty === "unknown") return labels.unknown;
-  return `${value.text} ${value.unit}`;
+  return `${value.text} ${value.unit === "customer_cents" ? labels.cents : value.unit}`;
 }
 function CertaintyBadge({ value, labels }: { value: Certainty; labels: UsageTableLabels }) {
   return (
@@ -81,7 +84,11 @@ export function UsageTable({
     );
   return (
     <div className="flex flex-col gap-3">
-      <Table>
+      <Table
+        tabIndex={0}
+        aria-label={labels.title}
+        className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
+      >
         <TableHeader>
           <TableRow>
             {view.groupBy.map((d) => (
@@ -89,7 +96,7 @@ export function UsageTable({
             ))}
             {view.units.map((unit) => (
               <TableHead key={unit} className="text-right">
-                {unit}
+                {unit === "customer_cents" ? labels.customerCharges : unit}
               </TableHead>
             ))}
             <TableHead className="text-right">{labels.cost}</TableHead>
@@ -154,15 +161,38 @@ export function UsageTablePanel({
   dimensionLabels,
   ...query
 }: Omit<UsageQuery, "cursor"> & Pick<UsageTableProps, "labels" | "dimensionLabels">) {
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const binding = useMeterBinding();
+  const key = serialize([query, binding?.access]);
+  const [page, setPage] = useState<{
+    key: string;
+    meter: Meter | undefined;
+    cursor: string;
+  } | null>(null);
+  const cursor = page?.key === key && page.meter === binding?.meter ? page.cursor : undefined;
+  const setCursor = (cursor: string) => setPage({ key, meter: binding?.meter, cursor });
   const result = useUsageView(cursor ? { ...query, cursor } : query);
+  if (result.state === "unavailable" || result.state === "forbidden")
+    return (
+      <div className="space-y-3">
+        <p role="alert" className="text-sm text-muted-foreground">
+          {result.state === "forbidden"
+            ? (labels?.forbidden ?? usageTableLabels.forbidden)
+            : (labels?.failed ?? usageTableLabels.failed)}
+        </p>
+        {cursor && result.state === "unavailable" && (
+          <Button variant="outline" size="sm" onClick={() => setPage(null)}>
+            {labels?.first ?? usageTableLabels.first}
+          </Button>
+        )}
+      </div>
+    );
   return (
     <UsageTable
       view={result.data}
       labels={labels}
       dimensionLabels={dimensionLabels}
       onNextPage={setCursor}
-      onFirstPage={cursor ? () => setCursor(undefined) : undefined}
+      onFirstPage={cursor ? () => setPage(null) : undefined}
     />
   );
 }

@@ -1,0 +1,1 @@
+../../radix/provider-allocation-editor/provider-allocation-editor.tsx

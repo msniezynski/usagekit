@@ -53,6 +53,7 @@ function Marker({ left, label, className }: { left: string; label: ReactNode; cl
     <Tooltip>
       <TooltipTrigger asChild>
         <span
+          role="img"
           aria-label={typeof label === "string" ? label : undefined}
           className={`absolute top-0 h-full w-0.5 ${className}`}
           style={{ left: `${left}%` }}
@@ -157,6 +158,14 @@ export function BudgetCardsPanel({
   ...input
 }: BudgetsInput & Pick<BudgetCardProps, "labels" | "formatTime">) {
   const result = useBudgetsView(input);
+  if (result.state === "unavailable" || result.state === "forbidden")
+    return (
+      <p role="alert" className="text-sm text-muted-foreground">
+        {result.state === "forbidden"
+          ? (labels?.forbidden ?? budgetCardLabels.forbidden)
+          : (labels?.failed ?? budgetCardLabels.failed)}
+      </p>
+    );
   const text = { ...budgetCardLabels, ...labels };
   if (!result.data) return <p className="text-sm text-muted-foreground">{text.loading}</p>;
   if (result.data.state !== "ok")

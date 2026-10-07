@@ -30,17 +30,21 @@ export async function loadConnections(session: Session): Promise<ConnectionInput
   const list = (await get(session, "/providers/connections")) as {
     provider: string;
     connectionId: string;
+    label?: string;
+    plan?: string;
     tags?: string[];
   }[];
   return list.map((c) => ({
     id: c.connectionId,
     provider: c.provider,
     fundingSource: "byok",
+    ...(c.label ? { label: c.label } : {}),
+    ...(c.plan ? { plan: c.plan } : {}),
     ...(c.tags ? { tags: c.tags } : {}),
   }));
 }
 export async function loadBudgetUnits(session: Session): Promise<string[]> {
   const budgets = (await get(session, "/budgets")) as Budget[];
-  const units = [...new Set(budgets.map((b) => b.unit))].sort();
-  return units.length ? units : ["requests"];
+  const units = [...new Set(["requests", "cents", ...budgets.map((b) => b.unit)])].sort();
+  return units;
 }

@@ -30,6 +30,14 @@ export function startupError(error: unknown): StartupFailure {
       "Cannot access the config directory or bind the selected port.",
     );
   const errors: Record<string, [string, string]> = {
+    ServerAlreadyRunning: [
+      "server_already_running",
+      "Another live server owns this config directory. Stop it before starting another instance.",
+    ],
+    ServerLockUncertain: [
+      "server_lock_uncertain",
+      "Config ownership cannot be verified. Inspect the local server lock; do not remove a live server's lock.",
+    ],
     InvalidConfig: ["invalid_config", "Config is invalid. Check config.json."],
     VaultUnlockFailed: [
       "vault_unlock_failed",

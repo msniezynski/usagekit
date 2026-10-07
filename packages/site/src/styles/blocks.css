@@ -1,0 +1,811 @@
+/* Blocks: registry previews that read the page's in-memory Meter, and the code that copies them. */
+/* The page header introduces the blocks, so the band opens a step closer to it. */
+.blk {
+  --blk-second: color-mix(in oklab, var(--fg) 36%, var(--bg));
+  --blk-top: min(96px, var(--section-y));
+  padding-top: var(--blk-top);
+  border-block: 1px solid var(--line);
+  background: var(--bg-subtle);
+}
+.blk[id] {
+  scroll-margin-top: calc(40px - var(--blk-top));
+}
+
+/* Toolbar: Preview and Code, with the state of the shared sample and its commands. */
+.blk-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  margin-bottom: 16px;
+}
+.blk-tablist {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.blk-tab {
+  height: 30px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--fg-muted);
+  background: transparent;
+  font-size: var(--text-sm);
+  font-weight: 550;
+  transition:
+    color var(--fast),
+    background-color var(--fast);
+}
+.blk-tab:hover {
+  color: var(--fg);
+}
+.blk-tab[aria-selected="true"] {
+  color: var(--fg);
+  background: var(--bg-muted);
+}
+/* Status on the left, commands on the right: Send and Simulate keep their place as it changes. */
+.blk-controls {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+/* Right-aligned on its own line too, if a second follow-up button makes the row overflow. */
+.blk-commands {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+}
+.blk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.blk-status {
+  display: flex;
+  align-items: center;
+  margin-right: auto;
+  padding-right: 8px;
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+}
+/* A dot only where the toolbar reports a state; the sample-data label is plain text. The dot is
+   inline, so it stays on the first line when the status wraps. */
+.blk-status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 999px;
+  background: var(--fg-subtle);
+  vertical-align: 0.1em;
+}
+.blk-status[data-tone="accent"] .blk-status-dot {
+  background: var(--accent);
+}
+.blk-status[data-tone="danger"] .blk-status-dot {
+  background: var(--danger);
+}
+.blk-panel:focus-visible {
+  outline-offset: 4px;
+  border-radius: var(--radius-lg);
+}
+
+/* Gallery: spans vary with what each block needs; the two tables take the full width. */
+.blk-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+}
+.blk-frame.is-header-status {
+  grid-column: span 5;
+}
+.blk-frame.is-usage-summary-cards {
+  grid-column: span 7;
+}
+.blk-frame.is-budget-card,
+.blk-frame.is-cost-summary-card,
+.blk-frame.is-coverage-summary {
+  grid-column: span 4;
+}
+.blk-frame.is-usage-table,
+.blk-frame.is-exceptions-list {
+  grid-column: span 12;
+}
+
+.blk-frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
+  container-type: inline-size;
+}
+.blk-cap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  padding: 0 14px 0 16px;
+  border-bottom: 1px solid var(--line);
+}
+.blk-cap-name {
+  overflow: hidden;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 450;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.blk-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 20px;
+}
+
+/* Shared block parts */
+.blk-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 24px;
+}
+.blk-head:has(.blk-desc) {
+  align-items: flex-start;
+}
+.blk-desc {
+  margin-top: 2px;
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+}
+.blk-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+.blk-head-meta,
+.blk-message {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+}
+.blk-foot {
+  margin-top: auto;
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+}
+.blk-key {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+.blk-key.is-used,
+.blk-key.is-byok {
+  background: var(--fg);
+}
+.blk-key.is-platform {
+  background: var(--blk-second);
+}
+.blk-key.is-headroom {
+  background: var(--track);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+.blk-key.is-none {
+  visibility: hidden;
+}
+.blk-key.is-reserved {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--hatch) 0 1.5px,
+    color-mix(in oklab, var(--hatch) 20%, transparent) 1.5px 3.5px
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--hatch) 55%, transparent);
+}
+.blk-tick {
+  display: inline-block;
+}
+.blk-tick[data-changed] {
+  animation: blk-roll 420ms var(--ease-out);
+}
+@keyframes blk-roll {
+  from {
+    opacity: 0.2;
+    transform: translateY(0.35em);
+  }
+}
+/* Status text darkened toward ink so it passes 4.5:1; the dot keeps the pure status color. */
+.blk .level.is-warning {
+  color: color-mix(in oklab, var(--warn) 72%, var(--fg));
+}
+.blk .level.is-exceeded {
+  color: color-mix(in oklab, var(--danger) 78%, var(--fg));
+}
+.blk .btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* header-status: an app top bar with the status pill and its details */
+.blk-appbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 8px 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+}
+.blk-ws {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.blk-avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  color: var(--fg-inverse);
+  background: var(--bg-inverse);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+.blk-ws-name {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.blk-pill {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.blk-pill .badge {
+  height: 28px;
+  padding: 0 11px;
+  font-size: var(--text-sm);
+}
+.blk-pill .badge.is-ok {
+  color: var(--fg);
+}
+.blk-tip {
+  position: relative;
+  display: grid;
+  align-self: flex-end;
+  gap: 2px;
+  min-width: 176px;
+  margin: -4px 8px 0 0;
+  padding: 10px 14px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--fg-muted);
+  background: var(--bg);
+  box-shadow: var(--shadow-md);
+  font-size: var(--text-xs);
+}
+.blk-tip::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  right: 28px;
+  width: 9px;
+  height: 9px;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+  background: var(--bg);
+  transform: rotate(45deg);
+}
+.blk-tip-title {
+  color: var(--fg);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+/* Shadows vanish on the dark page, so the popover floats on a lighter surface instead. */
+:root[data-theme="dark"] .blk-tip,
+:root[data-theme="dark"] .blk-tip::before {
+  border-color: var(--line-strong);
+  background: var(--bg-muted);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .blk-tip,
+  :root:not([data-theme]) .blk-tip::before {
+    border-color: var(--line-strong);
+    background: var(--bg-muted);
+  }
+}
+
+/* usage-summary-cards */
+.blk-tiles {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.blk-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.blk-tile-label {
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+.blk-tile-value {
+  margin-bottom: 10px;
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.blk-tile .certainty {
+  align-items: flex-start;
+  margin-top: auto;
+  white-space: normal;
+}
+.blk-tile .certainty-mark {
+  margin-top: 0.45em;
+}
+
+/* budget-card */
+/* Hatching marches only while a request is in flight; a pending reservation keeps it, still. */
+.blk-meter[data-flight="false"] .meter-reserved {
+  animation: none;
+}
+.blk-rows {
+  display: grid;
+  gap: 8px;
+}
+.blk-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+.blk-row dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fg-muted);
+}
+.blk-row dd {
+  font-weight: 550;
+}
+
+/* cost-summary-card */
+.blk-big {
+  font-size: var(--text-3xl);
+  font-weight: 600;
+  font-stretch: var(--wide);
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+.blk-split {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--track);
+}
+.blk-split-part {
+  flex-shrink: 0;
+  height: 100%;
+  transition: width 560ms var(--ease-out);
+}
+.blk-split-part.is-byok {
+  background: var(--fg);
+}
+.blk-split-part.is-platform {
+  background: var(--blk-second);
+}
+.blk-split.is-unknown {
+  border: 1px dashed var(--fg-subtle);
+  background: transparent;
+}
+.blk-funding {
+  display: grid;
+  gap: 12px;
+}
+.blk-fund {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 10px;
+  font-size: 14px;
+}
+.blk-fund .blk-key {
+  align-self: center;
+}
+.blk-fund-name,
+.blk-fund-cost {
+  font-weight: 550;
+}
+.blk-fund-cost {
+  text-align: right;
+}
+.blk-fund-owner {
+  grid-column: 2;
+  overflow: hidden;
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.blk-fund-count {
+  color: var(--fg-muted);
+  font-size: var(--text-xs);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* coverage-summary */
+.blk-cov {
+  display: grid;
+  gap: 10px;
+}
+.blk-cov-row {
+  display: grid;
+  grid-template-columns: minmax(0, 6.5em) minmax(24px, 1fr) 2.5em 4.25em;
+  align-items: center;
+  gap: 12px;
+  font-size: var(--text-sm);
+}
+.blk-cov-label {
+  overflow: hidden;
+  color: var(--fg-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.blk-cov-bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--track);
+}
+.blk-cov-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--blk-second);
+  transition: width 560ms var(--ease-out);
+}
+.blk-cov-row[data-state="metered"] .blk-cov-bar > span {
+  background: var(--fg);
+}
+.blk-cov-count,
+.blk-cov-share {
+  text-align: right;
+}
+.blk-cov-count {
+  font-weight: 550;
+}
+.blk-cov-share {
+  color: var(--fg-muted);
+}
+.blk-cov-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.blk-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: auto;
+  color: var(--fg-muted);
+  font-size: var(--text-sm);
+}
+.blk-note svg {
+  margin-top: 3px;
+}
+
+/* Tables: usage-table and exceptions-list scroll inside their frames. */
+.blk-scroll {
+  position: relative;
+  margin-inline: -20px;
+  overflow-x: auto;
+  border-block: 1px solid var(--line);
+}
+.blk-scroll:focus-visible {
+  border-radius: 0;
+  outline-offset: -2px;
+}
+/* A table that ends its frame runs to the frame's bottom edge. */
+.blk-body > .blk-scroll:last-child {
+  margin-bottom: -20px;
+  border-bottom: 0;
+}
+/* More columns wait to the right: fade the trailing edge until the visitor scrolls there. */
+.blk-scroll[data-more] {
+  mask-image: linear-gradient(to left, transparent, #000 32px);
+}
+.blk-table {
+  width: 100%;
+  min-width: 600px;
+  /* Separate borders travel with the pinned row headers; collapsed ones stay behind. */
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--text-sm);
+}
+.blk-table th,
+.blk-table td {
+  height: 46px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  white-space: nowrap;
+}
+.blk-table thead th {
+  height: 36px;
+  color: var(--fg-muted);
+  background: var(--bg-subtle);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+.blk-table tbody th {
+  font-weight: 550;
+}
+/* Row headers stay in view while the other columns scroll under them. */
+.blk-table tbody th,
+.blk-table thead th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--bg);
+}
+.blk-table thead th:first-child {
+  background: var(--bg-subtle);
+}
+.blk-scroll[data-scrolled] .blk-table tbody th,
+.blk-scroll[data-scrolled] .blk-table thead th:first-child {
+  box-shadow: inset -1px 0 0 var(--line-strong);
+}
+.blk-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.blk-table :is(th, td):first-child {
+  padding-left: 20px;
+}
+.blk-table :is(th, td):last-child {
+  padding-right: 20px;
+}
+.blk-table .is-num {
+  text-align: right;
+}
+.blk-table td.is-num {
+  font-weight: 500;
+}
+.blk-table td.is-muted {
+  color: var(--fg-muted);
+}
+.blk-table td.blk-table-empty {
+  color: var(--fg-muted);
+  text-align: center;
+}
+
+/* exceptions-list */
+.blk-table th.blk-op {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 450;
+}
+.blk-exc-row {
+  animation: blk-row-in 360ms var(--ease-out);
+}
+@keyframes blk-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+.blk-kind.is-pending .badge-dot {
+  background: var(--accent);
+}
+.blk-kind.is-reservation_expired .badge-dot {
+  background: var(--warn);
+}
+.blk-kind.is-lease_expired .badge-dot {
+  background: var(--danger);
+}
+
+/* Code tab: the same 5 and 7 column split as the first row of previews. */
+.blk-code {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+}
+.blk-code-aside {
+  position: sticky;
+  top: calc(var(--header-h) + 24px);
+  display: grid;
+  grid-column: span 5;
+  gap: 16px;
+}
+.blk-code > .code {
+  grid-column: span 7;
+}
+.blk-codeblock {
+  background: var(--bg);
+}
+.blk-code-note {
+  color: var(--fg-muted);
+  font-size: var(--text-base);
+}
+.blk-code-note code {
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  color: var(--fg);
+  background: var(--bg);
+  font-size: 0.87em;
+  white-space: nowrap;
+}
+
+.blk-more {
+  margin-top: 24px;
+  color: var(--fg-muted);
+  font-size: var(--text-base);
+}
+.blk-more .link {
+  color: var(--fg);
+}
+
+/* Narrow frames rearrange their own content. */
+@container (max-width: 379px) {
+  .blk-ws-name {
+    display: none;
+  }
+}
+@container (max-width: 540px) {
+  .blk-tiles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .blk-tile {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 4px 12px;
+    padding: 12px 14px;
+  }
+  .blk-tile-value {
+    grid-row: span 2;
+    grid-column: 2;
+    margin: 0;
+    font-size: var(--text-xl);
+  }
+  .blk-tile .certainty {
+    margin: 0;
+  }
+}
+
+@media (max-width: 1023px) {
+  /* The commands get their own row, so a follow-up button never pushes them onto another. */
+  .blk-controls {
+    flex-basis: 100%;
+  }
+  .blk-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .blk-frame.is-header-status,
+  .blk-frame.is-usage-summary-cards,
+  .blk-frame.is-coverage-summary,
+  .blk-frame.is-usage-table,
+  .blk-frame.is-exceptions-list {
+    grid-column: span 2;
+  }
+  .blk-frame.is-budget-card,
+  .blk-frame.is-cost-summary-card {
+    grid-column: span 1;
+  }
+  .blk-code {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .blk-code-aside,
+  .blk-code > .code {
+    grid-column: auto;
+  }
+  .blk-code-aside {
+    position: static;
+  }
+}
+/* Touch: primary controls are at least 40px tall. The status row keeps that height whether or
+   not a follow-up button sits in it, so Send and Simulate below never move. */
+@media (max-width: 760px) {
+  .blk-tab {
+    height: 40px;
+    padding-inline: 16px;
+  }
+  .blk .btn-sm {
+    height: 40px;
+    padding-inline: 14px;
+  }
+  .blk-status {
+    flex: 1 1 140px;
+    min-width: 0;
+    min-height: 40px;
+    padding-right: 0;
+  }
+  /* Follow-up buttons join the status row; Send and Simulate fill the row below it. */
+  .blk-commands {
+    display: contents;
+  }
+  .blk-actions {
+    flex-basis: 100%;
+  }
+  .blk-actions .btn {
+    flex: 1 1 auto;
+  }
+}
+@media (max-width: 639px) {
+  .blk-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .blk-frame.is-header-status,
+  .blk-frame.is-usage-summary-cards,
+  .blk-frame.is-usage-table,
+  .blk-frame.is-budget-card,
+  .blk-frame.is-cost-summary-card,
+  .blk-frame.is-coverage-summary,
+  .blk-frame.is-exceptions-list {
+    grid-column: auto;
+  }
+  .blk-body {
+    padding: 16px;
+  }
+  .blk-scroll {
+    margin-inline: -16px;
+  }
+  .blk-body > .blk-scroll:last-child {
+    margin-bottom: -16px;
+  }
+  .blk-table th,
+  .blk-table td {
+    padding-inline: 10px;
+  }
+  .blk-table :is(th, td):first-child {
+    padding-left: 16px;
+  }
+  .blk-table :is(th, td):last-child {
+    padding-right: 16px;
+  }
+  /* The empty row spans every column; start its text where the visible part begins. */
+  .blk-table td.blk-table-empty {
+    text-align: left;
+  }
+}

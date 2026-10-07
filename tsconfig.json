@@ -42,6 +42,9 @@
     },
     {
       "path": "./packages/store-d1"
+    },
+    {
+      "path": "./packages/site"
     }
   ]
 }
