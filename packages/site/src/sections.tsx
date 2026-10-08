@@ -9,6 +9,7 @@ import {
   installPackages,
   npmPackage,
   readHooks,
+  reactPackages,
   runtimePackages,
   runtimeVersion,
 } from "./content.js";
@@ -527,15 +528,15 @@ export function LifecycleSection() {
   );
 }
 
-/* Install: the runtime from npm today, the React layer from the checkout. */
+/* Install: published runtime and React packages, with copyable registry blocks. */
 
 export function InstallSection() {
   return (
     <section className="section sec-install" id="install" aria-labelledby="install-title">
       <div className="container">
         <SectionHeading id="install-title" title="Start with the runtime.">
-          Four packages on npm. Embed the Meter in your server today, then add views, hooks and
-          blocks from the repository checkout when you need UI.
+          Embed the Meter in your server, then add views, hooks and copyable blocks when you need
+          UI. All seven packages are published at {runtimeVersion}.
         </SectionHeading>
         <div className="install-grid">
           <div className="install-col">
@@ -560,16 +561,17 @@ export function InstallSection() {
             <h3 className="install-col-title">Add the React layer</h3>
             <p className="install-text">
               <code className="sec-code">@usagekit/react</code>,{" "}
-              <code className="sec-code">@usagekit/views</code> and the registry are not on npm yet.
-              Build them from a checkout of the repository.
+              <code className="sec-code">@usagekit/views</code> and their runtime dependencies are
+              available on npm. Copy blocks into your app with the shadcn CLI.
             </p>
-            <Code lang="shell" title="From the repository root">
-              {"nvm use\nnpm ci\nnpm run build\nnpm run registry:build"}
-            </Code>
+            <Install packages={reactPackages} label="Install the React layer" />
             <p className="install-text">
-              Blocks then install from the local registry build with the shadcn CLI.{" "}
+              Try both complete dashboards and copy a block's install command.{" "}
+              <a className="link" href="/examples/">
+                Explore the examples
+              </a>{" "}
               <a className="link" href="/docs/#checkout">
-                Read the checkout guide
+                Read the installation guide
               </a>
             </p>
           </div>
@@ -699,9 +701,10 @@ const faqs: readonly { question: string; answer: ReactNode }[] = [
     question: "What can I install today?",
     answer: (
       <>
-        {pkg("@usagekit/core")}, {pkg("store")}, {pkg("meter")} and {pkg("providers")}{" "}
-        {runtimeVersion} are on npm. React, views and Postgres storage use the 0.6.0 cohort; see the
-        installation guide for registry availability and checkout setup.
+        {pkg("@usagekit/core")}, {pkg("store")}, {pkg("meter")}, {pkg("providers")}, {pkg("views")},{" "}
+        {pkg("react")} and {pkg("store-postgres")} {runtimeVersion} are on npm. Copyable blocks are
+        available from the public registry; the local server, SQLite and Cloudflare workspaces run
+        from a repository checkout.
       </>
     ),
   },

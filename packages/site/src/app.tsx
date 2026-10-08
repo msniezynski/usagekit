@@ -26,6 +26,7 @@ export type Page = "home" | "components" | "agents" | "docs";
 const nav = [
   ["/components/", "Components", "components"],
   ["/agents/", "Agents", "agents"],
+  ["/examples/", "Examples", null],
   ["/#how-it-works", "How it works", null],
   ["/#storage", "Storage", null],
   ["/docs/", "Docs", "docs"],
@@ -153,6 +154,7 @@ function Footer() {
         <nav className="footer-links" aria-label="Footer">
           <a href="/components/">Components</a>
           <a href="/agents/">Agents</a>
+          <a href="/examples/">Interactive examples</a>
           <a href="/docs/">Documentation</a>
           <a href={sourceRepo}>
             GitHub <ArrowUpRight size={13} aria-hidden="true" />

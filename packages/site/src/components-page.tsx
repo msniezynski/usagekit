@@ -19,12 +19,12 @@ export function ComponentsHero() {
             <a className="btn btn-primary" href="#components">
               Browse the blocks
             </a>
-            <a className="btn btn-outline" href="/docs/#components">
-              Read the docs
+            <a className="btn btn-outline" href="/examples/">
+              Try the dashboards
             </a>
           </div>
           <p className="cmp-note">
-            The React layer and registry run from the repository checkout, not npm.
+            Hooks are on npm. Copy all 20 blocks from the public shadcn registry.
           </p>
         </div>
       </div>

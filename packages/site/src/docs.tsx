@@ -12,10 +12,11 @@ import { Code, Install } from "./code.js";
 import {
   installPackages,
   npmPackage,
+  publishedPackages,
   providerHooks,
   readHooks,
+  reactPackages,
   registryBlocks,
-  runtimePackages,
   runtimeVersion,
 } from "./content.js";
 import { BisibilityMark } from "./ui.js";
@@ -23,7 +24,7 @@ import { BisibilityMark } from "./ui.js";
 /** Section ids are public deep links (/docs/#hooks); keep them stable. */
 const sections = [
   { id: "getting-started", label: "Install the runtime" },
-  { id: "packages", label: "Runtime packages" },
+  { id: "packages", label: "Published packages" },
   { id: "storage", label: "Storage adapters" },
   { id: "checkout", label: "React installation" },
   { id: "local-server", label: "Local server" },
@@ -193,7 +194,7 @@ function Chips({ items, labelledBy }: { items: readonly string[]; labelledBy: st
   );
 }
 
-/** Where a ledger can live. Only the in-memory Store ships on npm. */
+/** Published durable storage and the remaining repository adapters. */
 function Adapters() {
   const adapters: { name: string; where: string; entry: string; text: ReactNode }[] = [
     {
@@ -235,14 +236,17 @@ function Adapters() {
     },
     {
       name: "Postgres",
-      where: "Your repository",
-      entry: 'import type { Store } from "@usagekit/store"',
+      where: "On npm",
+      entry: 'import { createPostgresStore } from "@usagekit/store-postgres"',
       text: (
         <>
-          Implement the Store on your own schema. bisibility runs usagekit this way: its own Store
-          on Prisma, with hand-written SQL migrations, running alongside its existing billing and
-          tested with usagekit&apos;s conformance suite. A shared Prisma package for usagekit is
-          planned.
+          Durable accounting through pg or Prisma. Run <C>migratePostgresStore</C> explicitly before
+          starting the application; runtime creation never applies DDL. Use{" "}
+          <C>createTransactionBoundStore</C> when accounting must commit with a host ledger. See{" "}
+          <a href="https://github.com/msniezynski/usagekit/blob/main/docs/POSTGRES.md">
+            the Postgres guide
+          </a>
+          .
         </>
       ),
     },
@@ -459,9 +463,9 @@ export function Docs() {
         <div className="docs-content">
           <Section id="getting-started" title="Install the runtime" onFollow={onFollow}>
             <p>
-              Choose the layer you need. The four public runtime packages are available on npm at{" "}
-              <strong>{runtimeVersion}</strong>. React, views and Postgres storage use the 0.6.0
-              cohort described in the React installation section below.
+              Choose the layer you need. All seven packages are published on npm at{" "}
+              <strong>{runtimeVersion}</strong>: the runtime, headless views, React hooks and
+              durable Postgres storage. Start with the runtime below.
             </p>
             <div className="docs-block">
               <Install packages={installPackages} label="Install the runtime" />
@@ -474,9 +478,9 @@ export function Docs() {
             </Note>
           </Section>
 
-          <Section id="packages" title="Runtime packages" onFollow={onFollow}>
+          <Section id="packages" title="Published packages" onFollow={onFollow}>
             <ul className="docs-packages docs-block" role="list">
-              {runtimePackages.map(({ name, description }) => (
+              {publishedPackages.map(({ name, description }) => (
                 <li key={name}>
                   <a className="docs-package" href={npmPackage(name)}>
                     <span className="docs-package-name">
@@ -537,7 +541,8 @@ export function Docs() {
               <C>@usagekit/store/conformance</C> on npm exports <C>runStoreConformance</C> and{" "}
               <C>runStoreScalingConformance</C>. Both run in vitest, so add vitest 5 and fast-check
               4 as dev dependencies. The same suite runs unchanged against the in-memory Store, the
-              embedded Meter, SQLite, the remote Meter over HTTP and the Cloudflare adapter.
+              embedded Meter, SQLite, Postgres, the remote Meter over HTTP and the Cloudflare
+              adapter.
             </p>
             <p>
               Capabilities state what an adapter guarantees: <C>durable</C>, <C>rollingWindows</C>,{" "}
@@ -560,14 +565,11 @@ export function Docs() {
               title="Keep the runtime and UI on the same release cohort."
             >
               <C>@usagekit/react</C>, <C>@usagekit/views</C> and <C>@usagekit/store-postgres</C>
-              belong to the 0.6.0 cohort. Check each exact version on npm before installing; use
-              reviewed tarballs for an unreleased candidate. Registry JSON is distributed from the
-              project website.
+              are published at {runtimeVersion}. Install matching versions together. Registry JSON
+              is distributed from the project website; the registry tooling itself stays private.
             </Note>
             <Code lang="shell" title="Published 0.6.0 cohort" className="docs-block">
-              {`npm view @usagekit/react@0.6.0 version --registry https://registry.npmjs.org/
-# After the cohort is available on npm:
-npm install --save-exact @usagekit/core@0.6.0 @usagekit/store@0.6.0 @usagekit/meter@0.6.0 @usagekit/providers@0.6.0 @usagekit/views@0.6.0 @usagekit/react@0.6.0`}
+              {`npm install --save-exact ${reactPackages.join(" ")}\n# Optional durable Postgres adapter:\nnpm install --save-exact @usagekit/store-postgres@${runtimeVersion}`}
             </Code>
             <p>
               To build an unreleased source checkout, from the repository root with Node{" "}
@@ -585,9 +587,10 @@ npm install --save-exact @usagekit/core@0.6.0 @usagekit/store@0.6.0 @usagekit/me
               {showcaseCommands}
             </Code>
             <p>
-              These showcases use local fixtures and make no provider calls. To consume the UI
-              workspaces in another application, follow <C>docs/CONSUMING.md</C> in the checkout for
-              the local package source and peer dependencies.
+              <a href="/examples/">Try the hosted dashboards</a> to explore both variants without a
+              checkout. These showcases use local fixtures and make no provider calls. To consume
+              the UI workspaces in another application, follow <C>docs/CONSUMING.md</C> in the
+              checkout for the local package source and peer dependencies.
             </p>
           </Section>
 
@@ -648,6 +651,11 @@ npm install --save-exact @usagekit/core@0.6.0 @usagekit/store@0.6.0 @usagekit/me
             <p>
               Both Radix/New York and Base UI contain these blocks. They use your application's
               semantic tokens and primitives; they do not bring a second theme.
+            </p>
+            <p>
+              <a href="/examples/">Open the public registry</a> to try both dashboards and copy an
+              install command for any block. Commands use the origin of the preview you are viewing.
+              For a local registry build, use the checkout commands below.
             </p>
             <dl className="docs-index docs-block">
               {registryBlocks.map(([name, description]) => (

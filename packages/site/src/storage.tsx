@@ -7,7 +7,7 @@ import { useMeterBinding } from "@usagekit/react";
 import { Code } from "./code.js";
 import { useLive } from "./live.js";
 import { owner } from "./meter-fixture.js";
-import { BisibilityMark, Money, SectionHeading } from "./ui.js";
+import { Money, SectionHeading } from "./ui.js";
 
 /* Storage: the Store contract, one live transaction, the adapters and how to prove your own. */
 
@@ -73,17 +73,10 @@ const adapters: readonly {
   {
     key: "postgres",
     name: "Postgres",
-    durable: "prove",
-    entry: <M>Store</M>,
-    home: "Your repository",
-    note: (
-      <>
-        How <BisibilityMark size={13} className="store-bisibility" />
-        <strong className="store-bisibility-name">bisibility</strong> runs usagekit: its own Store
-        on Prisma, with hand-written SQL migrations. It runs alongside its existing billing and is
-        tested with usagekit's conformance suite.
-      </>
-    ),
+    durable: "yes",
+    entry: <M>createPostgresStore</M>,
+    home: "@usagekit/store-postgres on npm",
+    note: "pg and Prisma drivers, explicit migrations and composition with your host transaction.",
   },
   {
     key: "any",

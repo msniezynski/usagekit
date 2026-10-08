@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+
+Sitemap: https://usagekit.dev/sitemap.xml

@@ -1,7 +1,7 @@
 # UI layers
 
-The four-package runtime cohort is published at 0.5.0. `@usagekit/react` and
-`@usagekit/views` belong to the seven-package 0.6.0 cohort. The registry remains
+All seven packages, including `@usagekit/react`, `@usagekit/views` and
+`@usagekit/store-postgres`, are published at 0.6.0. The registry remains
 private build tooling whose blocks are distributed as public copyable JSON.
 Verify exact npm versions before installing a cohort; use reviewed tarballs for unreleased
 candidates. See [consuming packages](CONSUMING.md) for both workflows.
@@ -182,10 +182,10 @@ Each JSON artifact declares package dependencies, host primitives and all copied
 The manager bundles its editor; summary cards bundle their measurement card. Files land in
 `@/components/usagekit/` and import `@/components/ui/*`. Root `r/<name>.json` defaults to
 Radix. Tooltip triggers and selects have variant-specific files; other block source is shared.
-The shadcn CLI requests exact 0.6.0 UI package versions. Until that candidate is published,
-install the reviewed local tarballs first and keep the registry consumer offline from npm.
-After publication, the public registry can resolve those exact dependencies anonymously.
-See [consuming packages](CONSUMING.md) for the usable checkout flow.
+The shadcn CLI requests exact 0.6.0 UI package versions, available anonymously on npm.
+The [public examples](https://usagekit.dev/examples/) link both complete dashboards and
+provide each block's install command. See [consuming packages](CONSUMING.md) for local
+tarball validation of unreleased candidates.
 
 To use another design system, copy every artifact file and replace the listed table, card,
 badge, button, tooltip, select, input and label imports with equivalent host primitives.

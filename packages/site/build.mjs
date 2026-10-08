@@ -4,6 +4,8 @@ import { readFile, writeFile, mkdir, rm, copyFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const directory = fileURLToPath(new URL(".", import.meta.url));
+/** Canonical public website; immutable preview deployments keep this identity. */
+const origin = "https://usagekit.dev";
 /** One prerendered page per audience, each with its own title and description. */
 const pages = [
   {
@@ -32,12 +34,16 @@ const pages = [
     path: "docs/",
     title: "Usagekit documentation: get started",
     description:
-      "Get started with Usagekit: published runtime packages, storage adapters, headless React hooks, shared reads, budget editing and local shadcn registry installation.",
+      "Get started with Usagekit: published runtime packages, Postgres storage, headless React hooks, shared reads, budget editing and public shadcn registry installation.",
   },
 ];
 const attribute = (text) => text.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
-const withMeta = (html, { title, description }) =>
+const withMeta = (html, { title, description, path }) =>
   html
+    .replace(
+      "</head>",
+      `    <link rel="canonical" href="${origin}/${path}" />\n    <meta property="og:url" content="${origin}/${path}" />\n  </head>`,
+    )
     .replace(/<title>[^<]*<\/title>/, `<title>${title.replaceAll("&", "&amp;")}</title>`)
     .replace(
       /(<meta\s+property="og:title"\s+content=")[^"]*(")/,
@@ -74,6 +80,12 @@ try {
     await mkdir(`${directory}dist/site/${page.path}`, { recursive: true });
     await writeFile(`${directory}dist/site/${page.path}index.html`, html);
   }
+  await writeFile(
+    `${directory}dist/site/sitemap.xml`,
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages
+      .map(({ path }) => `  <url><loc>${origin}/${path}</loc></url>`)
+      .join("\n")}\n</urlset>\n`,
+  );
   await copyFile(`${directory}../../LICENSE`, `${directory}dist/site/LICENSE`);
   await copyFile(`${directory}../../NOTICE`, `${directory}dist/site/NOTICE`);
   console.log(
