@@ -3,10 +3,12 @@ dist/
 coverage/
 *.tsbuildinfo
 .DS_Store
+.idea/
 .env
 .env.*
 !.env.example
 .wt/
+/.local/
 .vercel/
 /docs/adr/
 

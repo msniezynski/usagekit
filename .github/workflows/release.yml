@@ -1,0 +1,94 @@
+name: Publish packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      approved_sha:
+        description: Exact owner-approved main SHA
+        required: true
+        type: string
+      version:
+        description: Owner-approved cohort version, without v
+        required: true
+        type: string
+      dry_run:
+        description: Verify without publishing
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    environment: npm-publish
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: usagekit
+          POSTGRES_PASSWORD: disposable-fixture
+          POSTGRES_DB: usagekit_store_fixture
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U usagekit -d usagekit_store_fixture"
+          --health-interval 10s --health-timeout 5s --health-retries 6
+    env:
+      USAGEKIT_APPROVED_RELEASE_SHA: ${{ inputs.approved_sha }}
+      USAGEKIT_APPROVED_RELEASE_VERSION: ${{ inputs.version }}
+      USAGEKIT_POSTGRES_TEST_URL: postgresql://usagekit:disposable-fixture@127.0.0.1:5432/usagekit_store_fixture
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Validate approved main and signed tag
+        env:
+          RELEASE_DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          test "$GITHUB_REPOSITORY" = msniezynski/usagekit
+          test "$GITHUB_REF" = refs/heads/main
+          test "$GITHUB_SHA" = "$USAGEKIT_APPROVED_RELEASE_SHA"
+          test "$(git rev-parse HEAD)" = "$USAGEKIT_APPROVED_RELEASE_SHA"
+          test "$(node -p 'require("./packages/core/package.json").version')" = "$USAGEKIT_APPROVED_RELEASE_VERSION"
+          git switch -C main "$USAGEKIT_APPROVED_RELEASE_SHA"
+          git config gpg.format ssh
+          git config gpg.ssh.allowedSignersFile .github/release-allowed-signers
+          if [ "$RELEASE_DRY_RUN" != true ]; then
+            test "$(git rev-parse "v${USAGEKIT_APPROVED_RELEASE_VERSION}^{commit}")" = "$USAGEKIT_APPROVED_RELEASE_SHA"
+            git verify-tag "v${USAGEKIT_APPROVED_RELEASE_VERSION}"
+          fi
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
+        with:
+          node-version-file: .nvmrc
+          package-manager-cache: false
+      - run: npm install --global npm@10.9.3
+      - run: npm ci
+      - name: Require successful latest CI for this SHA
+        run: node scripts/check-release-ci.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Install isolated OIDC publisher
+        run: |
+          npm install --prefix "$RUNNER_TEMP/usagekit-publisher" --ignore-scripts --no-audit --no-fund npm@11.16.0
+          echo "USAGEKIT_TRUSTED_NPM_CLI=$RUNNER_TEMP/usagekit-publisher/node_modules/npm/bin/npm-cli.js" >> "$GITHUB_ENV"
+      - name: Verify release without publishing
+        if: inputs.dry_run
+        run: npm run release -- --trusted-publishing --dry-run
+      - name: Publish approved cohort through OIDC
+        if: ${{ !inputs.dry_run }}
+        run: npm run release -- --trusted-publishing
+      - name: Verify public registry and anonymous consumer
+        if: ${{ !inputs.dry_run }}
+        run: npm run check:consumer -- --registry

@@ -1,23 +1,22 @@
 # Consuming usagekit
 
 Use Node 22.23.1 and pin packages from a release cohort to the same exact version.
-The four-package 0.5.0 runtime cohort is published; 0.4.0 is its preceding version.
-The seven-package 0.6.0 source cohort adds views, React and Postgres storage.
-Verify every exact 0.6.0 version on npm before using the registry commands below;
-use reviewed local tarballs for an unpublished candidate.
+The seven-package 0.6.0 cohort is published and includes views, React and Postgres storage.
+The four-package 0.5.0 runtime cohort remains available as the preceding version.
+Use the registry commands below for 0.6.0 and reviewed local tarballs for unpublished candidates.
 
 Source: <https://github.com/msniezynski/usagekit>. Documentation and registry: <https://usagekit.dev>.
 
 ```sh
-npm install --save-exact @usagekit/core@0.5.0 @usagekit/store@0.5.0 @usagekit/meter@0.5.0 @usagekit/providers@0.5.0
+npm install --save-exact @usagekit/core@0.6.0 @usagekit/store@0.6.0 @usagekit/meter@0.6.0 @usagekit/providers@0.6.0
 ```
 
 The registry is `https://registry.npmjs.org/`. No scope registry mapping is needed.
 The packages are public. No registry token is required to install them.
 Consumers that configured a read-only token during the private phase should verify a token-free `npm ci` and then remove the token from CI, deployment and user configuration.
-For an unpublished candidate, install all four reviewed local tarballs together as described in
-the [migration guide](MIGRATING-0.5.md). Custom Store and Meter implementations need the new
-mandatory billing methods before upgrading; the 0.4.0 interfaces are not interchangeable.
+For an unpublished candidate, install the reviewed cohort tarballs together as described below.
+Consumers upgrading from 0.4.0 must follow the [migration guide](MIGRATING-0.5.md): custom Store
+and Meter implementations need the mandatory billing methods; the interfaces are not interchangeable.
 
 ## Embedded contract
 

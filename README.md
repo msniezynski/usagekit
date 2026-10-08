@@ -5,8 +5,8 @@ costs and application credits. Both BYOK and platform-funded keys are in scope.
 Host A uses Postgres and Prisma. Host B adds team-owned connections.
 Host C targets Cloudflare D1. A local server shares the embedded Meter contract.
 
-**Release lines: runtime 0.5.0 is published. The 0.6.0 source cohort adds headless views, React hooks and the durable Postgres adapter.**
-Licensed under Apache-2.0. `@usagekit/core`, `store`, `meter` and `providers` 0.5.0 are published on registry.npmjs.org.
+**Release 0.6.0 is published, including headless views, React hooks and the durable Postgres adapter.**
+Licensed under Apache-2.0. `@usagekit/core`, `store`, `meter`, `providers`, `views`, `react` and `store-postgres` 0.6.0 are published on registry.npmjs.org.
 The 0.6.0 release allow-list contains `core`, `store`, `meter`, `providers`, `views`, `react` and `store-postgres`. Other workspaces remain private. See [consuming packages](docs/CONSUMING.md) for registry availability and candidate validation. Candidate publication needs exact-source owner approval.
 
 [Project website](https://usagekit.dev) · [Source](https://github.com/msniezynski/usagekit) · [Issues](https://github.com/msniezynski/usagekit/issues) · [Roadmap](docs/ROADMAP.md)
@@ -54,8 +54,10 @@ This README is the single source of workflow rules. Keep one root README.
 
 1. Work on task branches such as `feat/meter-contract`. Never develop on `main` or detached HEAD.
 2. Preserve unrelated work. Use dedicated worktrees for concurrent tasks; `.wt/` is ignored.
+   Keep local reports and scratch artifacts under ignored `.local/` inside this repository, never in the parent `Projects` directory.
    Bootstrap stays on `chore/bootstrap-workspace` for review.
-3. Use Conventional Commits. Do not add `Co-Authored-By` or tool/AI attribution to commits, descriptions or review text.
+3. Author Usagekit commits as `Michał Śnieżyński <27588547+msniezynski@users.noreply.github.com>`.
+   Use short, clear Conventional Commit titles. Do not add `Co-Authored-By` or tool/AI attribution to commits, descriptions or review text.
 4. Run `npm run check` before handoff. Review the staged diff before committing.
 5. Integrate only by squash through `npm run approve:main`. Rebase task branches; never create merge commits.
    Main contains stable, reviewed, explicitly owner-approved versions only.
@@ -91,6 +93,40 @@ Expired local approval markers are removed. Active markers report their path and
 The command cannot verify human intent. `--approved-sha` asserts prior owner approval.
 Future hosting requires separate authorization and server-side branch protection.
 No-remote and no-push rules are owner instructions, not technical hook restrictions.
+
+## Automated package releases
+
+The `release.yml` GitHub Actions workflow publishes the seven-package cohort through
+[npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers/). Configure each
+package's npm Trusted Publisher as GitHub Actions, owner `msniezynski`, repository
+`usagekit`, workflow `release.yml`, environment `npm-publish`, with **Allow npm publish**.
+The GitHub environment permits deployments from the `main` branch only. It does not
+require a separate reviewer for every package.
+
+After exact-SHA and version owner approval, promote through `npm run approve:main`,
+push main, and require its latest CI run to pass. Create and push a signed version tag
+on that exact main using an authorized key in `.github/release-allowed-signers`.
+Run **Publish packages** from main with the approved full SHA and version. Start with
+`dry_run=true`; choose `false` only for the approved publication. A live run requires
+the signed tag, unchanged approved main, successful Postgres/Cloudflare/consumer CI
+and absence of every target package version. An existing or partial cohort stops for
+inspection instead of being republished.
+
+The workflow uses baseline npm 10.9.3 for installation and all repository checks.
+Only the OIDC publishing subprocess uses isolated npm 11.16.0, satisfying npm's
+Trusted Publishing requirement without changing the development runtime. It calls
+the existing `npm run release -- --trusted-publishing` process; hooks, package audits
+and all release checks remain active. npm receives short-lived workflow credentials,
+so no npm token, passkey or per-package browser confirmation is needed.
+
+After publication, `npm run check:consumer -- --registry` waits up to 15 minutes for
+registry propagation, verifies manifests and compiled contents against the checkout,
+then installs anonymously outside the monorepo and checks declarations and React SSR.
+
+A new npm Trusted Publisher remains pending until its first successful OIDC publish.
+npm requires that first publish within two days of configuration; otherwise recreate
+the expired connection. A dry-run does not validate npm's trust relationship or
+authorize another version.
 
 ## Git hooks
 
