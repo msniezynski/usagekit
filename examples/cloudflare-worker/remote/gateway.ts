@@ -16,7 +16,7 @@ export default {
     const path = new URL(request.url).pathname;
     if (path === "/health") return Response.json({ gateway: env.GATEWAY, revision: env.REVISION });
     // Exercise the unchanged shipped HTTP example through either gateway.
-    if (path.startsWith("/v1/")) return env.LEDGER.getByName(env.NAMESPACE).fetch(request);
+    if (path.startsWith("/v1/")) return env.LEDGER.getByName(env.NAMESPACE).handleRequest(request);
     if (path !== "/test" || request.method !== "POST")
       return new Response("Not found", { status: 404 });
     const text = await request.text();

@@ -47,13 +47,14 @@ export class UsageLedger extends DurableObject<Env> {
       },
     });
   }
-  async fetch(request: Request): Promise<Response> {
+  async handleRequest(request: Request): Promise<Response> {
     return this.handle(request);
   }
 }
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     // All principals sharing any budget must use the SAME object. Never shard by principal.
-    return env.LEDGER.getByName(env.NAMESPACE).fetch(request);
+    // RPC transfers the request stream without the DO fetch early-response auto-drain race.
+    return env.LEDGER.getByName(env.NAMESPACE).handleRequest(request);
   },
 } satisfies ExportedHandler<Env>;

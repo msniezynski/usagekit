@@ -5,8 +5,10 @@ import type { StoreFactory } from "./factory.js";
 import { input, command, ref, receipt, unknownReceipt, budget, quantity } from "./helpers.js";
 const numRuns =
   (globalThis as { process?: { env?: { CI?: string } } }).process?.env?.CI === "true" ? 1000 : 200;
+// CI executes five times as many cases, including isolated durable database fixtures.
+const timeout = numRuns * 300;
 export function propertyTests(factory: StoreFactory) {
-  describe("generated command interleavings", () => {
+  describe("generated command interleavings", { timeout }, () => {
     test("holders never reacquire dispatch and mutations preserve state invariants", async () => {
       await fc.assert(
         fc.asyncProperty(

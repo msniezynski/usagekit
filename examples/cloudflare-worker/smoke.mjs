@@ -90,6 +90,25 @@ try {
     operation: "search",
     estimate: [{ unit: "requests", value: "6", scale: 0 }],
   };
+  // A rejected body must not poison the following request in the same worker process.
+  // Invalid JSON also proves authentication still precedes body parsing.
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const rejected = await fetch(origin + "/v1/operations/reserve", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(attempt % 2 ? { authorization: "Bearer invalid-smoke-fixture" } : {}),
+      },
+      body: "{".repeat(32768),
+      signal: AbortSignal.timeout(5000),
+    });
+    assert.equal((await readSmokeResponse(rejected, "rejected request body")).status, 401);
+    assert.equal(
+      (await call("/v1/operations/reserve", { ...i, scope: { ...i.scope, namespace: "other" } }))
+        .status,
+      403,
+    );
+  }
   assert.equal((await call("/v1/operations/reserve", i, {})).status, 401);
   assert.equal(
     (await call("/v1/operations/reserve", { ...i, scope: { ...i.scope, namespace: "other" } }))
@@ -101,6 +120,13 @@ try {
       .status,
     403,
   );
+  const notFound = await fetch(origin + "/v1/operations/unknown", {
+    method: "POST",
+    headers,
+    body: "{".repeat(32768),
+    signal: AbortSignal.timeout(5000),
+  });
+  assert.equal((await readSmokeResponse(notFound, "unknown route with unread body")).status, 404);
   const reserve = await call("/v1/operations/reserve", i);
   assert.equal(reserve.status, 200);
   assert.equal(reserve.body.outcome, "reserved");
@@ -141,6 +167,7 @@ try {
     },
   };
   assert.equal((await call("/v1/operations/settle", settlement)).body.outcome, "settled");
+  assert.doesNotMatch(output, /Can't read from request stream after response has been sent/);
   await stop();
   await start();
   const q = Buffer.from(JSON.stringify(ref)).toString("base64url");
