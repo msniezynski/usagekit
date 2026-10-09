@@ -130,7 +130,7 @@ export function UsageConnectionRow({
         </button>
       </div>
       {notice && (
-        <p className="cn-usage-meta -mt-1.5 flex min-w-0 items-start gap-[0.4em] pb-3">
+        <p className="cn-usage-meta flex min-w-0 items-start gap-[0.4em] pb-3">
           <svg
             aria-hidden
             viewBox="0 0 16 16"

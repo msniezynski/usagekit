@@ -745,18 +745,21 @@ svg {
     background-position: 8.49px 0;
   }
 }
+/* Ticks center on their threshold through layout, not a transform, so they snap to the same
+   pixels as the marks drawn around the bar. */
 .meter-alert,
 .meter-limit {
   position: absolute;
   inset-block: 0;
   box-sizing: content-box;
   width: 1px;
+  margin-left: -1.5px;
   border-inline: 1px solid var(--bg);
   background: var(--fg-subtle);
-  transform: translateX(-50%);
 }
 .meter-limit {
   width: 2px;
+  margin-left: -2px;
   background: var(--fg);
 }
 

@@ -22,7 +22,7 @@ description in `build.mjs`:
 
 - `/` explains usagekit for everyone: the live console, the two ways to use it,
   the reserve, dispatch and settle lifecycle, storage adapters, the public runtime
-  packages, the bisibility integration and a general FAQ, including how usagekit
+  packages, an example host integration and a general FAQ, including how usagekit
   differs from usage-based billing.
 - `/components/` is for product engineers: shadcn blocks and headless React hooks
   for usage, costs and budgets, as live previews and code.

@@ -60,7 +60,7 @@ function Pill({
           <span
             tabIndex={0}
             data-level={bound.level}
-            className={`${pill} ${levelClass[bound.level]} hover:bg-muted outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 ${usageMotion.respond}`}
+            className={`${pill} ${levelClass[bound.level]} hover:bg-muted [&:hover_[data-usage-track]>span:first-child]:bg-foreground/10 outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 ${usageMotion.respond}`}
           />
         }
       >

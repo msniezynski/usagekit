@@ -101,7 +101,7 @@
   }
 
   .cn-usage-pill-link {
-    @apply hover:bg-accent hover:text-accent-foreground;
+    @apply hover:bg-accent hover:text-accent-foreground [&:hover_[data-usage-track]>span:first-child]:bg-foreground/10;
   }
 
   .cn-usage-pill-skeleton {

@@ -439,24 +439,6 @@
   line-height: 1.6;
 }
 
-/* Example integration */
-.docs-example {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px 24px;
-  padding: 18px 18px 18px 22px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-}
-.docs-example p {
-  color: var(--fg-muted);
-  font-size: var(--text-base);
-  line-height: 1.6;
-}
-.docs-example .btn {
-  flex: none;
-}
 .docs-end {
   height: 1px;
 }
@@ -598,11 +580,6 @@
   }
   .docs-adapter-text {
     margin-top: 4px;
-  }
-  .docs-example {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 18px;
   }
 }
 

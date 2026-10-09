@@ -19,7 +19,6 @@ import {
   registryBlocks,
   runtimeVersion,
 } from "./content.js";
-import { BisibilityMark } from "./ui.js";
 
 /** Section ids are public deep links (/docs/#hooks); keep them stable. */
 const sections = [
@@ -794,17 +793,6 @@ export function Docs() {
                 </li>
               ))}
             </ul>
-            <div className="docs-example docs-block">
-              <p>
-                <strong>bisibility uses Usagekit for metering.</strong> Its React UI adoption is
-                still in progress.
-              </p>
-              <a className="btn btn-outline" href="https://bisibility.com">
-                <BisibilityMark size={16} />
-                Visit bisibility
-                <ArrowUpRight size={14} strokeWidth={1.75} aria-hidden="true" />
-              </a>
-            </div>
           </Section>
           <div ref={end} className="docs-end" aria-hidden="true" />
         </div>

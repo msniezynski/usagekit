@@ -421,26 +421,24 @@ function Scale({ row, refused }: { row: BudgetRow; refused: SiteEvent | null }) 
               {...(tick === 100 ? { transform: "translate(-1 0)" } : {})}
             />
           ))}
-          {row.alerts.map((alert, index) => {
-            const position = bar?.alerts[index];
-            return position ? (
-              <rect
-                key={alert.key}
-                className="hero-tick is-alert"
-                data-crossed={alert.crossed}
-                x={`${position}%`}
-                y="0"
-                width="1"
-                height="10"
-              />
-            ) : null;
-          })}
         </svg>
+        {/* Alert ticks are laid out like the marks above the bar, so all three share one pixel. */}
+        {row.alerts.map((alert, index) => {
+          const position = bar?.alerts[index];
+          return position ? (
+            <span
+              key={alert.key}
+              className="hero-ruler-alert"
+              data-crossed={alert.crossed}
+              style={at(position)}
+            />
+          ) : null;
+        })}
         {limit && bar?.limit === "100"
           ? quarters.map((quarter) => (
               <span
                 key={String(quarter)}
-                className="hero-ruler-label"
+                className={`hero-ruler-label${quarter === 0n ? " is-start" : quarter === 4n ? " is-end" : ""}`}
                 style={at(String(quarter * 25n))}
               >
                 {usd(shareOf(limit, quarter, 4n))}

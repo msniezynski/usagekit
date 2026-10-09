@@ -56,8 +56,12 @@ export type UsageOverviewCardProps = {
   emptyAction?: ReactNode;
   /** Initial read in progress: placeholders keep the layout instead of empty figures. */
   loading?: boolean;
+  /** Headline figure size: "lg" leads a page, "md" and "sm" suit denser hosts. */
+  size?: "sm" | "md" | "lg";
   labels?: Partial<UsageOverviewCardLabels>;
 };
+
+const figureSize = { sm: "cn-usage-figure-md", md: "cn-usage-figure-lg", lg: "cn-usage-figure-xl" };
 
 const placeholder = "cn-usage-skeleton block animate-pulse motion-reduce:animate-none";
 
@@ -77,6 +81,7 @@ export function UsageOverviewCard({
   empty,
   emptyAction,
   loading = false,
+  size = "lg",
   labels: custom,
 }: UsageOverviewCardProps) {
   const labels = { ...usageOverviewCardLabels, ...custom };
@@ -190,7 +195,7 @@ export function UsageOverviewCard({
                     </span>
                   )}
                   <span
-                    className={`min-w-0 break-words font-semibold tabular-nums ${unknown ? "cn-usage-figure-md text-muted-foreground" : budget.figure ? "cn-usage-figure-xl" : "cn-usage-figure-md"} ${level === "exceeded" && !unknown ? "text-destructive" : ""}`}
+                    className={`min-w-0 break-words font-semibold tabular-nums ${unknown ? "cn-usage-figure-md text-muted-foreground" : budget.figure ? figureSize[size] : "cn-usage-figure-md"} ${level === "exceeded" && !unknown ? "text-destructive" : ""}`}
                   >
                     {figure}
                   </span>

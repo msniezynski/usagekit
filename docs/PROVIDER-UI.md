@@ -175,7 +175,7 @@ or authorize a release. See [UI layers](UI.md) and [the project website](SITE.md
 
 ## Two application consumers
 
-Bisibility and the Usagekit dashboard are the intended consumers of the same React hooks
+Host applications and the Usagekit dashboard are the intended consumers of the same React hooks
 and registry blocks. Changes to shared behavior belong in this library. Each application
 supplies its verified identity, adapters, labels, primitives and product-specific slots.
 Neither application should maintain a second implementation of provider or budget editors.
@@ -188,8 +188,8 @@ The server supplies connection CAS revisions and a durable content-free command 
 budget reconciliation reads immutable version evidence. Unsupported capabilities stay hidden.
 See [local dashboard controls](LOCAL-SERVER.md#dashboard-controls) for the API and restart rules.
 
-Bisibility's existing metering integration is the public example. Adoption of these new
-React blocks is still pending. Its application adapter keeps OAuth, credential storage,
+The website's example host integration shows an existing metering integration. Adoption of these
+new React blocks there is still pending. Its application adapter keeps OAuth, credential storage,
 funding permissions and wallet ownership in the application while projecting neutral DTOs
 into the shared UI. Both integrations should exercise the same read-only, exact-value,
 conflict and unknown-result cases before replacing their current screens.

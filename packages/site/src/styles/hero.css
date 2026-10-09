@@ -266,17 +266,18 @@
   position: relative;
   height: 26px;
 }
+/* The label ends half a pixel past the threshold, so its 1px line is centered on it like the
+   tick in the bar and the one on the ruler. */
 .hero-mark {
   position: absolute;
   bottom: 8px;
-  left: calc(var(--hero-at) + 1px);
+  right: calc(100% - var(--hero-at) - 0.5px);
   padding-right: 8px;
   color: var(--fg-muted);
   font-size: var(--text-xs);
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
-  transform: translateX(-100%);
   transition: color var(--base);
 }
 .hero-mark::after {
@@ -293,7 +294,7 @@
   color: var(--hero-warn-ink);
 }
 .hero-mark.is-limit {
-  left: var(--hero-at);
+  right: calc(100% - var(--hero-at));
   padding-right: 0;
 }
 .hero-mark.is-limit::after {
@@ -355,12 +356,18 @@
 .hero-tick.is-major {
   fill: var(--fg-subtle);
 }
-.hero-tick.is-alert {
-  fill: var(--fg-muted);
-  transition: fill var(--base);
+.hero-ruler-alert {
+  position: absolute;
+  top: 0;
+  left: var(--hero-at);
+  width: 1px;
+  height: 10px;
+  margin-left: -0.5px;
+  background: var(--fg-muted);
+  transition: background-color var(--base);
 }
-.hero-tick.is-alert[data-crossed="true"] {
-  fill: var(--warn);
+.hero-ruler-alert[data-crossed="true"] {
+  background: var(--warn);
 }
 .hero-ruler-label {
   position: absolute;
@@ -372,10 +379,10 @@
   white-space: nowrap;
   transform: translateX(-50%);
 }
-.hero-ruler-label:first-of-type {
+.hero-ruler-label.is-start {
   transform: none;
 }
-.hero-ruler-label:last-of-type {
+.hero-ruler-label.is-end {
   transform: translateX(-100%);
 }
 

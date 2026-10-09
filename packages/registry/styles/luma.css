@@ -101,7 +101,7 @@
   }
 
   .cn-usage-pill-link {
-    @apply hover:bg-muted dark:hover:bg-input/30;
+    @apply hover:bg-muted dark:hover:bg-input/30 [&:hover_[data-usage-track]>span:first-child]:bg-foreground/10;
   }
 
   .cn-usage-pill-skeleton {

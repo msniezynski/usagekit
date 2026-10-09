@@ -12,16 +12,6 @@
 .store[id] {
   scroll-margin-top: calc(39px - var(--store-rule-y));
 }
-.store-bisibility {
-  margin: 0 4px 0 3px;
-  vertical-align: -1px;
-  color: var(--fg);
-}
-.store-bisibility-name {
-  color: var(--fg);
-  font-weight: 700;
-  letter-spacing: -0.045em;
-}
 
 .store-block {
   margin-top: 96px;

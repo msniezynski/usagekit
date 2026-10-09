@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@base-ui/react/button";
 import { ArrowUpRight, Menu, Moon, Sun, X } from "lucide-react";
 import { BlocksSection } from "./blocks.js";
-import { BisibilityMark, Brand } from "./ui.js";
+import { Brand } from "./ui.js";
 import { npmOrg, runtimeVersion, sourceRepo } from "./content.js";
 import { Docs } from "./docs.js";
 import { Hero } from "./hero.js";
@@ -161,10 +161,6 @@ function Footer() {
           </a>
           <a href={npmOrg}>
             npm packages <ArrowUpRight size={13} aria-hidden="true" />
-          </a>
-          <a href="https://bisibility.com">
-            <BisibilityMark size={14} />
-            bisibility <ArrowUpRight size={13} aria-hidden="true" />
           </a>
           <a href="/LICENSE">Apache-2.0 license</a>
         </nav>

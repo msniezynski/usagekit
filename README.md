@@ -139,6 +139,7 @@ Hooks live in `.githooks/`, installed as local `core.hooksPath`.
 | `pre-merge-commit`      | Rejects ordinary merge commits                                                                  |
 | `reference-transaction` | Protects main and rejects merge history or forbidden commit messages                            |
 | `post-commit`           | Writes last-commit metadata inside `.git/usagekit/`; never modifies source or contacts services |
+| `post-checkout`         | Copies the ignored `docs/adr/private-terms.txt` from the main checkout into a new worktree      |
 
 Pre-commit permits partial staging and untracked files. It does not run policy tests.
 It checks current files; the privacy guard also scans indexed content. Review staged changes independently.

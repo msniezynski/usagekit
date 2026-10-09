@@ -1,3 +1,5 @@
 #!/bin/sh
 set -eu
-exec "$(git rev-parse --show-toplevel)/scripts/run-hook.sh" post-commit "$@"
+# A worktree that is still being created has no files yet, so the runner comes from the checkout
+# that holds this hook.
+exec "$(cd "$(dirname "$0")/.." && pwd)/scripts/run-hook.sh" post-commit "$@"

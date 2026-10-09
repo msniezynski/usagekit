@@ -56,7 +56,15 @@ export type UsageOverviewCardProps = {
   emptyAction?: ReactNode;
   /** Initial read in progress: placeholders keep the layout instead of empty figures. */
   loading?: boolean;
+  /** Headline figure size: "lg" leads a page, "md" and "sm" suit denser hosts. */
+  size?: "sm" | "md" | "lg";
   labels?: Partial<UsageOverviewCardLabels>;
+};
+
+const figureSize = {
+  sm: "text-2xl tracking-tight",
+  md: "text-3xl leading-none tracking-tight",
+  lg: "text-4xl leading-none tracking-tighter @xl:text-5xl",
 };
 
 const placeholder = "rounded-md bg-muted block animate-pulse motion-reduce:animate-none";
@@ -77,6 +85,7 @@ export function UsageOverviewCard({
   empty,
   emptyAction,
   loading = false,
+  size = "lg",
   labels: custom,
 }: UsageOverviewCardProps) {
   const labels = { ...usageOverviewCardLabels, ...custom };
@@ -192,7 +201,7 @@ export function UsageOverviewCard({
                     </span>
                   )}
                   <span
-                    className={`min-w-0 break-words font-semibold tabular-nums ${unknown ? "text-2xl tracking-tight text-muted-foreground" : budget.figure ? "text-4xl leading-none tracking-tighter @xl:text-5xl" : "text-2xl tracking-tight"} ${level === "exceeded" && !unknown ? "text-destructive" : ""}`}
+                    className={`min-w-0 break-words font-semibold tabular-nums ${unknown ? "text-2xl tracking-tight text-muted-foreground" : budget.figure ? figureSize[size] : "text-2xl tracking-tight"} ${level === "exceeded" && !unknown ? "text-destructive" : ""}`}
                   >
                     {figure}
                   </span>

@@ -101,7 +101,7 @@
   }
 
   .cn-usage-pill-link {
-    @apply hover:underline hover:underline-offset-4;
+    @apply hover:underline hover:underline-offset-4 [&:hover_[data-usage-track]>span:first-child]:bg-foreground/10;
   }
 
   .cn-usage-pill-skeleton {

@@ -309,6 +309,8 @@ Status words come from the level labels; a partial reading below the warning poi
 "Still measuring" rather than claiming to be within budget. `level` raises the status the same
 way as on the meter, so a budget that reservations already exhaust reads as over the limit. `loading` keeps the layout with
 placeholders instead of figures, and `emptyAction` adds an action to the empty state.
+`size` sets the headline figure: `lg` (the default) leads a page, while `md` and `sm` suit
+denser hosts.
 
 `UsageConnectionRow` (in `usage-connection-row.tsx`, bundled with the card) is one connection:
 a summary line with the tightest reading that unfolds labelled readings per funding source,

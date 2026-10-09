@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { assertCommitMessage, assertTaskBranch, git, run } from "./lib/git.mjs";
 
@@ -7,6 +7,18 @@ const zero = /^0+$/;
 
 function reject(message) {
   throw new Error(message);
+}
+
+/** A new worktree gets the main checkout's ignored private-terms list, so the privacy check runs. */
+function copyPrivateTerms() {
+  const file = "docs/adr/private-terms.txt";
+  const main = dirname(git(["rev-parse", "--path-format=absolute", "--git-common-dir"]));
+  const source = resolve(main, file);
+  const target = resolve(git(["rev-parse", "--show-toplevel"]), file);
+  if (source === target || !existsSync(source) || existsSync(target)) return;
+  mkdirSync(dirname(target), { recursive: true });
+  copyFileSync(source, target);
+  console.log(`[usagekit] Copied ${file} from the main checkout.`);
 }
 
 function protectRefs(state, input) {
@@ -57,6 +69,9 @@ try {
       reject("Merge commits are disabled.");
     for (const script of ["check:runtime", "check:workspace", "check:format", "typecheck"])
       run("npm", ["run", script], { stdio: "inherit" });
+  } else if (hook === "post-checkout") {
+    // A new worktree or clone checks out from the null revision.
+    if (zero.test(args[0] ?? "")) copyPrivateTerms();
   } else if (hook === "post-commit") {
     const file = resolve(git(["rev-parse", "--git-path", "usagekit/last-commit.json"]));
     mkdirSync(dirname(file), { recursive: true });
@@ -73,5 +88,5 @@ try {
   }
 } catch (error) {
   console.error(`[usagekit] ${error.message}`);
-  process.exitCode = hook === "post-commit" ? 0 : 1;
+  process.exitCode = hook === "post-commit" || hook === "post-checkout" ? 0 : 1;
 }
