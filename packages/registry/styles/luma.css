@@ -1,0 +1,202 @@
+/* Usagekit elements in shadcn Luma: rounded geometry, soft elevation, breathable layouts. */
+.style-luma {
+  .cn-usage-track {
+    @apply rounded-full bg-muted;
+  }
+
+  .cn-usage-track-lg {
+    @apply h-4;
+  }
+
+  .cn-usage-track-md {
+    @apply h-3;
+  }
+
+  .cn-usage-track-sm {
+    @apply h-2;
+  }
+
+  .cn-usage-notch {
+    @apply rounded-full;
+  }
+
+  .cn-usage-status {
+    @apply text-xs;
+  }
+
+  .cn-usage-dot {
+    @apply size-2 rounded-full;
+  }
+
+  .cn-usage-segmented {
+    @apply rounded-full bg-muted;
+  }
+
+  .cn-usage-segmented-list {
+    @apply p-1;
+  }
+
+  .cn-usage-segment {
+    @apply rounded-full px-3 py-1 text-sm font-medium;
+  }
+
+  .cn-usage-thumb {
+    @apply inset-y-1 left-1 w-[calc((100%_-_0.5rem)/var(--count))] rounded-full bg-background dark:bg-input/30;
+  }
+
+  .cn-usage-focus {
+    @apply outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30;
+  }
+
+  .cn-usage-body {
+    @apply text-sm;
+  }
+
+  .cn-usage-meta {
+    @apply text-xs/relaxed;
+  }
+
+  .cn-usage-label {
+    @apply text-xs;
+  }
+
+  .cn-usage-affix {
+    @apply text-foreground/70;
+  }
+
+  .cn-usage-tag {
+    @apply text-muted-foreground;
+  }
+
+  .cn-usage-title {
+    @apply text-sm;
+  }
+
+  .cn-usage-value {
+    @apply text-sm;
+  }
+
+  .cn-usage-heading {
+    @apply text-sm;
+  }
+
+  .cn-usage-section {
+    @apply text-lg tracking-tight;
+  }
+
+  .cn-usage-pill {
+    @apply rounded-3xl border font-medium leading-none;
+  }
+
+  .cn-usage-pill-fill {
+    @apply bg-background dark:bg-transparent;
+  }
+
+  .cn-usage-pill-sm {
+    @apply h-6 gap-1.5 px-2.5 text-[11px];
+  }
+
+  .cn-usage-pill-md {
+    @apply h-8 gap-2 px-3 text-xs;
+  }
+
+  .cn-usage-pill-link {
+    @apply hover:bg-muted dark:hover:bg-input/30;
+  }
+
+  .cn-usage-pill-skeleton {
+    @apply rounded-3xl bg-muted;
+  }
+
+  .cn-usage-row {
+    @apply rounded-2xl py-3.5 hover:bg-muted/60;
+  }
+
+  .cn-usage-chip {
+    @apply h-5 rounded-3xl border border-border px-2 text-xs font-medium text-muted-foreground;
+  }
+
+  .cn-usage-panel {
+    @apply rounded-2xl px-4 py-3;
+  }
+
+  .cn-usage-well {
+    @apply rounded-2xl bg-muted/50 px-4 py-3;
+  }
+
+  .cn-usage-gap-lg {
+    @apply gap-6;
+  }
+
+  .cn-usage-gap-md {
+    @apply gap-4;
+  }
+
+  .cn-usage-gap-sm {
+    @apply gap-3;
+  }
+
+  .cn-usage-skeleton {
+    @apply rounded-2xl bg-muted;
+  }
+
+  .cn-usage-skeleton-card {
+    @apply rounded-4xl bg-muted;
+  }
+
+  .cn-usage-notice {
+    @apply rounded-2xl border px-4 py-3 text-sm;
+  }
+
+  .cn-usage-empty {
+    @apply rounded-2xl border border-dashed px-4 py-3.5;
+  }
+
+  .cn-usage-figure-xl {
+    @apply text-4xl leading-none tracking-tighter @xl:text-5xl;
+  }
+
+  .cn-usage-figure-lg {
+    @apply text-3xl leading-none tracking-tight;
+  }
+
+  .cn-usage-figure-md {
+    @apply text-2xl tracking-tight;
+  }
+
+  .cn-usage-figure-sm {
+    @apply text-lg leading-snug;
+  }
+
+  .cn-usage-figure-xs {
+    @apply text-base leading-snug;
+  }
+
+  .cn-usage-frame {
+    @apply rounded-3xl border;
+  }
+
+  .cn-usage-head {
+    @apply h-12 px-4 text-xs;
+  }
+
+  .cn-usage-cell {
+    @apply px-4 py-3.5;
+  }
+
+  .cn-usage-tile {
+    @apply p-6;
+  }
+
+  .cn-usage-item {
+    @apply rounded-2xl border px-4 py-3.5;
+  }
+
+  .cn-usage-index {
+    @apply size-6 rounded-full text-xs;
+  }
+
+  .cn-usage-swatch {
+    @apply rounded-full;
+  }
+}

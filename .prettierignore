@@ -3,6 +3,7 @@ dist/
 coverage/
 package-lock.json
 .wt/
+.local/
 docs/adr/
 packages/registry/consumers/*/components/ui/
 packages/registry/.work/

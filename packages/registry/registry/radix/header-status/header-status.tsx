@@ -3,8 +3,8 @@
 import type { BudgetAlertCrossed } from "@usagekit/core";
 import { useHeaderStatus } from "@usagekit/react";
 import type { BudgetsInput, HeaderBound, HeaderStatus, Limit } from "@usagekit/views";
-import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { usageMotion } from "@/components/usagekit/usage-motion";
 
 export const headerStatusLabels = {
   of: "of",
@@ -23,11 +23,14 @@ export const headerStatusLabels = {
 };
 export type HeaderStatusLabels = typeof headerStatusLabels;
 
+const pill =
+  "cn-usage-pill cn-usage-pill-fill cn-usage-pill-md inline-flex max-w-full items-center tabular-nums text-foreground";
 const levelClass = {
-  ok: "border-border bg-secondary text-secondary-foreground",
-  warning: "border-chart-4 bg-chart-4/15 text-foreground",
-  exceeded: "border-destructive bg-destructive/10 text-destructive",
+  ok: "border-border",
+  warning: "border-chart-4/70",
+  exceeded: "border-destructive/50 text-destructive",
 } as const;
+const dotClass = { ok: "bg-chart-2", warning: "bg-chart-4", exceeded: "bg-destructive" } as const;
 
 function amount(value: Limit, labels: HeaderStatusLabels): string {
   if (value === "unavailable") return labels.unavailable;
@@ -49,23 +52,32 @@ function Pill({
       ? `${bound.warningAt.percent}%`
       : `${bound.warningAt.text} ${bound.warningAt.unit}`
     : null;
+  const text = `${amount(bound.remaining, labels)} ${labels.of} ${amount(bound.of, labels)} ${bound.unit} ${labels.left}`;
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Badge
-          variant="outline"
+        <span
+          tabIndex={0}
           data-level={bound.level}
-          className={`h-auto min-h-5 max-w-full whitespace-normal break-all ${levelClass[bound.level]}`}
+          className={`${pill} ${levelClass[bound.level]} cn-usage-pill-link cn-usage-focus ${usageMotion.respond}`}
         >
-          {`${amount(bound.remaining, labels)} ${labels.of} ${amount(bound.of, labels)} ${bound.unit} ${labels.left}`}
-        </Badge>
+          <span
+            aria-hidden
+            className={`cn-usage-dot shrink-0 transition-colors duration-300 motion-reduce:transition-none ${dotClass[bound.level]}`}
+          />
+          <span key={text} className={`min-w-0 break-words ${usageMotion.enter}`}>
+            {text}
+          </span>
+        </span>
       </TooltipTrigger>
       <TooltipContent>
-        <span className="block">{`${bound.kind} ${bound.target}`}</span>
-        <span className="block">
-          {bound.resetsAt ? `${labels.resets} ${formatTime(bound.resetsAt)}` : labels.noReset}
+        <span className="flex flex-col gap-0.5">
+          <span className="font-medium">{`${bound.kind} ${bound.target}`}</span>
+          <span>
+            {bound.resetsAt ? `${labels.resets} ${formatTime(bound.resetsAt)}` : labels.noReset}
+          </span>
+          {warning && <span>{`${labels.warningAt} ${warning}`}</span>}
         </span>
-        {warning && <span className="block">{`${labels.warningAt} ${warning}`}</span>}
       </TooltipContent>
     </Tooltip>
   );
@@ -77,24 +89,34 @@ export type HeaderStatusBarProps = {
   formatTime?: (iso: string) => string;
 };
 
-/** Compact inline status: one pill per visible bound, colored by level through tokens. */
+/** Compact inline status: one pill per visible bound, with its level in words and color. */
 export function HeaderStatusBar({
   status,
   labels: custom,
   formatTime = (t) => t,
 }: HeaderStatusBarProps) {
   const labels = { ...headerStatusLabels, ...custom };
-  if (!status) return <span className="text-xs text-muted-foreground">{labels.loading}</span>;
-  if (status.state === "unavailable" || status.state === "forbidden")
+  if (!status)
     return (
-      <span role="status" className="text-xs text-muted-foreground">
-        {status.state === "forbidden" ? labels.forbidden : labels.failed}
+      <span role="status" className="inline-flex w-40 max-w-full">
+        <span className="sr-only">{labels.loading}</span>
+        <span
+          aria-hidden
+          className="cn-usage-pill-skeleton cn-usage-pill-md block w-full animate-pulse motion-reduce:animate-none"
+        />
       </span>
     );
-  if (status.state === "empty")
+  if (status.state === "unavailable" || status.state === "forbidden" || status.state === "empty")
     return (
-      <span role="status" className="text-xs text-muted-foreground">
-        {labels.empty}
+      <span
+        role="status"
+        className={`${pill} border-dashed border-border text-muted-foreground ${usageMotion.enter}`}
+      >
+        {status.state === "forbidden"
+          ? labels.forbidden
+          : status.state === "empty"
+            ? labels.empty
+            : labels.failed}
       </span>
     );
   return (
@@ -107,12 +129,9 @@ export function HeaderStatusBar({
           <Pill key={bound.budgetId} bound={bound} labels={labels} formatTime={formatTime} />
         ))}
         {status.hidden > 0 && (
-          <Badge
-            variant="outline"
-            className="h-auto min-h-5 max-w-full whitespace-normal break-all text-muted-foreground"
-          >
+          <span className={`${pill} border-dashed border-border text-muted-foreground`}>
             {`${status.hidden} ${labels.hidden}`}
-          </Badge>
+          </span>
         )}
       </div>
     </TooltipProvider>
@@ -131,7 +150,10 @@ export function HeaderStatusPanel({
   const result = useHeaderStatus(crossings ? { ...input, crossings } : input);
   if (result.state === "unavailable" || result.state === "forbidden")
     return (
-      <p role="alert" className="text-sm text-muted-foreground">
+      <p
+        role="alert"
+        className={`${pill} border-dashed border-border text-muted-foreground ${usageMotion.enter}`}
+      >
         {result.state === "forbidden"
           ? (labels?.forbidden ?? headerStatusLabels.forbidden)
           : (labels?.failed ?? headerStatusLabels.failed)}

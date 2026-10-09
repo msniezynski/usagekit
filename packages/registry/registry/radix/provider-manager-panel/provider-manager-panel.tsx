@@ -1,15 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
-import {
-  useProviderConnections,
-  useProviderAction,
-  useProviderManagementBinding,
-} from "@usagekit/react";
-import type {
-  ProviderConnection,
-  ProviderDefinition,
-  ProviderManagementPort,
-} from "@usagekit/views";
+import { useCallback, useState } from "react";
+import { useProviderEditor } from "@usagekit/react";
+import type { ProviderConnection, ProviderDefinition } from "@usagekit/views";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { ProviderCard } from "@/components/usagekit/provider-card";
@@ -20,6 +12,7 @@ import { ProviderChainEditor } from "@/components/usagekit/provider-chain-editor
 import { ProviderBalancePanel } from "@/components/usagekit/provider-balance-card";
 import { ProviderAllocationPanel } from "@/components/usagekit/provider-allocation-editor";
 import { ProviderReadFeedback } from "@/components/usagekit/provider-feedback";
+import { UsageSpinner, usageMotion } from "@/components/usagekit/usage-motion";
 export const providerManagerLabels = {
   title: "Provider connections",
   connect: "New connection",
@@ -28,6 +21,7 @@ export const providerManagerLabels = {
   empty: "No provider connections yet.",
   choose: "Choose a provider",
   manage: "Manage",
+  add: "Add a connection",
 };
 export type ProviderManagerLabels = typeof providerManagerLabels;
 export function ProviderManagerPanel({
@@ -40,139 +34,227 @@ export function ProviderManagerPanel({
   labels?: Partial<ProviderManagerLabels>;
 }) {
   const labels = { ...providerManagerLabels, ...custom };
-  const result = useProviderConnections(filter ? { provider: filter } : {});
-  const action = useProviderAction();
-  const context = useProviderManagementBinding();
-  const identity = JSON.stringify(context?.binding);
+  const result = useProviderEditor({
+    kind: "connections",
+    ...(filter ? { provider: filter } : {}),
+  });
+  const action = { ...result.action, canWrite: result.canEdit };
   const [selected, setSelected] = useState<{
     connection: ProviderConnection;
-    identity: string;
-    port: ProviderManagementPort | undefined;
+    definition: ProviderDefinition;
+    epoch: string;
   } | null>(null);
-  useEffect(() => {
-    const answer = action.result;
-    if (answer?.outcome === "success" && answer.connection)
-      setSelected((prior) =>
-        prior?.connection.id === answer.connection!.id &&
-        prior.identity === identity &&
-        prior.port === context?.port
-          ? { ...prior, connection: structuredClone(answer.connection!) }
-          : prior,
-      );
-  }, [action.result, identity, context?.port]);
-  const [create, setCreate] = useState<string | null>(null);
-  if (
-    !result.data ||
-    result.state === "loading" ||
-    result.state === "forbidden" ||
-    result.state === "unavailable"
-  )
+  const [creating, setCreating] = useState<{
+    definition: ProviderDefinition;
+    epoch: string;
+  } | null>(null);
+  // An opened editor takes focus so keyboard users land in it; it scrolls into view gently.
+  const reveal = useCallback((heading: HTMLElement | null) => {
+    if (!heading) return;
+    heading.focus({ preventScroll: true });
+    heading.scrollIntoView?.({
+      block: "nearest",
+      behavior: globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
+  }, []);
+  const reloadDisabled = result.refreshing || action.pending || action.ambiguous;
+  if (!result.editorData)
     return (
-      <ProviderReadFeedback state={result.state} error={result.error} refresh={result.refresh} />
+      <ProviderReadFeedback
+        state={result.state}
+        error={result.error}
+        refresh={result.reload}
+        disabled={reloadDisabled}
+      />
     );
-  const { connections, providers } = result.data;
-  const connection =
-    selected?.identity === identity && selected.port === context?.port
-      ? selected.connection
-      : undefined;
-  const definition = providers.find((item) => item.id === (create ?? connection?.provider));
+  const connections = result.evidence?.connections ?? [];
+  const providers = result.evidence?.providers ?? [];
+  const connection = selected?.epoch === result.editorEpoch ? selected.connection : undefined;
+  const current = connections.find((item) => item.id === connection?.id) ?? null;
+  const creation = creating?.epoch === result.editorEpoch ? creating.definition : null;
+  const create = creation?.id ?? null;
+  const definition =
+    providers.find((item) => item.id === (create ?? connection?.provider)) ??
+    (connection ? selected?.definition : creation);
   return (
-    <section aria-label={labels.title} className="space-y-6 min-w-0">
-      <div className="flex flex-wrap gap-3 items-center justify-between">
-        <h2 className="text-xl font-semibold">{labels.title}</h2>
+    <section aria-label={labels.title} className="cn-usage-gap-lg flex min-w-0 flex-col">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="cn-usage-section font-semibold">{labels.title}</h2>
         <Button
           type="button"
           variant="outline"
-          disabled={result.refreshing || action.pending || action.ambiguous}
-          onClick={() => {
-            setSelected(null);
-            setCreate(null);
-            action.reset();
-            result.refresh();
-          }}
+          size="sm"
+          disabled={reloadDisabled}
+          onClick={result.reload}
         >
+          {result.refreshing && <UsageSpinner />}
           {labels.reload}
         </Button>
       </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {connections.map((item) => (
-          <ProviderCard
-            key={item.id}
-            connection={item}
-            onManage={() => {
-              setSelected({ connection: structuredClone(item), identity, port: context?.port });
-              setCreate(null);
-            }}
-          />
-        ))}
-      </div>
-      {!connections.length && <p>{labels.empty}</p>}
-      <div className="flex flex-wrap gap-2" role="group" aria-label={labels.choose}>
-        {providers
-          .filter((item) => item.capabilities.includes("connect"))
-          .map((item) => (
-            <Button
+      {!result.evidence && (
+        <ProviderReadFeedback
+          state={result.state}
+          error={result.error}
+          refresh={result.reload}
+          disabled={reloadDisabled}
+        />
+      )}
+      {connections.length > 0 && (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {connections.map((item) => (
+            <ProviderCard
               key={item.id}
-              type="button"
-              variant="outline"
-              onClick={() => {
-                setCreate(item.id);
-                setSelected(null);
-              }}
-            >
-              {labels.connect}: {item.label}
-            </Button>
-          ))}
-      </div>
-      {definition && (create || connection) && (
-        <section
-          key={`${identity}:${create ?? connection?.id}`}
-          aria-label={`${labels.manage}: ${connection?.label ?? definition.label}`}
-          className="space-y-4 min-w-0"
-        >
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              setSelected(null);
-              setCreate(null);
-            }}
-          >
-            {labels.close}
-          </Button>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <ProviderConnectForm
-              key={`${create ?? connection?.id}:${connection?.revision ?? "new"}`}
-              provider={definition}
-              {...(connection ? { connection } : {})}
-              {...(oauth ? { oauth: oauth(definition, connection) } : {})}
-              onConnected={(item) => {
-                setSelected({ connection: structuredClone(item), identity, port: context?.port });
-                setCreate(null);
-                action.reset();
-                result.refresh();
+              connection={item}
+              action={action}
+              selected={connection?.id === item.id}
+              onManage={() => {
+                const definition = providers.find((value) => value.id === item.provider);
+                if (!definition) return;
+                setSelected((prior) =>
+                  prior?.epoch === result.editorEpoch && prior.connection.id === item.id
+                    ? prior
+                    : {
+                        connection: structuredClone(item),
+                        definition: structuredClone(definition),
+                        epoch: result.editorEpoch,
+                      },
+                );
+                setCreating(null);
               }}
             />
+          ))}
+        </div>
+      )}
+      {result.evidence && !connections.length && (
+        <p className="cn-usage-empty cn-usage-body border-border text-muted-foreground">
+          {labels.empty}
+        </p>
+      )}
+      {providers.some((item) => item.capabilities.includes("connect")) && (
+        <div className="space-y-2">
+          <p className="cn-usage-title font-medium">{labels.add}</p>
+          <div className="flex flex-wrap gap-2" role="group" aria-label={labels.choose}>
+            {providers
+              .filter((item) => item.capabilities.includes("connect"))
+              .map((item) => (
+                <Button
+                  key={item.id}
+                  type="button"
+                  variant={creation?.id === item.id ? "secondary" : "outline"}
+                  disabled={!result.canEdit}
+                  onClick={() => {
+                    setCreating({ definition: structuredClone(item), epoch: result.editorEpoch });
+                    setSelected(null);
+                  }}
+                >
+                  <svg
+                    aria-hidden
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
+                    <path d="M8 3.5v9M3.5 8h9" strokeLinecap="round" />
+                  </svg>
+                  {labels.connect}: {item.label}
+                </Button>
+              ))}
+          </div>
+        </div>
+      )}
+      {definition && (create || connection) && (
+        <section
+          key={`${result.editorEpoch}:${create ?? connection?.id}`}
+          aria-labelledby={`${result.editorEpoch}:${create ?? connection?.id}:title`}
+          className={`cn-usage-frame cn-usage-tile cn-usage-gap-md flex min-w-0 flex-col border-border bg-muted/30 ${usageMotion.enter}`}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3
+              id={`${result.editorEpoch}:${create ?? connection?.id}:title`}
+              ref={reveal}
+              tabIndex={-1}
+              className="cn-usage-title font-semibold outline-none"
+            >
+              {labels.manage}: {connection?.label ?? definition.label}
+            </h3>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSelected(null);
+                setCreating(null);
+              }}
+            >
+              <svg
+                aria-hidden
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              >
+                <path d="M4.5 4.5l7 7M11.5 4.5l-7 7" />
+              </svg>
+              {labels.close}
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {result.evidence && (!connection || current) && (
+              <ProviderConnectForm
+                key={`${create ?? connection?.id}:${connection?.revision ?? "new"}`}
+                provider={definition}
+                action={action}
+                {...(current ? { connection: current } : {})}
+                {...(oauth ? { oauth: oauth(definition, current ?? undefined) } : {})}
+                onConnected={(item) => {
+                  setSelected((prior) =>
+                    prior?.epoch === result.editorEpoch && prior.connection.id === item.id
+                      ? prior
+                      : {
+                          connection: structuredClone(item),
+                          definition: structuredClone(definition),
+                          epoch: result.editorEpoch,
+                        },
+                  );
+                  setCreating(null);
+                }}
+              />
+            )}
             {connection && (
               <>
-                <ProviderSourceSelector
+                {current && (
+                  <ProviderSourceSelector
+                    connection={current}
+                    action={action}
+                    sources={definition.fundingSources}
+                  />
+                )}
+                {current && <ProviderBalancePanel connectionId={connection.id} />}
+                <ProviderRateEditor
                   connection={connection}
-                  sources={definition.fundingSources}
+                  evidence={current}
+                  action={{ ...action, canWrite: action.canWrite && !!current }}
                 />
-                <ProviderBalancePanel connectionId={connection.id} />
-                <ProviderRateEditor key={`rates:${connection.revision}`} connection={connection} />
-                <ProviderChainEditor
-                  key={`chain:${connection.revision}`}
-                  connection={connection}
-                  connections={connections}
-                />
+                {current && (
+                  <ProviderChainEditor
+                    key={`chain:${connection.revision}`}
+                    connection={current}
+                    action={action}
+                    connections={connections}
+                  />
+                )}
               </>
             )}
           </div>
           {connection && (
             <ProviderAllocationPanel
               connectionIds={[connection.id]}
-              fresh={!connection.freshness.stale && !!connection.freshness.observedAt}
+              evidenceAvailable={!!current}
+              canEdit={result.canEdit && !!current}
+              fresh={!!current && !current.freshness.stale && !!current.freshness.observedAt}
             />
           )}
         </section>

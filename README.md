@@ -5,9 +5,9 @@ costs and application credits. Both BYOK and platform-funded keys are in scope.
 Host A uses Postgres and Prisma. Host B adds team-owned connections.
 Host C targets Cloudflare D1. A local server shares the embedded Meter contract.
 
-**Release 0.6.0 is published, including headless views, React hooks and the durable Postgres adapter.**
+**Release lines: 0.6.0 is published. The 0.7.0 source cohort adds the `useProviderEditor` React hook; the other six packages move to 0.7.0 in lockstep.**
 Licensed under Apache-2.0. `@usagekit/core`, `store`, `meter`, `providers`, `views`, `react` and `store-postgres` 0.6.0 are published on registry.npmjs.org.
-The 0.6.0 release allow-list contains `core`, `store`, `meter`, `providers`, `views`, `react` and `store-postgres`. Other workspaces remain private. See [consuming packages](docs/CONSUMING.md) for registry availability and candidate validation. Candidate publication needs exact-source owner approval.
+The 0.7.0 release allow-list contains `core`, `store`, `meter`, `providers`, `views`, `react` and `store-postgres`. Other workspaces remain private. See [consuming packages](docs/CONSUMING.md) for registry availability and candidate validation. Candidate publication needs exact-source owner approval.
 
 [Project website](https://usagekit.dev) · [Source](https://github.com/msniezynski/usagekit) · [Issues](https://github.com/msniezynski/usagekit/issues) · [Roadmap](docs/ROADMAP.md)
 
@@ -170,7 +170,7 @@ There is no pre-push hook. The release allow-list and publish guard restrict pub
 | `packages/providers`      | Provider catalog, fixture conformance and wrapper-boundary lint rule                                                             |
 | `packages/views`          | View models over the Meter: usage, budgets, header, coverage                                                                     |
 | `packages/react`          | React hooks and `MeterProvider` over the view models                                                                             |
-| `packages/registry`       | shadcn blocks for Radix and Base UI, see [UI](docs/UI.md)                                                                        |
+| `packages/registry`       | shadcn blocks for Radix and Base UI in every shadcn style, see [UI](docs/UI.md)                                                  |
 | `packages/site`           | Static project website, React examples and getting-started documentation, see [site](docs/SITE.md)                               |
 
 Future packages are listed in the [plan](docs/PLAN.md#4-package-grid), without placeholder directories.

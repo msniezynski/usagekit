@@ -17,20 +17,26 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { join, resolve } from "node:path";
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createElement } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { createManualClock, createMemoryStore } from "@usagekit/store";
 import { createMeter } from "@usagekit/meter";
-import { MeterProvider, ProviderManagementProvider } from "@usagekit/react";
+import {
+  MeterProvider,
+  ProviderManagementProvider,
+  createMeterQueryClient,
+  createProviderQueryClient,
+} from "@usagekit/react";
 import type { BudgetWriter } from "@usagekit/react";
+import { legacy, styleMap, styleSource, styles } from "../styles/styles.mjs";
 import {
   createDemoProviderPort,
   demoProviders,
   initialAllocations,
   initialConnections,
 } from "../consumers/radix/app/demo-providers.js";
-import type { ProviderCommand } from "@usagekit/views";
+import type { ProviderCommand, ProviderReadResult } from "@usagekit/views";
 import type { AccessContext, Budget, ReserveInput } from "@usagekit/core";
 import { blockNames, variants } from "./index.js";
 import type { Variant } from "./index.js";
@@ -160,7 +166,10 @@ describe("shadcn add against both consumers", () => {
     const host = hosts[variant];
     for (const name of blockNames)
       expect(readFileSync(join(host, "components/usagekit", `${name}.tsx`), "utf8")).toBe(
-        readFileSync(join(root, "registry", variant, name, `${name}.tsx`), "utf8"),
+        styleSource(
+          readFileSync(join(root, "registry", variant, name, `${name}.tsx`), "utf8"),
+          styleMap(styles.find((style) => style.name === legacy[variant])!.sheet),
+        ),
       );
     for (const primitive of [
       "table",
@@ -332,6 +341,218 @@ const load = async (variant: Variant, name: string): Promise<Module> =>
       .href
   )) as Module;
 
+describe.each(variants)("%s native usage presentation", (variant) => {
+  test("unknown progress cannot display a fabricated zero", async () => {
+    const { UsageOverviewCard } = await load(variant, "usage-overview-card");
+    render(
+      createElement(UsageOverviewCard!, {
+        title: "Provider usage",
+        budget: { label: "Budget used", value: "0%", percent: 0, partial: true },
+        metrics: [{ id: "paid", label: "Paid to providers", value: "Unknown" }],
+        labels: { unknown: "Unconfirmed usage" },
+      }),
+    );
+    expect(screen.getByRole("region", { name: "Budget used" }).textContent).toContain(
+      "Unconfirmed usage",
+    );
+    expect(screen.queryByRole("meter")).toBeNull();
+    expect(screen.queryByText("0%")).toBeNull();
+  });
+  test("partial and exceeded progress preserve actual copy and valid meter geometry", async () => {
+    const { UsageOverviewCard } = await load(variant, "usage-overview-card");
+    render(
+      createElement(UsageOverviewCard!, {
+        title: "Provider usage",
+        budget: {
+          label: "Budget used",
+          value: "At least 180%",
+          meterLabel: "Partial budget usage",
+          percent: 180,
+          partial: true,
+        },
+        metrics: [{ id: "paid", label: "Paid", value: "At least $125.55" }],
+        children: createElement("li", null, "Provider A"),
+        notice: {
+          message: "Provider A reached its limit",
+          action: createElement("a", { href: "/settings" }, "Settings"),
+        },
+      }),
+    );
+    const meter = screen.getByRole("meter", { name: "Partial budget usage" });
+    expect(meter.getAttribute("aria-valuenow")).toBe("100");
+    expect(meter.getAttribute("aria-valuetext")).toBe("At least 180%");
+    expect(meter.getAttribute("data-level")).toBe("exceeded");
+    expect(meter.style.getPropertyValue("--usage-fill")).toBe("100%");
+    expect(meter.getAttribute("data-kind")).toBe("partial");
+    expect(meter.querySelector("[data-usage-over]")).toBeTruthy();
+    expect(screen.getByRole("listitem").textContent).toBe("Provider A");
+    expect(screen.getByRole("alert").textContent).toContain("Provider A reached its limit");
+    expect(screen.getByText("At least $125.55")).toBeTruthy();
+  });
+  test("loading keeps the layout without placeholder figures", async () => {
+    const { UsageOverviewCard } = await load(variant, "usage-overview-card");
+    render(
+      createElement(UsageOverviewCard!, {
+        title: "Provider usage",
+        loading: true,
+        budget: { label: "Budget used", value: "0%", percent: 0, partial: false },
+        metrics: [{ id: "paid", label: "Paid", value: "$0.00" }],
+      }),
+    );
+    expect(screen.getByRole("status").textContent).toBe("Loading usage.");
+    expect(screen.queryByRole("meter")).toBeNull();
+    expect(screen.queryByText("0%")).toBeNull();
+    expect(screen.queryByText("$0.00")).toBeNull();
+  });
+  test("a known figure, its status words and the warning mark render together", async () => {
+    const { UsageOverviewCard } = await load(variant, "usage-overview-card");
+    const { container } = render(
+      createElement(UsageOverviewCard!, {
+        title: "Provider usage",
+        budget: {
+          label: "Budget used",
+          value: "86% of the tightest budget used",
+          figure: "86%",
+          caption: "Tightest: Search",
+          percent: 86,
+          partial: false,
+          warningAt: 80,
+        },
+        metrics: [],
+        labels: { warning: "Close to the limit" },
+      }),
+    );
+    expect(screen.getByText("86%")).toBeTruthy();
+    expect(screen.getByText("Close to the limit")).toBeTruthy();
+    const meter = screen.getByRole("meter", { name: "Budget used" });
+    expect(meter.getAttribute("aria-valuetext")).toBe("86% of the tightest budget used");
+    expect(meter.getAttribute("data-level")).toBe("warning");
+    expect(container.querySelector('[style*="left: 80%"]')).toBeTruthy();
+  });
+  test("a partial reading below the warning point does not claim to be within budget", async () => {
+    const { UsageOverviewCard } = await load(variant, "usage-overview-card");
+    render(
+      createElement(UsageOverviewCard!, {
+        title: "Provider usage",
+        budget: {
+          label: "Budget used",
+          value: "At least 62%",
+          qualifier: "At least",
+          figure: "62%",
+          percent: 62.75,
+          partial: true,
+        },
+        metrics: [],
+      }),
+    );
+    expect(screen.queryByText("Within budget")).toBeNull();
+    expect(screen.getByText("Still measuring")).toBeTruthy();
+    expect(screen.getByText("At least")).toBeTruthy();
+    expect(screen.getByRole("meter").getAttribute("data-kind")).toBe("partial");
+  });
+  test("connection rows unfold their readings from a keyboard-operable disclosure", async () => {
+    const { UsageOverviewCard } = await load(variant, "usage-overview-card");
+    const { UsageConnectionRow } = await load(variant, "usage-connection-row");
+    render(
+      createElement(
+        UsageOverviewCard!,
+        {
+          title: "Provider usage",
+          budget: { label: "Budget used", value: "No budget", percent: null, partial: false },
+          metrics: [],
+        },
+        createElement(UsageConnectionRow!, {
+          name: "Search",
+          tags: ["Primary"],
+          status: { label: "Connected", tone: "positive" },
+          summary: { value: "28%", percent: 28 },
+          groups: [
+            {
+              id: "own",
+              readings: [
+                { id: "app", label: "App", value: "28 of 100 used", percent: 28 },
+                { id: "api", label: "API", value: "No cap", percent: null },
+                { id: "late", label: "Late", value: "Usage unknown", percent: 0, partial: true },
+              ],
+            },
+          ],
+          breakdown: [{ id: "rank", label: "Rank checks", value: "28", tags: ["Scheduled 4"] }],
+        }),
+      ),
+    );
+    const toggle = screen.getByRole("button", { name: "Search Primary Connected 28%" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    const details = document.getElementById(toggle.getAttribute("aria-controls")!)!;
+    expect(details.hasAttribute("inert")).toBe(true);
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(details.hasAttribute("inert")).toBe(false);
+    const meter = within(details).getByRole("meter", { name: "Search App" });
+    expect(meter.getAttribute("aria-valuetext")).toBe("28 of 100 used");
+    // Uncapped and unknown readings never draw a fill that could read as zero.
+    expect(within(details).getAllByRole("meter")).toHaveLength(1);
+    expect(details.querySelector('[data-usage-track="none"]')).toBeTruthy();
+    expect(details.querySelector('[data-usage-track="unknown"]')).toBeTruthy();
+    expect(within(details).getByText("Scheduled 4")).toBeTruthy();
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(details.hasAttribute("inert")).toBe(true);
+  });
+  test("an unknown connection summary never shows the host figure", async () => {
+    const { UsageConnectionRow } = await load(variant, "usage-connection-row");
+    render(
+      createElement(
+        "ul",
+        null,
+        createElement(UsageConnectionRow!, {
+          name: "Search",
+          summary: { value: "0%", percent: 0, partial: true },
+          labels: { unknown: "Not yet measured" },
+        }),
+      ),
+    );
+    expect(screen.queryByText("0%")).toBeNull();
+    expect(screen.getByRole("button", { name: "Search Not yet measured" })).toBeTruthy();
+  });
+  test("cap pill keeps hidden, unavailable and partial states distinct", async () => {
+    const { UsageCapPill } = await load(variant, "usage-cap-pill");
+    const node = (props: Record<string, unknown>) => createElement(UsageCapPill!, props);
+    const view = render(node({ state: "hidden" }));
+    expect(view.container.innerHTML).toBe("");
+    view.rerender(
+      node({ state: "unavailable", href: "/usage", labels: { unavailable: "Spend unavailable" } }),
+    );
+    expect(screen.queryByRole("link")).toBeNull();
+    expect(screen.getByRole("status").textContent).toBe("Spend unavailable");
+    view.rerender(
+      node({
+        state: "ready",
+        href: "/usage",
+        percent: 0,
+        partial: true,
+        label: "0% used",
+        ariaLabel: "Monthly cap 0% used",
+      }),
+    );
+    expect(screen.getByRole("link", { name: "Usage unknown" }).textContent).toContain(
+      "Usage unknown",
+    );
+    expect(screen.queryByText("0% used")).toBeNull();
+    view.rerender(
+      node({
+        state: "ready",
+        href: "/usage",
+        percent: 62.75,
+        partial: true,
+        label: "At least 62% used",
+      }),
+    );
+    expect(screen.getByRole("link", { name: "At least 62% used" }).getAttribute("href")).toBe(
+      "/usage",
+    );
+  });
+});
+
 describe.each(variants)("%s blocks render against a memory Meter", (variant) => {
   const withMeter = async (node: ReactNode) => {
     const meter = await memoryMeter();
@@ -422,6 +643,90 @@ describe.each(variants)("%s blocks render against a memory Meter", (variant) => 
     fireEvent.click(screen.getByRole("button", { name: "First page" }));
     await screen.findByText("alpha");
   });
+  test("paging keeps the current page visible and busy until the next page arrives", async () => {
+    const { UsageTablePanel } = await load(variant, "usage-table");
+    const meter = await memoryMeter();
+    const read = meter.usage.bind(meter);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    meter.usage = async (access, query) => {
+      if (query.cursor) await gate;
+      return read(access, query);
+    };
+    render(
+      createElement(
+        MeterProvider,
+        { meter, access },
+        createElement(UsageTablePanel!, {
+          scope: { kind: "principal", namespace: "test", principal: "u1" },
+          ...month,
+          units: ["requests"],
+          groupBy: ["provider"],
+          limit: 1,
+        }),
+      ),
+    );
+    await screen.findByText("alpha");
+    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+    await waitFor(() =>
+      expect(screen.getByRole("table", { name: "Usage detail" }).getAttribute("aria-busy")).toBe(
+        "true",
+      ),
+    );
+    expect(screen.getByText("alpha")).toBeTruthy();
+    expect(screen.queryByText("Loading usage.")).toBeNull();
+    expect((screen.getByRole("button", { name: "Next page" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    await act(async () => release());
+    await screen.findByText("beta");
+    expect(screen.queryByText("alpha")).toBeNull();
+    expect(
+      screen.getByRole("table", { name: "Usage detail" }).getAttribute("aria-busy"),
+    ).toBeNull();
+  });
+  test("a failed read drops the retained page, so a reload never shows superseded data", async () => {
+    const { UsageTablePanel } = await load(variant, "usage-table");
+    const meter = await memoryMeter();
+    const read = meter.usage.bind(meter);
+    const queryClient = createMeterQueryClient();
+    let attempts = 0;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    meter.usage = async (access, query) => {
+      if (!query.cursor) return read(access, query);
+      attempts += 1;
+      // A malformed page fails the loader itself; that failure is the one a refetch clears.
+      if (attempts === 1) return { outcome: "ok", value: null } as never;
+      await gate;
+      return read(access, query);
+    };
+    render(
+      createElement(
+        MeterProvider,
+        { meter, access, queryClient },
+        createElement(UsageTablePanel!, {
+          scope: { kind: "principal", namespace: "test", principal: "u1" },
+          ...month,
+          units: ["requests"],
+          groupBy: ["provider"],
+          limit: 1,
+        }),
+      ),
+    );
+    await screen.findByText("alpha");
+    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+    await screen.findByRole("alert");
+    act(() => queryClient.invalidate());
+    await screen.findByText("Loading usage.");
+    expect(screen.queryByText("alpha")).toBeNull();
+    await act(async () => release());
+    await screen.findByText("beta");
+  });
   test("budget cards show figures, markers and the redacted pool", async () => {
     const { BudgetCardsPanel } = await load(variant, "budget-card");
     const { container } = await withMeter(
@@ -438,7 +743,9 @@ describe.each(variants)("%s blocks render against a memory Meter", (variant) => 
     expect(screen.getByText(/figures are hidden/)).toBeTruthy();
     expect(screen.getByRole("img", { name: "Hard limit 15 requests" })).toBeTruthy();
     expect(screen.getByRole("img", { name: "Alert 50%" })).toBeTruthy();
-    expect(container.querySelector('[style*="width: 40%"]')).toBeTruthy();
+    const track = container.querySelector<HTMLElement>("[data-usage-track]")!;
+    expect(track.style.getPropertyValue("--usage-fill")).toBe("40%");
+    expect(track.style.getPropertyValue("--usage-reserved")).toBe("6.66%");
   });
   test("header status shows one pill per visible bound", async () => {
     const { HeaderStatusPanel } = await load(variant, "header-status");
@@ -871,6 +1178,122 @@ describe.each(variants)("%s provider blocks use explicit host ports", (variant) 
       );
     return { ...render(wrap(node)), demo, wrap };
   };
+  const editorFixture = () => {
+    const demo = fixture();
+    const client = createProviderQueryClient();
+    const read = demo.port.read.bind(demo.port);
+    let failure: "forbidden" | "unavailable" | null = null;
+    let revision = "1";
+    let removed = false;
+    let extraProvider = false;
+    demo.port.read = vi.fn(async (binding, query): Promise<ProviderReadResult> => {
+      if (failure === "forbidden") return { outcome: "forbidden" };
+      if (failure === "unavailable")
+        return { outcome: "unavailable", message: "Stored evidence is unavailable." };
+      const answer = await read(binding, query);
+      if (answer.outcome === "ok" && answer.value.kind === "connections" && extraProvider)
+        return {
+          ...answer,
+          value: {
+            ...answer.value,
+            providers: [
+              ...answer.value.providers,
+              { ...demoProviders[0]!, id: "new-provider", label: "New provider" },
+            ],
+            connections: [
+              ...answer.value.connections,
+              {
+                ...structuredClone(initialConnections[0]!),
+                id: "new-connection",
+                provider: "new-provider",
+                label: "New provider account",
+              },
+            ],
+          },
+        };
+      if (answer.outcome === "ok" && removed) {
+        if (answer.value.kind === "connections")
+          return { outcome: "ok", value: { ...answer.value, state: "empty", connections: [] } };
+        if (answer.value.kind === "details")
+          return { outcome: "ok", value: { ...answer.value, state: "empty", connection: null } };
+        if (answer.value.kind === "allocations")
+          return { outcome: "ok", value: { ...answer.value, state: "empty", rows: [] } };
+      }
+      if (answer.outcome !== "ok" || revision === "1") return answer;
+      const connection = (item: (typeof initialConnections)[number]) =>
+        item.id === "search-own"
+          ? {
+              ...item,
+              revision,
+              rates: item.rates.map((rate) => ({
+                ...rate,
+                price: { text: "9.7500", unit: "cents", certainty: "measured" as const },
+                provenance: { ...rate.provenance, version: "rate-2" },
+              })),
+            }
+          : item;
+      const value = answer.value;
+      if (value.kind === "connections")
+        return {
+          outcome: "ok",
+          value: { ...value, revision, connections: value.connections.map(connection) },
+        };
+      if (value.kind === "details")
+        return {
+          outcome: "ok",
+          value: {
+            ...value,
+            revision,
+            connection: value.connection ? connection(value.connection) : null,
+          },
+        };
+      if (value.kind === "allocations")
+        return {
+          outcome: "ok",
+          value: {
+            ...value,
+            revision,
+            rows: value.rows.map((row) => ({
+              ...row,
+              revision,
+              ...(row.id === "byok-app"
+                ? {
+                    limit: { text: "700", unit: "requests", certainty: "measured" as const },
+                    used: { text: "25", unit: "requests", certainty: "measured" as const },
+                  }
+                : {}),
+            })),
+          },
+        };
+      return answer;
+    });
+    const wrap = (node: ReactNode) =>
+      createElement(
+        ProviderManagementProvider,
+        { port: demo.port, binding: demo.binding, client },
+        node,
+      );
+    return {
+      demo,
+      client,
+      wrap,
+      fail(value: typeof failure) {
+        failure = value;
+      },
+      newer() {
+        revision = "2";
+      },
+      remove() {
+        removed = true;
+      },
+      revealProvider() {
+        extraProvider = true;
+      },
+      async refresh() {
+        await act(async () => client.invalidate(demo.port, demo.binding));
+      },
+    };
+  };
   test("stored reads never test or mutate providers, and writes are read-only by default", async () => {
     const { ProviderManagerPanel } = await load(variant, "provider-manager-panel");
     const demo = fixture();
@@ -1268,6 +1691,257 @@ describe.each(variants)("%s provider blocks use explicit host ports", (variant) 
     fireEvent.click(screen.getByRole("button", { name: "Save rate" }));
     await waitFor(() => expect(demo.calls).toHaveLength(2));
     expect(demo.calls[1]).toMatchObject({ kind: "rates", expectedRevision: "2" });
+  });
+  test.each(["forbidden", "unavailable"] as const)(
+    "allocation %s read keeps the draft fenced and hides old financial evidence until a fresh read",
+    async (failure) => {
+      const { ProviderAllocationPanel } = await load(variant, "provider-allocation-editor");
+      const f = editorFixture();
+      render(
+        f.wrap(
+          createElement(ProviderAllocationPanel!, { connectionIds: ["search-own"], fresh: true }),
+        ),
+      );
+      const region = await screen.findByRole("region", { name: "Own key App" });
+      fireEvent.change(within(region).getByLabelText("Limit (requests)"), {
+        target: { value: "123" },
+      });
+      expect(within(region).getByText("12 requests")).toBeTruthy();
+      f.fail(failure);
+      await f.refresh();
+      await screen.findByText(
+        failure === "forbidden"
+          ? "You cannot make this change."
+          : "Stored evidence is unavailable.",
+      );
+
+      const draft = within(screen.getByRole("region", { name: "Own key App" })).getByLabelText(
+        "Limit (requests)",
+      ) as HTMLInputElement;
+      expect(draft.value).toBe("123");
+      expect(draft.readOnly || draft.disabled).toBe(true);
+      expect(
+        (screen.getByRole("button", { name: "Save allocations" }) as HTMLButtonElement).disabled,
+      ).toBe(true);
+      for (const value of [
+        "12 requests",
+        "3 requests",
+        "985 requests",
+        "9007199254740993.125 requests",
+      ])
+        expect(screen.queryByText(value)).toBeNull();
+      expect(
+        (
+          within(screen.getByRole("region", { name: "Own key App" })).getByRole("button", {
+            name: "Use available balance",
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
+      expect(f.demo.calls).toEqual([]);
+
+      f.newer();
+      f.fail(null);
+      await f.refresh();
+      await screen.findByText("25 requests");
+      expect(
+        (
+          within(screen.getByRole("region", { name: "Own key App" })).getByLabelText(
+            "Limit (requests)",
+          ) as HTMLInputElement
+        ).value,
+      ).toBe("123");
+      fireEvent.click(screen.getByRole("button", { name: "Reload allocations" }));
+      await waitFor(() =>
+        expect(
+          (
+            within(screen.getByRole("region", { name: "Own key App" })).getByLabelText(
+              "Limit (requests)",
+            ) as HTMLInputElement
+          ).value,
+        ).toBe("700"),
+      );
+      expect(f.demo.calls).toEqual([]);
+    },
+  );
+  test.each(["forbidden", "unavailable"] as const)(
+    "manager %s read retains the disabled rate draft without old price, provenance or balance",
+    async (failure) => {
+      const { ProviderManagerPanel } = await load(variant, "provider-manager-panel");
+      const f = editorFixture();
+      render(f.wrap(createElement(ProviderManagerPanel!)));
+      await screen.findByText("Search production");
+      fireEvent.click(screen.getAllByRole("button", { name: "Manage connection" })[0]!);
+      const price = await screen.findByLabelText(/Price/);
+      fireEvent.change(price, { target: { value: "12.5000" } });
+      expect(screen.getByText("rate-1")).toBeTruthy();
+      f.fail(failure);
+      await f.refresh();
+      await screen.findAllByText(
+        failure === "forbidden"
+          ? "You cannot make this change."
+          : "Stored evidence is unavailable.",
+      );
+
+      const draft = screen.getByLabelText(/Price/) as HTMLInputElement;
+      expect(draft.value).toBe("12.5000");
+      expect(draft.readOnly || draft.disabled).toBe(true);
+      expect(
+        (screen.getByRole("button", { name: "Save rate" }) as HTMLButtonElement).disabled,
+      ).toBe(true);
+      for (const value of [
+        "rate-1",
+        "153",
+        "9007199254740993.125 requests",
+        "12 requests",
+        "985 requests",
+      ])
+        expect(screen.queryByText(value)).toBeNull();
+      expect(screen.queryByText(/0\.6250 cents/)).toBeNull();
+      expect(f.demo.calls).toEqual([]);
+
+      f.newer();
+      f.fail(null);
+      await f.refresh();
+      await screen.findByText("rate-2");
+      expect((screen.getByLabelText(/Price/) as HTMLInputElement).value).toBe("12.5000");
+      fireEvent.click(screen.getByRole("button", { name: "Reload connections" }));
+      await waitFor(() => expect(screen.queryByLabelText(/Price/)).toBeNull());
+      fireEvent.click(screen.getAllByRole("button", { name: "Manage connection" })[0]!);
+      await waitFor(() =>
+        expect((screen.getByLabelText(/Price/) as HTMLInputElement).value).toBe("9.7500"),
+      );
+      expect(f.demo.calls).toEqual([]);
+    },
+  );
+  test("failed explicit allocation reload does not discard a dirty draft on later background recovery", async () => {
+    const { ProviderAllocationPanel } = await load(variant, "provider-allocation-editor");
+    const f = editorFixture();
+    render(f.wrap(createElement(ProviderAllocationPanel!, { connectionIds: ["search-own"] })));
+    const region = await screen.findByRole("region", { name: "Own key App" });
+    fireEvent.change(within(region).getByLabelText("Limit (requests)"), {
+      target: { value: "123" },
+    });
+    f.fail("unavailable");
+    fireEvent.click(screen.getByRole("button", { name: "Reload allocations" }));
+    await screen.findByText("Stored evidence is unavailable.");
+    expect((screen.getAllByLabelText("Limit (requests)")[0] as HTMLInputElement).value).toBe("123");
+    f.newer();
+    f.fail(null);
+    await f.refresh();
+    await screen.findByText("25 requests");
+    expect((screen.getAllByLabelText("Limit (requests)")[0] as HTMLInputElement).value).toBe("123");
+    expect(f.demo.calls).toEqual([]);
+  });
+  test("changing the manager query removes the old selected rate draft before the new read finishes", async () => {
+    const { ProviderManagerPanel } = await load(variant, "provider-manager-panel");
+    const f = editorFixture();
+    const rendered = render(f.wrap(createElement(ProviderManagerPanel!, { provider: "search" })));
+    await screen.findByText("Search production");
+    fireEvent.click(screen.getByRole("button", { name: "Manage connection" }));
+    fireEvent.change(await screen.findByLabelText(/Price/), { target: { value: "12.5000" } });
+    rendered.rerender(f.wrap(createElement(ProviderManagerPanel!, { provider: "language" })));
+    expect(screen.queryByLabelText(/Price/)).toBeNull();
+    expect(screen.queryByText("rate-1")).toBeNull();
+    await screen.findByText("Language shared");
+    expect(screen.queryByLabelText(/Price/)).toBeNull();
+    expect(f.demo.calls).toEqual([]);
+  });
+  test("removed allocation targets keep a disabled draft without retained totals or a writable Save", async () => {
+    const { ProviderAllocationPanel } = await load(variant, "provider-allocation-editor");
+    const f = editorFixture();
+    render(
+      f.wrap(
+        createElement(ProviderAllocationPanel!, { connectionIds: ["search-own"], fresh: true }),
+      ),
+    );
+    const region = await screen.findByRole("region", { name: "Own key App" });
+    fireEvent.change(within(region).getByLabelText("Limit (requests)"), {
+      target: { value: "123" },
+    });
+    f.remove();
+    await f.refresh();
+    await waitFor(() =>
+      expect(
+        (screen.getByRole("button", { name: "Save allocations" }) as HTMLButtonElement).disabled,
+      ).toBe(true),
+    );
+    expect((screen.getAllByLabelText("Limit (requests)")[0] as HTMLInputElement).value).toBe("123");
+    expect(screen.queryByText("12 requests")).toBeNull();
+    expect(screen.queryByText("985 requests")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Save allocations" }));
+    expect(f.demo.calls).toEqual([]);
+  });
+  test("removed manager target hides rate evidence and fences its retained draft while new connections remain available", async () => {
+    const { ProviderManagerPanel } = await load(variant, "provider-manager-panel");
+    const f = editorFixture();
+    render(f.wrap(createElement(ProviderManagerPanel!)));
+    await screen.findByText("Search production");
+    fireEvent.click(screen.getAllByRole("button", { name: "Manage connection" })[0]!);
+    fireEvent.change(await screen.findByLabelText(/Price/), { target: { value: "12.5000" } });
+    f.remove();
+    await f.refresh();
+    await screen.findByText("No provider connections yet.");
+    expect((screen.getByLabelText(/Price/) as HTMLInputElement).value).toBe("12.5000");
+    expect((screen.getByRole("button", { name: "Save rate" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    expect(screen.queryByText("rate-1")).toBeNull();
+    expect(screen.queryByText(/0\.6250 cents/)).toBeNull();
+    expect(
+      (screen.getByRole("button", { name: "New connection: Search" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Save rate" }));
+    expect(f.demo.calls).toEqual([]);
+  });
+  test("hook-backed rate panel preserves a dirty draft on failed read and rebases only on successful Reload", async () => {
+    const { ProviderRatePanel } = await load(variant, "provider-rate-editor");
+    const f = editorFixture();
+    render(f.wrap(createElement(ProviderRatePanel!, { connectionId: "search-own" })));
+    fireEvent.change(await screen.findByLabelText(/Price/), { target: { value: "12.5000" } });
+    f.fail("unavailable");
+    await f.refresh();
+    await screen.findByText("Stored evidence is unavailable.");
+    expect((screen.getByLabelText(/Price/) as HTMLInputElement).value).toBe("12.5000");
+    expect((screen.getByRole("button", { name: "Save rate" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    expect(screen.queryByText("rate-1")).toBeNull();
+    expect(screen.queryByText(/0\.6250 cents/)).toBeNull();
+    f.newer();
+    f.fail(null);
+    await f.refresh();
+    await screen.findByText("rate-2");
+    expect((screen.getByLabelText(/Price/) as HTMLInputElement).value).toBe("12.5000");
+    fireEvent.click(screen.getByRole("button", { name: "Reload rates" }));
+    await waitFor(() =>
+      expect((screen.getByLabelText(/Price/) as HTMLInputElement).value).toBe("9.7500"),
+    );
+    expect(f.demo.calls).toEqual([]);
+  });
+  test("manager opens a newly observed provider from fresh evidence", async () => {
+    const { ProviderManagerPanel } = await load(variant, "provider-manager-panel");
+    const f = editorFixture();
+    render(f.wrap(createElement(ProviderManagerPanel!)));
+    await screen.findByText("Search production");
+    f.revealProvider();
+    await f.refresh();
+    fireEvent.click(await screen.findByRole("button", { name: "New connection: New provider" }));
+    expect(screen.getByRole("form", { name: "New provider credentials" })).toBeTruthy();
+    expect(screen.getByLabelText("API key")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Close editor" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Manage connection" })[2]!);
+    fireEvent.change(await screen.findByLabelText(/Price/), { target: { value: "12.5000" } });
+    f.fail("unavailable");
+    await f.refresh();
+    await screen.findAllByText("Stored evidence is unavailable.");
+    expect((screen.getByLabelText(/Price/) as HTMLInputElement).value).toBe("12.5000");
+    expect((screen.getByRole("button", { name: "Save rate" }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+    expect(screen.queryByText("rate-1")).toBeNull();
+    expect(screen.queryByText(/0\.6250 cents/)).toBeNull();
+    expect(f.demo.calls).toEqual([]);
   });
   test.each(["forbidden", "unavailable", "empty"])(
     "manager distinguishes %s from loading",

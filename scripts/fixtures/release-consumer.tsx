@@ -7,7 +7,15 @@ import { canonical as canonicalReference } from "@usagekit/store/reference";
 import { createMeter } from "@usagekit/meter";
 import { dataforseo, createCatalog } from "@usagekit/providers";
 import { loadUsageSummary, parseProviderDecimal } from "@usagekit/views";
-import { MeterProvider, useMeterBinding, createMeterQueryClient } from "@usagekit/react";
+import type { ProviderManagementPort } from "@usagekit/views";
+import {
+  MeterProvider,
+  useMeterBinding,
+  createMeterQueryClient,
+  ProviderManagementProvider,
+  useProviderEditor,
+} from "@usagekit/react";
+import type { ProviderEditor } from "@usagekit/react";
 import {
   createPostgresStore,
   createPrismaPostgresDriver,
@@ -49,6 +57,72 @@ const html = renderToString(
   </MeterProvider>,
 );
 assert.match(html, /Shared meter ready/);
+
+// Exercise the installed headless editor API without starting a read or provider action during SSR.
+let providerTransportCalls = 0;
+const unexpectedProviderTransport = async (): Promise<never> => {
+  providerTransportCalls++;
+  throw new Error("Provider transport must not run during server rendering");
+};
+const providerPort: ProviderManagementPort = {
+  read: unexpectedProviderTransport,
+  execute: unexpectedProviderTransport,
+  reconcile: unexpectedProviderTransport,
+};
+function ProviderEditorStatus() {
+  const editor: ProviderEditor<"details"> = useProviderEditor({
+    kind: "details",
+    connectionId: "consumer-connection",
+  });
+  const base = editor.editorData?.connection;
+  const evidence = editor.evidence?.connection;
+  assert.ok(editor.editorEpoch);
+  assert.equal(typeof editor.reload, "function");
+  assert.equal(typeof editor.action.run, "function");
+  assert.equal(typeof editor.action.reconcile, "function");
+  return (
+    <section aria-label="Provider editor">
+      <div key={editor.editorEpoch}>{base ? `Draft for ${base.label}` : "No draft base"}</div>
+      <output>
+        {evidence ? `Current rates: ${evidence.rates.length}` : "No current evidence"}
+      </output>
+      <button
+        type="button"
+        onClick={editor.reload}
+        disabled={editor.refreshing || editor.action.pending || editor.action.ambiguous}
+      >
+        Reload rates
+      </button>
+      <button type="button" disabled={!editor.canEdit || !editor.action.canWrite}>
+        Save rate
+      </button>
+      <button
+        type="button"
+        onClick={() => void editor.action.reconcile()}
+        disabled={!editor.action.ambiguous || editor.action.pending}
+      >
+        Check change status
+      </button>
+    </section>
+  );
+}
+const providerHtml = renderToString(
+  <ProviderManagementProvider
+    port={providerPort}
+    binding={{
+      scopeKey: "consumer:provider-editor",
+      principalKey: "owner",
+      authRevision: "1",
+      canManage: true,
+    }}
+  >
+    <ProviderEditorStatus />
+  </ProviderManagementProvider>,
+);
+assert.match(providerHtml, /No draft base/);
+assert.match(providerHtml, /No current evidence/);
+assert.match(providerHtml, /<button\b[^>]*disabled=""[^>]*>Save rate<\/button>/);
+assert.equal(providerTransportCalls, 0);
 // Import the durable adapter and check its public types without opening a database connection.
 const pool = new Pool({ max: 1 });
 const options: PostgresStoreOptions = { pool, clock, schema: "consumer" };

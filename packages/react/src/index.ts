@@ -40,4 +40,6 @@ export type { ProviderHookBinding, ProviderViewResult } from "./provider-hooks.j
 export { useProviderAction } from "./provider-action.js";
 export type { ProviderAction, ProviderActionOptions } from "./provider-action.js";
 export type { ProviderActionState } from "./provider-action-state.js";
+export { useProviderEditor } from "./provider-editor.js";
+export type { ProviderEditor } from "./provider-editor.js";
 export { useBudgetProjection } from "./budget-projection.js";

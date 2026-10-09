@@ -10,6 +10,7 @@ import { BudgetEditor } from "@/components/usagekit/budget-editor";
 import type { BudgetEditorLabels } from "@/components/usagekit/budget-editor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { UsageNotice, UsageSpinner, usageMotion } from "@/components/usagekit/usage-motion";
 
 export const budgetManagerPanelLabels = {
   title: "Budget management",
@@ -99,33 +100,70 @@ export function BudgetManagerPanel({
             : null;
   const readable = result.state === "ok" || result.state === "empty";
   return (
-    <section aria-label={labels.title} className="space-y-4">
-      <Card>
+    <section aria-label={labels.title} className="min-w-0 space-y-4">
+      <Card className="min-w-0">
         <CardHeader>
-          <CardTitle>{labels.title}</CardTitle>
-          <CardDescription>{labels.description}</CardDescription>
+          <div className="flex min-w-0 flex-wrap items-start justify-between gap-x-3 gap-y-2">
+            <div className="min-w-48 flex-1 space-y-1.5">
+              <CardTitle className="leading-snug">{labels.title}</CardTitle>
+              <CardDescription>{labels.description}</CardDescription>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={result.refreshing}
+              onClick={() => {
+                setSelection(null);
+                setSaved(null);
+                result.refresh();
+              }}
+            >
+              {result.refreshing ? (
+                <UsageSpinner />
+              ) : (
+                <svg
+                  aria-hidden
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M13 8a5 5 0 1 1-1.5-3.55M13 3v2.5h-2.5" />
+                </svg>
+              )}
+              {labels.reload}
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="gap-4 flex flex-col">
           {message && (
             <p
               role={readable || result.state === "loading" ? "status" : "alert"}
-              className="text-sm text-muted-foreground"
+              className={`text-sm text-muted-foreground ${usageMotion.enter}`}
             >
               {message}
             </p>
           )}
-          {readable && (
-            <>
-              <ul className="divide-y divide-border">
-                {budgets.map((budget) => (
+          {readable && budgets.length > 0 && (
+            <ul className="rounded-xl border m-0 list-none divide-y divide-border overflow-hidden border-border p-0">
+              {budgets.map((budget) => {
+                const selected = activeId === budget.id;
+                const name = budgetTitles[budget.id] ?? budget.id;
+                return (
                   <li
                     key={budget.id}
-                    className="flex flex-wrap items-center justify-between gap-3 py-3"
+                    data-selected={selected}
+                    className={`px-4 py-3 relative flex min-w-0 flex-wrap items-center justify-between gap-3 ${selected ? "bg-muted/60" : ""} ${usageMotion.respond}`}
                   >
+                    <span
+                      aria-hidden
+                      className={`rounded-full absolute inset-y-2 left-0 w-0.5 bg-primary transition-[opacity,scale] duration-300 ease-out motion-reduce:transition-none ${selected ? "scale-y-100 opacity-100" : "scale-y-0 opacity-0"}`}
+                    />
                     <div className="min-w-0">
-                      <p className="font-medium break-words">
-                        {budgetTitles[budget.id] ?? budget.id}
-                      </p>
+                      <p className="break-words font-medium">{name}</p>
                       <p className="text-sm text-muted-foreground tabular-nums">
                         {budget.limit
                           ? `${formatQuantity(budget.limit)} ${budget.unit}`
@@ -134,74 +172,73 @@ export function BudgetManagerPanel({
                     </div>
                     <Button
                       type="button"
-                      variant="outline"
+                      variant={selected ? "secondary" : "outline"}
                       size="sm"
-                      aria-label={`${canWrite ? labels.edit : labels.view} ${budgetTitles[budget.id] ?? budget.id}`}
-                      aria-pressed={activeId === budget.id}
-                      onClick={() => choose(budget, budgetTitles[budget.id] ?? budget.id)}
+                      aria-label={`${canWrite ? labels.edit : labels.view} ${name}`}
+                      aria-pressed={selected}
+                      onClick={() => choose(budget, name)}
                     >
                       {canWrite ? labels.edit : labels.view}
                     </Button>
                   </li>
-                ))}
-              </ul>
-              {canWrite && creates.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">{labels.createTitle}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {creates.map((row) => (
-                      <Button
-                        key={row.budget.id}
-                        type="button"
-                        variant="outline"
-                        aria-label={`${labels.create} ${row.title}`}
-                        onClick={() => choose(row.budget, row.title, row.description)}
-                      >
-                        {labels.create} {row.title}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
+                );
+              })}
+            </ul>
           )}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setSelection(null);
-              setSaved(null);
-              result.refresh();
-            }}
-          >
-            {labels.reload}
-          </Button>
+          {readable && canWrite && creates.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">{labels.createTitle}</p>
+              <div className="flex flex-wrap gap-2">
+                {creates.map((row) => (
+                  <Button
+                    key={row.budget.id}
+                    type="button"
+                    variant={activeId === row.budget.id ? "secondary" : "outline"}
+                    aria-label={`${labels.create} ${row.title}`}
+                    onClick={() => choose(row.budget, row.title, row.description)}
+                  >
+                    <svg
+                      aria-hidden
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    >
+                      <path d="M8 3.5v9M3.5 8h9" strokeLinecap="round" />
+                    </svg>
+                    {row.title}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
           {saved && (
-            <p role="status" className="text-sm text-muted-foreground">
+            <UsageNotice key={saved} tone="positive">
               {labels.saved}
-            </p>
+            </UsageNotice>
           )}
         </CardContent>
       </Card>
       {readable && active && (
-        <BudgetEditor
-          key={serialize([editingKey, active.budget])}
-          budget={active.budget}
-          title={active.title}
-          description={active.description}
-          labels={editorLabels}
-          budgetWriter={budgetWriter}
-          onSaved={(budget) => {
-            setSaved(budget.id);
-            setSelection((previous) =>
-              previous?.key === editingKey && previous.meter === binding?.meter
-                ? { ...previous, budget: structuredClone(budget) }
-                : previous,
-            );
-            result.refresh();
-          }}
-        />
+        <div key={serialize([editingKey, active.budget.id])} className={usageMotion.enter}>
+          <BudgetEditor
+            key={serialize([editingKey, active.budget])}
+            budget={active.budget}
+            title={active.title}
+            description={active.description}
+            labels={editorLabels}
+            budgetWriter={budgetWriter}
+            onSaved={(budget) => {
+              setSaved(budget.id);
+              setSelection((previous) =>
+                previous?.key === editingKey && previous.meter === binding?.meter
+                  ? { ...previous, budget: structuredClone(budget) }
+                  : previous,
+              );
+              result.refresh();
+            }}
+          />
+        </div>
       )}
     </section>
   );

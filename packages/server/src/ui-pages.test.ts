@@ -2,12 +2,16 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createElement } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { createManualClock, createMemoryStore } from "@usagekit/store";
 import { createMeter } from "@usagekit/meter";
-import { MeterProvider, ProviderManagementProvider } from "@usagekit/react";
+import {
+  MeterProvider,
+  ProviderManagementProvider,
+  createProviderQueryClient,
+} from "@usagekit/react";
 import type {
   ProviderConnection,
   ProviderDefinition,
@@ -112,7 +116,8 @@ describe("local server UI pages on the base registry blocks", () => {
     const { OverviewPage } = await load("pages/overview.tsx");
     await withMeter(createElement(OverviewPage!, { budgetInput, units: ["requests"], now }));
     expect(await screen.findByText("7 of 10 requests left")).toBeTruthy();
-    expect(await screen.findByText("0.5000 cents")).toBeTruthy();
+    expect(await screen.findByRole("cell", { name: "0.5000 cents" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Usage overview" })).toBeTruthy();
     expect(screen.getByText("Coverage")).toBeTruthy();
     expect(screen.getByRole("combobox", { name: "Period" })).toBeTruthy();
   });
@@ -258,6 +263,7 @@ function providerFixture() {
     ],
   };
   let revision = 1;
+  const providers = [definition];
   let connections = [structuredClone(connection)];
   const commands: ProviderCommand[] = [];
   const secrets: Record<string, string>[] = [];
@@ -271,7 +277,7 @@ function providerFixture() {
         asOf: null,
         revision: String(revision),
         connections: structuredClone(connections),
-        providers: [definition],
+        providers: structuredClone(providers),
       },
     })),
     execute: vi.fn<ProviderManagementPort["execute"]>(async (_binding, command, ephemeral) => {
@@ -281,6 +287,13 @@ function providerFixture() {
         "connectionId" in command
           ? connections.find((value) => value.id === command.connectionId)
           : undefined;
+      if (current && "expectedRevision" in command && command.expectedRevision !== current.revision)
+        return {
+          outcome: "conflict",
+          commandId: command.commandId,
+          reason: "Connection revision changed",
+          currentRevision: current.revision,
+        };
       if (command.kind === "connect") {
         current = {
           ...structuredClone(connection),
@@ -323,9 +336,148 @@ function providerFixture() {
     authRevision: "1",
     canManage: true,
   };
-  return { port, binding, commands, secrets, definition, connection };
+  return {
+    port,
+    binding,
+    commands,
+    secrets,
+    definition,
+    connection,
+    revealProvider() {
+      providers.push({ ...definition, id: "new-provider", label: "New provider" });
+      connections.push({
+        ...structuredClone(connection),
+        id: "new-connection",
+        provider: "new-provider",
+        label: "New provider account",
+      });
+    },
+    snapshots() {
+      return structuredClone(connections);
+    },
+  };
 }
 describe("shared local management flows", () => {
+  test("dashboard opens the connect form for a newly observed provider", async () => {
+    const { ConnectionsPage } = await load("pages/connections.tsx");
+    const fixture = providerFixture();
+    const client = createProviderQueryClient();
+    const read = fixture.port.read;
+    let failed = false;
+    fixture.port.read = vi.fn<ProviderManagementPort["read"]>((binding, query) =>
+      failed
+        ? Promise.resolve({ outcome: "unavailable", message: "Stored evidence is unavailable." })
+        : read(binding, query),
+    );
+    render(
+      createElement(
+        ProviderManagementProvider,
+        { port: fixture.port, binding: fixture.binding, client },
+        createElement(ConnectionsPage!, { connections: [] }),
+      ),
+    );
+    await screen.findByText("Search local");
+    fixture.revealProvider();
+    await act(async () => {
+      client.invalidate(fixture.port, fixture.binding);
+    });
+    fireEvent.click(await screen.findByRole("button", { name: "Connect New provider" }));
+    expect(screen.getByRole("form", { name: "New provider credentials" })).toBeTruthy();
+    expect(screen.getByLabelText("API key")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Close editor" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Manage connection" })[1]!);
+    fireEvent.change(screen.getByLabelText(/Price/), { target: { value: "12.5000" } });
+    failed = true;
+    await act(async () => {
+      client.invalidate(fixture.port, fixture.binding);
+    });
+    await screen.findAllByText("Stored evidence is unavailable.");
+    expect((screen.getByLabelText(/Price/) as { value: string }).value).toBe("12.5000");
+    expect(
+      (screen.getByRole("button", { name: "Save rate" }) as { disabled: boolean }).disabled,
+    ).toBe(true);
+    expect(screen.queryByText(/0\.6250 cents/)).toBeNull();
+    expect(fixture.commands).toEqual([]);
+  });
+  test.each(["forbidden", "unavailable"] as const)(
+    "dashboard %s stored read retains the fenced rate draft without old evidence",
+    async (failure) => {
+      const { ConnectionsPage } = await load("pages/connections.tsx");
+      const fixture = providerFixture();
+      const client = createProviderQueryClient();
+      const read = fixture.port.read;
+      let failed = false;
+      let recovered = false;
+      fixture.port.read = vi.fn<ProviderManagementPort["read"]>(async (binding, query) => {
+        if (failed)
+          return failure === "forbidden"
+            ? { outcome: "forbidden" }
+            : { outcome: "unavailable", message: "Stored evidence is unavailable." };
+        const answer = await read(binding, query);
+        if (recovered && answer.outcome === "ok" && answer.value.kind === "connections")
+          return {
+            ...answer,
+            value: {
+              ...answer.value,
+              revision: "2",
+              connections: answer.value.connections.map((connection) => ({
+                ...connection,
+                revision: "2",
+                rates: connection.rates.map((rate) => ({
+                  ...rate,
+                  price: { text: "9.7500", unit: "cents", certainty: "measured" as const },
+                  provenance: { ...rate.provenance, version: "fresh-rate" },
+                })),
+              })),
+            },
+          };
+        return answer;
+      });
+      render(
+        createElement(
+          ProviderManagementProvider,
+          { port: fixture.port, binding: fixture.binding, client },
+          createElement(ConnectionsPage!, { connections: [] }),
+        ),
+      );
+      await screen.findByText("Search local");
+      fireEvent.click(screen.getByRole("button", { name: "Manage connection" }));
+      fireEvent.change(screen.getByLabelText(/Price/), { target: { value: "12.5000" } });
+      failed = true;
+      await act(async () => {
+        client.invalidate(fixture.port, fixture.binding);
+      });
+      await screen.findAllByText(
+        failure === "forbidden"
+          ? "You cannot make this change."
+          : "Stored evidence is unavailable.",
+      );
+      const draft = screen.getByLabelText(/Price/) as {
+        value: string;
+        readOnly: boolean;
+        disabled: boolean;
+      };
+      expect(draft.value).toBe("12.5000");
+      expect(draft.readOnly || draft.disabled).toBe(true);
+      expect(
+        (screen.getByRole("button", { name: "Save rate" }) as { disabled: boolean }).disabled,
+      ).toBe(true);
+      expect(screen.queryByText(/0\.6250 cents/)).toBeNull();
+      expect(fixture.commands).toEqual([]);
+      failed = false;
+      recovered = true;
+      await act(async () => {
+        client.invalidate(fixture.port, fixture.binding);
+      });
+      await screen.findByText("fresh-rate");
+      expect((screen.getByLabelText(/Price/) as { value: string }).value).toBe("12.5000");
+      fireEvent.click(screen.getByRole("button", { name: "Reload connections" }));
+      await waitFor(() => expect(screen.queryByLabelText(/Price/)).toBeNull());
+      fireEvent.click(screen.getByRole("button", { name: "Manage connection" }));
+      expect((screen.getByLabelText(/Price/) as { value: string }).value).toBe("9.7500");
+      expect(fixture.commands).toEqual([]);
+    },
+  );
   test("format check, connect, reconnect, exact manual rate and disconnect use explicit host ports", async () => {
     const { ConnectionsPage } = await load("pages/connections.tsx");
     const fixture = providerFixture();
@@ -362,18 +514,38 @@ describe("shared local management flows", () => {
       connectionId: "c2",
       expectedRevision: "2",
     });
+    await waitFor(() =>
+      expect(
+        (screen.getByRole("button", { name: "Reload connections" }) as { disabled: boolean })
+          .disabled,
+      ).toBe(false),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Reload connections" }));
+    await waitFor(() => expect(screen.queryByLabelText(/Price/)).toBeNull());
+    fireEvent.click(screen.getAllByRole("button", { name: "Manage connection" })[1]!);
     fireEvent.change(screen.getByLabelText(/Price/), { target: { value: "10.1234" } });
     fireEvent.click(screen.getByRole("button", { name: "Save rate" }));
     await waitFor(() => expect(fixture.commands).toHaveLength(4));
     expect(fixture.commands[3]).toMatchObject({
       kind: "rates",
+      connectionId: "c2",
+      expectedRevision: "3",
       rates: [{ rateId: "request", price: "10.1234" }],
     });
+    await waitFor(() =>
+      expect(fixture.snapshots()[1]!.rates[0]!.price).toMatchObject({ text: "10.1234" }),
+    );
+    await waitFor(() =>
+      expect(
+        (screen.getByRole("button", { name: "Disconnect" }) as { disabled: boolean }).disabled,
+      ).toBe(false),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Disconnect" }));
     expect(fixture.commands).toHaveLength(4);
     fireEvent.click(screen.getByRole("button", { name: "Confirm disconnect" }));
     await waitFor(() => expect(fixture.commands).toHaveLength(5));
     expect(fixture.commands[4]!.kind).toBe("disconnect");
+    expect(fixture.commands[4]).toMatchObject({ connectionId: "c2", expectedRevision: "4" });
   });
   test("new monthly budget targets the selected second connection with an exact native scope", async () => {
     const { BudgetsPage } = await load("pages/budgets.tsx");

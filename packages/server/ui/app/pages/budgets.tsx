@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import type { BudgetScope } from "@usagekit/core";
 import type { BudgetsInput, BudgetTemplate, ConnectionInput } from "@usagekit/views";
-import { Button } from "@/components/ui/button";
 import { BudgetCardsPanel } from "@/components/usagekit/budget-card";
 import { BudgetManagerPanel } from "@/components/usagekit/budget-manager-panel";
+import { UsageSegmented, usageMotion } from "@/components/usagekit/usage-motion";
 import { localScope } from "../session";
 
 type LocalBudgetScope = Extract<BudgetScope, { kind: "principal" | "connection" }>;
@@ -45,16 +45,22 @@ export function BudgetsPage({
     [connectionId, unitKey],
   );
   return (
-    <section aria-label="Budgets" className="space-y-8 min-w-0">
-      <div className="space-y-2">
-        <h1 className="text-xl font-semibold">Budgets</h1>
-        <p className="text-sm text-muted-foreground">
+    <section aria-label="Budgets" className="min-w-0 space-y-10">
+      <div className="space-y-1.5">
+        <h1 className="text-xl font-semibold tracking-tight">Budgets</h1>
+        <p className="max-w-prose text-sm text-muted-foreground">
           Edit existing limits or create a monthly limit. These controls do not reset usage or
           change a balance.
         </p>
       </div>
+      {budgetInput && (
+        <section aria-label="Applicable budget status" className="space-y-3">
+          <h2 className="text-base font-semibold">Applicable budget status</h2>
+          <BudgetCardsPanel {...budgetInput} />
+        </section>
+      )}
       <section aria-label="Local principal budgets" className="space-y-3">
-        <h2 className="text-lg font-semibold">Local principal</h2>
+        <h2 className="text-base font-semibold">Local principal</h2>
         <BudgetManagerPanel
           scope={localScope}
           templates={principalTemplates}
@@ -65,20 +71,17 @@ export function BudgetsPage({
       </section>
       {connections.length ? (
         <section aria-label="Connection budgets" className="space-y-4">
-          <h2 className="text-lg font-semibold">Connection budgets</h2>
-          <div role="group" className="flex flex-wrap gap-2" aria-label="Choose budget connection">
-            {connections.map((item) => (
-              <Button
-                key={item.id}
-                type="button"
-                className="h-auto max-w-full whitespace-normal break-all py-2"
-                variant={connectionId === item.id ? "secondary" : "outline"}
-                aria-pressed={connectionId === item.id}
-                onClick={() => setSelected(item.id)}
-              >
-                {item.label ?? item.id}
-              </Button>
-            ))}
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+            <h2 className="text-base font-semibold">Connection budgets</h2>
+            <UsageSegmented
+              label="Choose budget connection"
+              value={connectionId ?? null}
+              options={connections.map((item) => ({
+                value: item.id,
+                label: item.label ?? item.id,
+              }))}
+              onChange={setSelected}
+            />
           </div>
           {connectionScope && (
             <BudgetManagerPanel
@@ -92,15 +95,11 @@ export function BudgetsPage({
           )}
         </section>
       ) : (
-        <p className="text-sm text-muted-foreground">
+        <p
+          className={`rounded-lg border border-dashed border-border px-4 py-3.5 text-sm text-muted-foreground ${usageMotion.enter}`}
+        >
           Add a provider connection to manage its connection budgets.
         </p>
-      )}
-      {budgetInput && (
-        <section aria-label="Applicable budget status" className="space-y-3">
-          <h2 className="text-lg font-semibold">Applicable budget status</h2>
-          <BudgetCardsPanel {...budgetInput} />
-        </section>
       )}
     </section>
   );

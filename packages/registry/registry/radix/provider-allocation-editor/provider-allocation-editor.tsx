@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
-import { useProviderAction, useProviderAllocations } from "@usagekit/react";
+import { useProviderAction, useProviderEditor } from "@usagekit/react";
+import type { ProviderAction } from "@usagekit/react";
 import { parseProviderDecimal } from "@usagekit/views";
 import type { BudgetProjectionInput, ProviderAllocationRow } from "@usagekit/views";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import {
   ProviderActionFeedback,
   ProviderReadFeedback,
 } from "@/components/usagekit/provider-feedback";
+import { UsageNotice, UsageSpinner } from "@/components/usagekit/usage-motion";
 import {
   AllocationRow,
   providerAllocationLabels,
@@ -20,6 +22,9 @@ import type {
 export { providerAllocationLabels } from "@/components/usagekit/provider-allocation-row";
 type AllocationProps = {
   rows: readonly ProviderAllocationRow[];
+  /** Omit for explicit-data presentation; panels supply current evidence or null. */
+  evidenceRows?: readonly ProviderAllocationRow[] | null;
+  action?: ProviderAction;
   revision: string;
   fresh?: boolean;
   projections?: Readonly<Record<string, BudgetProjectionInput>>;
@@ -44,19 +49,16 @@ export function ProviderAllocationEditor(props: AllocationProps) {
 }
 function AllocationEditor({
   rows,
+  evidenceRows = rows,
+  action: guardedAction,
   revision,
   fresh = false,
   projections,
   labels: custom,
-}: {
-  rows: readonly ProviderAllocationRow[];
-  revision: string;
-  fresh?: boolean;
-  projections?: Readonly<Record<string, BudgetProjectionInput>>;
-  labels?: Partial<ProviderAllocationLabels>;
-}) {
+}: AllocationProps) {
   const labels = { ...providerAllocationLabels, ...custom };
-  const action = useProviderAction();
+  const sharedAction = useProviderAction();
+  const action = guardedAction ?? sharedAction;
   const initial = Object.fromEntries(
     rows.map((row) => [
       row.id,
@@ -71,6 +73,17 @@ function AllocationEditor({
   const [error, setError] = useState<string | null>(null);
   const editable =
     action.canWrite && !action.pending && !action.ambiguous && action.state !== "conflict";
+  const current = (row: ProviderAllocationRow) =>
+    evidenceRows?.find(
+      (value) =>
+        value.id === row.id &&
+        value.connectionId === row.connectionId &&
+        value.fundingSource === row.fundingSource &&
+        value.surface === row.surface &&
+        value.unit === row.unit,
+    ) ?? null;
+  const mayEdit = (row: ProviderAllocationRow) =>
+    editable && row.editable && current(row)?.editable === true;
   const submitted = action.submittedCommand;
   const shown = (row: ProviderAllocationRow): Draft => {
     const pending =
@@ -86,7 +99,7 @@ function AllocationEditor({
     const changes = rows
       .filter(
         (row) =>
-          row.editable &&
+          mayEdit(row) &&
           (shown(row).unlimited !== initial[row.id]!.unlimited ||
             (!shown(row).unlimited && shown(row).limit !== initial[row.id]!.limit)),
       )
@@ -114,19 +127,20 @@ function AllocationEditor({
     });
   };
   return (
-    <Card className="min-w-0 w-full">
+    <Card className="w-full min-w-0">
       <CardHeader>
-        <CardTitle>{labels.title}</CardTitle>
+        <CardTitle className="leading-snug">{labels.title}</CardTitle>
         <CardDescription>{labels.description}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="cn-usage-gap-md flex flex-col">
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {rows.map((row) => (
             <AllocationRow
               key={row.id}
               row={row}
+              evidence={current(row)}
               draft={shown(row)}
-              editable={editable && row.editable}
+              editable={mayEdit(row)}
               fresh={fresh}
               labels={labels}
               change={(value) => setDrafts({ ...drafts, [row.id]: value })}
@@ -134,27 +148,34 @@ function AllocationEditor({
             />
           ))}
         </div>
-        {!rows.length && <p>{labels.empty}</p>}
-        {error && (
-          <p role="alert" className="text-sm text-destructive">
-            {error}
+        {!rows.length && (
+          <p className="cn-usage-empty cn-usage-body border-border text-muted-foreground">
+            {labels.empty}
           </p>
         )}
-        <Button
-          type="button"
-          disabled={
-            !editable ||
-            !rows.some(
-              (row) =>
-                row.editable &&
-                (shown(row).unlimited !== initial[row.id]!.unlimited ||
-                  (!shown(row).unlimited && shown(row).limit !== initial[row.id]!.limit)),
-            )
-          }
-          onClick={save}
-        >
-          {labels.save}
-        </Button>
+        {error && (
+          <UsageNotice key={error} tone="error" role="alert">
+            {error}
+          </UsageNotice>
+        )}
+        <div className="border-t border-border pt-4">
+          <Button
+            type="button"
+            disabled={
+              !editable ||
+              !rows.some(
+                (row) =>
+                  mayEdit(row) &&
+                  (shown(row).unlimited !== initial[row.id]!.unlimited ||
+                    (!shown(row).unlimited && shown(row).limit !== initial[row.id]!.limit)),
+              )
+            }
+            onClick={save}
+          >
+            {action.pending && submitted?.kind === "allocations" && <UsageSpinner />}
+            {labels.save}
+          </Button>
+        </div>
         <ProviderActionFeedback action={action} />
       </CardContent>
     </Card>
@@ -164,33 +185,55 @@ export function ProviderAllocationPanel({
   connectionIds,
   fresh = false,
   labels,
+  evidenceAvailable = true,
+  canEdit = true,
 }: {
   connectionIds: readonly string[];
   fresh?: boolean;
   labels?: Partial<ProviderAllocationLabels>;
+  /** A composing panel may withdraw evidence without discarding this editor's draft. */
+  evidenceAvailable?: boolean;
+  canEdit?: boolean;
 }) {
-  const result = useProviderAllocations({ connectionIds });
-  const action = useProviderAction();
-  if (!result.data || result.state !== "ok")
+  const result = useProviderEditor({ kind: "allocations", connectionIds });
+  const action = { ...result.action, canWrite: result.canEdit && canEdit && evidenceAvailable };
+  const reloadDisabled =
+    action.pending || action.ambiguous || result.refreshing || !evidenceAvailable;
+  if (!result.editorData)
     return (
-      <ProviderReadFeedback state={result.state} error={result.error} refresh={result.refresh} />
+      <ProviderReadFeedback
+        state={result.state}
+        error={result.error}
+        refresh={result.reload}
+        disabled={reloadDisabled}
+      />
     );
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <Button
         type="button"
         variant="outline"
-        disabled={action.pending || action.ambiguous || result.refreshing}
-        onClick={() => {
-          action.reset();
-          result.refresh();
-        }}
+        size="sm"
+        disabled={reloadDisabled}
+        onClick={result.reload}
       >
-        Reload allocations
+        {result.refreshing && <UsageSpinner />}
+        {labels?.reload ?? providerAllocationLabels.reload}
       </Button>
+      {!result.evidence && (
+        <ProviderReadFeedback
+          state={result.state}
+          error={result.error}
+          refresh={result.reload}
+          disabled={reloadDisabled}
+        />
+      )}
       <ProviderAllocationEditor
-        rows={result.data.rows}
-        revision={result.data.revision}
+        key={result.editorEpoch}
+        rows={result.editorData.rows}
+        revision={result.editorData.revision}
+        evidenceRows={evidenceAvailable ? (result.evidence?.rows ?? null) : null}
+        action={action}
         fresh={fresh}
         {...(labels ? { labels } : {})}
       />

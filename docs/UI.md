@@ -1,8 +1,9 @@
 # UI layers
 
-The four-package runtime cohort is published at 0.5.0. `@usagekit/react` and
-`@usagekit/views` belong to the seven-package 0.6.0 cohort. The registry remains
-private build tooling whose blocks are distributed as public copyable JSON.
+All seven packages, including `@usagekit/react`, `@usagekit/views` and
+`@usagekit/store-postgres`, are published at 0.6.0. The 0.7.0 source cohort adds
+`useProviderEditor` to the React package. The registry remains private build tooling whose
+blocks are distributed as public copyable JSON.
 Verify exact npm versions before installing a cohort; use reviewed tarballs for unreleased
 candidates. See [consuming packages](CONSUMING.md) for both workflows.
 
@@ -136,36 +137,42 @@ and labels to provide application copy; all strings have English defaults.
 
 ## Copyable registry blocks
 
-Both Radix/New York and Base UI/base-vega contain the same twenty blocks:
+Both Radix/New York and Base UI/base-vega contain the same twenty-two blocks:
 
-| Block                        | Purpose                                                  |
-| ---------------------------- | -------------------------------------------------------- |
-| `measurement-card`           | One exact figure with certainty                          |
-| `usage-summary-cards`        | Complete totals by measurement unit                      |
-| `cost-summary-card`          | Provider cost and funding/cost-owner breakdown           |
-| `usage-table`                | Detail and cursor pagination                             |
-| `budget-card`                | Applicable budget usage, reservations, alerts and bounds |
-| `budget-editor`              | View or edit one trusted definition/template             |
-| `budget-manager-panel`       | Browse, reload, edit and create from host templates      |
-| `header-status`              | Compact applicable-budget status, including empty state  |
-| `coverage-summary`           | Tracked and untracked coverage                           |
-| `exceptions-list`            | Work needing evidence or recovery                        |
-| `usage-filters`              | Controlled period and scope choices                      |
-| `connection-list`            | Funding, tags and plan per connection                    |
-| `provider-card`              | Connection status, availability and explicit actions     |
-| `provider-connect-form`      | Draft credentials, test, connect and reconnect           |
-| `provider-source-selector`   | Own-key or platform funding with explicit confirmation   |
-| `provider-rate-editor`       | Exact rates, measured/manual/list provenance and editing |
-| `provider-chain-editor`      | Enable connections and edit fallback ordering            |
-| `provider-balance-card`      | Separate provider or host-wallet balance and freshness   |
-| `provider-allocation-editor` | Funding-by-surface limits and availability suggestions   |
-| `provider-manager-panel`     | Compose connection, rate, funding and allocation tools   |
+| Block                        | Purpose                                                          |
+| ---------------------------- | ---------------------------------------------------------------- |
+| `measurement-card`           | One exact figure with certainty                                  |
+| `usage-summary-cards`        | Complete totals by measurement unit                              |
+| `cost-summary-card`          | Provider cost and funding/cost-owner breakdown                   |
+| `usage-table`                | Detail and cursor pagination                                     |
+| `budget-card`                | Used and reserved figures, labelled limit, hard-limit and alerts |
+| `budget-editor`              | View or edit one trusted definition/template                     |
+| `budget-manager-panel`       | Browse, reload, edit and create from host templates              |
+| `usage-overview-card`        | Host-authoritative budget figure, meter, metrics and connections |
+| `usage-cap-pill`             | Compact header meter for known, partial, unknown and no-cap use  |
+| `header-status`              | Compact applicable-budget status, including empty state          |
+| `coverage-summary`           | Tracked and untracked coverage                                   |
+| `exceptions-list`            | Work needing evidence or recovery                                |
+| `usage-filters`              | Controlled period and scope choices                              |
+| `connection-list`            | Funding, tags and plan per connection                            |
+| `provider-card`              | Connection status, availability and explicit actions             |
+| `provider-connect-form`      | Draft credentials, test, connect and reconnect                   |
+| `provider-source-selector`   | Own-key or platform funding with explicit confirmation           |
+| `provider-rate-editor`       | Exact rates, measured/manual/list provenance and editing         |
+| `provider-chain-editor`      | Enable connections and edit fallback ordering                    |
+| `provider-balance-card`      | Separate provider or host-wallet balance and freshness           |
+| `provider-allocation-editor` | Funding-by-surface limits and availability suggestions           |
+| `provider-manager-panel`     | Compose connection, rate, funding and allocation tools           |
 
 Provider blocks use a separate host-owned `ProviderManagementPort`. They do not infer
 provider credentials, connection ownership, prices or wallet balances from Meter reads.
 Headless hooks provide connection, balance, quote and allocation reads plus explicit
 administrative actions. See [provider UI](PROVIDER-UI.md) for the adapter contract,
-concurrency, reconciliation and exact-limit semantics.
+concurrency, reconciliation and exact-limit semantics. The 0.7.0 React package adds
+[`useProviderEditor`](PROVIDER-UI.md#provider-editors), which keeps a draft base separate from
+current evidence and rebases only after an explicit successful reload. Hook-backed editor
+panels enforce that lifecycle; hosts supplying props to pure leaves are responsible for their
+validity. This API is absent from the published 0.6.0 React package.
 
 Data-driven blocks expose pure components and hook-backed Panels where applicable.
 Filters and connection lists take host data. Styling uses the host's semantic tokens;
@@ -181,28 +188,105 @@ npx shadcn add ./packages/registry/dist/r/base/usage-summary-cards.json
 Each JSON artifact declares package dependencies, host primitives and all copied files.
 The manager bundles its editor; summary cards bundle their measurement card. Files land in
 `@/components/usagekit/` and import `@/components/ui/*`. Root `r/<name>.json` defaults to
-Radix. Tooltip triggers and selects have variant-specific files; other block source is shared.
-The shadcn CLI requests exact 0.6.0 UI package versions. Until that candidate is published,
-install the reviewed local tarballs first and keep the registry consumer offline from npm.
-After publication, the public registry can resolve those exact dependencies anonymously.
-See [consuming packages](CONSUMING.md) for the usable checkout flow.
+Radix. The header status tooltip trigger and the filter selects have variant-specific files;
+other block source is shared.
+The shadcn CLI requests exact 0.7.0 UI package versions. They resolve anonymously on npm once
+0.7.0 is published; until then, install the reviewed local tarballs first. The
+[public examples](https://usagekit.dev/examples/) show every block in every shadcn style and
+provide each block's install command. See [consuming packages](CONSUMING.md) for local tarball
+validation of unreleased candidates.
 
 To use another design system, copy every artifact file and replace the listed table, card,
 badge, button, tooltip, select, input and label imports with equivalent host primitives.
 Keep the view model semantics, exact text and accessible labels.
 
+### Styles
+
+The blocks follow every shadcn style: New York and Vega, Nova, Maia, Lyra, Mira, Luma, Sera and
+Rhea for both Radix and Base UI. Host primitives already come in the host's style. Usagekit's own
+elements (meters, statuses, pills, segmented choices, notices, panels, rows, tables and type
+roles) carry `cn-usage-*` tokens instead of fixed classes, and
+`packages/registry/styles/<style>.css` defines every token for one style in the format of
+shadcn's style sheets: `.style-<style> { .cn-usage-track { @apply ...; } }`. Each value mirrors
+the shadcn primitive with the same role in that style, such as the progress track for meters,
+the badge for pills, tabs for segmented choices and the alert for notices. Where a style fills
+chips, badges or fields (Maia, Mira, Luma and Rhea), quiet text on them uses
+`text-foreground/70`, because the muted foreground falls below 4.5:1 contrast on those fills.
+
+`npm run registry:build` bakes one sheet into the sources for each style and writes
+`r/styles/<style>/<name>.json`, so installed code contains plain Tailwind classes and no
+tokens. `r/radix` stays New York and `r/base` stays Base UI Vega. A host on any style points a
+registry at the style placeholder, which the shadcn CLI fills from `components.json`:
+
+```json
+{ "registries": { "@usagekit": "https://usagekit.dev/r/styles/{style}/{name}.json" } }
+```
+
+```sh
+npx shadcn add @usagekit/usage-overview-card
+```
+
+Tests require every sheet to define exactly the tokens the sources use, with semantic colors
+and no motion, and every published file to match its source with that style's sheet baked in.
+To add a style, add its sheet, list it in `styles/styles.mjs` and add its primitives under
+`consumers/styles/<style>` for the showcase.
+
+`consumers/styles/<style>` holds the eight primitives the blocks import, as
+`shadcn add card button badge input label select table tooltip` writes them with shadcn 4.21 and
+the lucide icon library, for every style beyond the two consumer hosts (`radix` is New York and
+`base` is Base UI Vega). Only the `cn` import changes, to the host's `@/lib/utils`, and Prettier
+formats the files. `consumers/styles/index.css` is their host stylesheet: the consumer theme with
+`shadcn/tailwind.css` and the radius scale that `shadcn init` writes. The showcase loads every
+folder at once and renders the current style's files, so its pickers switch in place.
+
+## Meter and motion
+
+Blocks share two helper files that are copied with the blocks that use them; neither adds a
+dependency or a stylesheet.
+
+`usage-meter.tsx` draws every usage reading with one vocabulary. A confirmed reading is a solid
+fill in the level tone. A partial reading, a confirmed lower bound, adds a short hatched tail
+after the fill. An unknown reading is an empty hatched track and never a zero fill. A reading
+without a limit is a dashed baseline. A reading past its limit clamps at the end of the scale
+and adds a notch beyond it. Meter budgets add a lighter reserved segment and labelled marks for
+the limit, hard limit and alerts; a ring in the surface color cuts each mark into the fill, so a
+crossed alert stays visible. A nonzero reading always leaves a visible trace. Levels use
+`primary`, `chart-4` and `destructive`; the track takes the shape, height and color of the
+style's progress track. `UsageMeter` takes a host
+percent, while `UsageTrack` takes exact percent text from the view models. A host that knows
+more than the percent, such as reserved usage or a crossed alert, passes `level`, and the meter
+shows the more severe of that level and the level of the percent.
+
+`usage-motion.tsx` holds the motion vocabulary. Meters settle from empty on first render and
+glide to new readings; related meters are staggered. Changed figures, status words, feedback
+and revealed fields rise in once from `@starting-style`. Disclosures unfold their height,
+segmented choices slide their indicator, the fallback chain slides reordered items and a
+spinner marks only the control doing the work. Nothing else loops. Transitions use the host's
+`ease-out` token, so a host can supply its own curve. With `prefers-reduced-motion: reduce`,
+every transition and animation is removed and content appears in its final state; a test
+guards that every animated class has a reduced-motion counterpart.
+
+Paging a usage table keeps the current page visible and marked busy until the next page
+arrives, within the same query and binding only. Failed and forbidden reads never show
+retained figures and discard the retained page, so a later reload starts from loading.
+
 ## Local showcases and coverage
 
-After the root `npm ci`, prepare complete local dashboards without downloads or publication:
+After the root `npm ci`, prepare a complete local dashboard without downloads or publication:
 
 ```sh
 node packages/registry/consumers/prepare.mjs
 ```
 
-The command prints two Vite invocations for `http://127.0.0.1:5177` (Radix) and
-`http://127.0.0.1:5178` (Base UI). Both use the copied blocks, one in-memory Meter,
-sample host adapters, light/dark controls and a view-only switch. Fixtures and generated
-copies stay local; they make no provider calls. Use them for desktop/mobile review.
+The command prints a Vite invocation for `http://127.0.0.1:5177`. One page shows every block
+with one in-memory Meter, sample host adapters, light/dark controls and a view-only switch. Its
+library and style pickers switch all seventeen styles in place, like the shadcn create preview:
+every sheet loads under its `.style-<style>` class, the pickers swap that class on `<html>`, and
+each host primitive, the pickers' own Select included, renders the exact file `shadcn add`
+writes for the current style. The style, the state and the theme stay in the address. A state switcher shows the native usage card within
+budget, near and over the limit, with partial or unknown data, without a budget or connections,
+loading and after a failed read; it can replay the first render. Fixtures and generated copies
+stay local; they make no provider calls. Use it for desktop/mobile review.
 
 `loadCoverageView` accepts a `CoverageSource` for bigint counts of metered, passthrough,
 unpriced, cached and rate-limited requests. Without it, the Meter's tracked requests are
@@ -211,3 +295,32 @@ coverage port runs. `createMemoryCoverageSource` is available for tests and demo
 
 The existing local server builds its Base UI page with `npm run build` and serves it at `/`.
 Its bearer token is kept in memory; reloading asks for it again.
+
+## Native accounting adapters
+
+`UsageOverviewCard` and `UsageCapPill` also accept authorized observations from a host's
+existing accounting system. They do not read the supplemental Meter or infer a provider
+balance. The host supplies localized exact value strings, actions and routing; the blocks
+own presentation and meter geometry. Unknown usage never renders a confirmed zero meter.
+Partial positive amounts must be qualified as lower bounds by the host adapter.
+
+The card's `budget` takes a complete `value`, announced by the meter, plus an optional short
+`figure`, a `qualifier` such as "At least", a `caption` and `warningAt` for the warning mark.
+Status words come from the level labels; a partial reading below the warning point reads
+"Still measuring" rather than claiming to be within budget. `level` raises the status the same
+way as on the meter, so a budget that reservations already exhaust reads as over the limit. `loading` keeps the layout with
+placeholders instead of figures, and `emptyAction` adds an action to the empty state.
+
+`UsageConnectionRow` (in `usage-connection-row.tsx`, bundled with the card) is one connection:
+a summary line with the tightest reading that unfolds labelled readings per funding source,
+notes and a per-feature breakdown. A `notice` stays visible while the row is collapsed. An
+unknown summary shows its label, never the host figure. `UsageCapPill` takes `size="sm"` for
+compact header chips.
+
+Both artifacts bundle `usage-progress.tsx`, a pure `usageProgress(percent, partial)`
+projection with no React, DOM or styling imports. It can be used without the styled blocks.
+It preserves complete zero, partial positive usage, unknown zero and over-limit status.
+The existing headless Meter and provider hooks remain available from `@usagekit/react`.
+Like every registry item, these blocks request exact 0.7.0 package versions. The provider
+rate, allocation and manager blocks also need `useProviderEditor`, which is new in the 0.7.0
+React package.

@@ -1,5 +1,6 @@
 import { afterEach, expect, test } from "vitest";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { startServer } from "./index.js";
@@ -63,10 +64,10 @@ test("without a built UI the root answers 404 after authentication", async () =>
   }
 });
 
-test("the UI uses the base registry blocks and base primitives unchanged", () => {
+test("the UI uses the base registry blocks in the Vega style and base primitives unchanged", () => {
   const server = join(import.meta.dirname, "..");
   const registry = join(server, "../registry");
-  for (const block of [
+  const blocks = [
     "usage-table",
     "budget-card",
     "header-status",
@@ -80,10 +81,21 @@ test("the UI uses the base registry blocks and base primitives unchanged", () =>
     "provider-connect-form",
     "provider-rate-editor",
     "provider-feedback",
-  ])
-    expect(readFileSync(join(server, "ui/components/usagekit", `${block}.tsx`), "utf8")).toBe(
-      readFileSync(join(registry, "registry/base", block, `${block}.tsx`), "utf8"),
-    );
+    "usage-overview-card",
+    "usage-connection-row",
+    "usage-cap-pill",
+    "usage-progress",
+    "usage-meter",
+    "usage-motion",
+  ];
+  expect(readdirSync(join(server, "ui/components/usagekit")).sort()).toEqual(
+    blocks.map((block) => `${block}.tsx`).sort(),
+  );
+  // The dashboard is a Base UI Vega host: the sync script bakes the Vega sheet into each base block
+  // as shadcn add does and fails when a copy differs.
+  execFileSync(process.execPath, [join(server, "../../scripts/sync-server-ui.mjs"), "--check"], {
+    stdio: "pipe",
+  });
   for (const primitive of [
     "table",
     "card",

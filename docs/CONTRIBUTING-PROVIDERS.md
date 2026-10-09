@@ -1,7 +1,10 @@
 # Contributing a provider
 
 A provider contribution consists of descriptor data, pure extractors, redacted fixtures and
-contract tests. `@usagekit/providers` remains private until separately approved for publication.
+contract tests. Coding agents can follow the
+[add-provider skill](../.claude/skills/add-provider/SKILL.md), which walks through these steps.
+A new descriptor works in a checkout right away; once contributed, it ships with the next
+`@usagekit/providers` release.
 
 1. Add `src/<provider>/descriptor.ts` and `extractors.ts`, following the two bundled providers.
    Give every operation a stable id, method/path match, billable flag and cost evidence kind.

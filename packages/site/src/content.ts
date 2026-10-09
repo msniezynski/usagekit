@@ -1,5 +1,7 @@
 /** Facts shared by the homepage and the docs. Keep them true to the repository. */
-export const runtimeVersion = "0.5.0";
+export const runtimeVersion = "0.6.0";
+/** The source cohort awaiting publication. Registry blocks request it; install commands do not. */
+export const sourceVersion = "0.7.0";
 export const sourceRepo = "https://github.com/msniezynski/usagekit";
 export const npmOrg = "https://www.npmjs.com/org/usagekit";
 export const npmPackage = (name: string) => `https://www.npmjs.com/package/@usagekit/${name}`;
@@ -10,8 +12,19 @@ export const runtimePackages = [
   { name: "meter", description: "Admission, reservations, settlement and recovery." },
   { name: "providers", description: "Provider catalog, price tables and receipts." },
 ] as const;
-/** The four public packages, installable from npm today. */
-export const installPackages = runtimePackages.map(({ name }) => `@usagekit/${name}`);
+export const publishedPackages = [
+  ...runtimePackages,
+  { name: "views", description: "Authorized usage, budget, coverage and exception view models." },
+  { name: "react", description: "Headless hooks, shared reads and host-owned budget editing." },
+  { name: "store-postgres", description: "Durable Postgres storage with pg and Prisma drivers." },
+] as const;
+/** Keep every install command on the published release cohort. */
+export const installPackages = runtimePackages.map(
+  ({ name }) => `@usagekit/${name}@${runtimeVersion}`,
+);
+export const reactPackages = ["core", "store", "meter", "views", "react"].map(
+  (name) => `@usagekit/${name}@${runtimeVersion}`,
+);
 
 export const registryBlocks = [
   ["measurement-card", "An exact figure, with certainty."],
@@ -21,6 +34,8 @@ export const registryBlocks = [
   ["budget-card", "Usage, reservations and headroom."],
   ["budget-editor", "Edit a trusted budget definition."],
   ["budget-manager-panel", "Browse, create and reload budgets."],
+  ["usage-overview-card", "Host budget figure, meter, metrics and connections."],
+  ["usage-cap-pill", "A compact header meter for host usage."],
   ["header-status", "Compact status across your app."],
   ["coverage-summary", "Tracked and untracked coverage."],
   ["exceptions-list", "Work that needs evidence or recovery."],

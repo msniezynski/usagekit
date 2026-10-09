@@ -32,9 +32,11 @@ description in `build.mjs`:
   repository workspaces, and only the bundled DataForSEO and SerpApi descriptors
   are named. Known free operations and configured passthrough calls are counted
   without spend enforcement.
-- `/docs/` covers installation, storage adapters, the local React checkout
+- `/docs/` covers installation, storage adapters, the published React packages and checkout
   workflow, hooks, components, budget editing, provider management and
   architecture.
+- `/examples/` links the showcase in every Radix and Base UI style and the public registry.
+  This route is supplied by `npm run preview:build`, alongside the four site pages.
 
 Titles and descriptions follow measured search demand (for example "usage
 metering", "shadcn blocks", "api proxy") and avoid rate-limiting wording.
@@ -57,8 +59,8 @@ charges are involved; the console is labeled as a sample workspace.
   commands.
 - **Storage.** One transaction per command, the adapter tables, the latest
   operation record read with `meter.getOperation`, and the adapters (in-memory on
-  npm; SQLite and Durable Objects in the repository; Postgres and other databases
-  through the Store interface and the conformance suite).
+  npm; SQLite and Durable Objects in the repository; published Postgres storage with
+  pg and Prisma drivers; other databases through the Store interface and conformance suite).
 - **Agents.** An illustration of the local dashboard and two illustrative proxy
   responses, next to the real CLI commands.
 
@@ -71,9 +73,9 @@ unpublished-package installation claims. Mona Sans and Geist Mono are bundled fr
 their `@fontsource-variable` packages (OFL-1.1); there are no external font
 requests. Runtime packages link to their npm pages. Source links point to
 <https://github.com/msniezynski/usagekit>; the website is <https://usagekit.dev>.
-React, views and Postgres storage belong to the 0.6.0 cohort; installation guidance
-distinguishes published packages from unreleased checkout candidates. Registry tooling,
-SQLite and Cloudflare adapters remain repository workspaces.
+All seven packages, including React, views and Postgres storage, are published at 0.6.0;
+installation commands pin that cohort until the 0.7.0 source cohort is published.
+Registry tooling, SQLite and Cloudflare adapters remain repository workspaces.
 
 ## Build and accessibility
 
@@ -93,9 +95,11 @@ with a skip link, explicit labels, one polite live region for sample commands an
 40px touch targets on small screens.
 
 The artifact is suitable for a static host serving each page directory through
-its `index.html` (`/components/`, `/agents/` and `/docs/`). A public deployment needs its own reviewed hosting target and
-authorization. Add canonical and social-image URLs only after the production
-origin is known.
+its `index.html` (`/components/`, `/agents/` and `/docs/`). Every page carries its canonical
+link and `og:url` at `https://usagekit.dev`; `sitemap.xml` lists those pages and is linked from
+`robots.txt`. The hosting artifact with interactive examples and registry JSON is described
+in [preview deployment](PREVIEW.md). A deployment needs its own reviewed target and
+authorization. No social image is supplied yet.
 
 ## Review evidence
 

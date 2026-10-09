@@ -6,8 +6,10 @@ The React layer composes both capabilities without introducing another balance a
 
 `@usagekit/views` exports provider DTOs and the `ProviderManagementPort` contract.
 `@usagekit/react` consumes that port without styling. Registry blocks render the same
-models with Radix/New York or Base UI primitives. All UI workspaces remain private;
-see [consuming packages](CONSUMING.md) for the checkout workflow.
+models with Radix or Base UI primitives in each shadcn style. `@usagekit/views` and
+`@usagekit/react` are published at 0.6.0 and belong to the 0.7.0 source cohort; registry and
+site workspaces remain private.
+See [consuming packages](CONSUMING.md) for published packages and reviewed checkout candidates.
 
 ## Host adapter
 
@@ -56,6 +58,85 @@ callback must not invoke an old adapter after the binding changes. Read-only is 
 The provider cache is separate from the Meter cache. Hosts should refresh or invalidate
 accounting reads after external changes to usage or financial authorities. Successful
 provider configuration actions invalidate provider reads.
+
+## Provider editors
+
+`useProviderEditor(query, options?)` is new in the 0.7.0 React package and absent from the
+published 0.6.0 package. Until 0.7.0 is published, use the matching reviewed cohort tarballs.
+It accepts the provider context or the same standalone binding options as the read hooks.
+
+The editor separates two snapshots:
+
+- `editorData` is the immutable initializer for a draft. Details and allocation editors use
+  its expected revisions. Background reads never replace it. `editorEpoch` identifies a
+  draft identity change or explicit rebase.
+- `evidence` is the current read snapshot for non-draft figures, balances, availability
+  and rate provenance. Never present retained `editorData` as current financial evidence.
+
+A background refresh in the same binding may retain valid evidence, but `canEdit` and
+`action.run` stay fenced until the read finishes. A failed or forbidden read removes
+evidence while preserving a disabled draft. An execute-forbidden result also hides evidence
+and fences edits until a successful explicit reload; a conflict retains the draft and fences
+further writes while independently valid evidence may remain visible. Background recovery
+after a read failure can restore evidence, but cannot silently replace the draft base or clear
+an action denial or conflict fence.
+
+`reload()` explicitly requests a fresh draft base. Only a successful reload rebases the
+form and clears an action denial or conflict fence; it may discard unsaved draft changes.
+A failed reload preserves the draft, and a later background read cannot complete that failed
+reload. Scope, principal, authorization revision, port, query or query-client changes isolate
+the editor immediately. Late reads and callbacks from the old identity cannot restore it.
+
+The existing command journal remains authoritative. Reload is unavailable while a command
+is pending or ambiguous, and cannot erase the original submitted command or bypass its
+write fence. Remounting the same query preserves its exact submitted values as pending or
+ambiguous command state; another query cannot use them to initialize its draft.
+`action.reconcile` checks that command's status without retrying it; it does not require
+displayed financial evidence, but the host must independently authorize the request.
+
+A connections list can open a new selected editor from current evidence after a background
+refresh or an explicit connection action. That selected form owns a stable draft and CAS base;
+it does not inherit the list's initial revision. The hook checks the current target and command
+capability, while the host independently enforces the submitted CAS revision. Existing dirty
+forms still require a successful explicit reload to adopt a different base.
+
+Hook-backed editor panels enforce this lifecycle. Pure leaf components render explicit
+props; a host composing those leaves owns draft identity, current evidence and write fencing.
+For a details editor, a minimal host composition looks like this:
+
+```tsx
+import { useProviderEditor } from "@usagekit/react";
+import { HostRateForm } from "./host-rate-form";
+
+function Rates({ connectionId }: { connectionId: string }) {
+  const editor = useProviderEditor({ kind: "details", connectionId });
+  return (
+    <>
+      <button
+        type="button"
+        onClick={editor.reload}
+        disabled={editor.refreshing || editor.action.pending || editor.action.ambiguous}
+      >
+        Reload rates
+      </button>
+      {editor.editorData?.connection && (
+        <HostRateForm
+          key={editor.editorEpoch}
+          base={editor.editorData.connection}
+          evidence={editor.evidence?.connection ?? null}
+          action={editor.action}
+          disabled={!editor.canEdit}
+        />
+      )}
+    </>
+  );
+}
+```
+
+`HostRateForm` is host UI: initialize exact draft strings from `base`, display non-draft
+figures only from `evidence`, honor `disabled` and current per-command capabilities, and
+submit through `action.run`. Render the hook's read state and error alongside the form.
+The copyable `ProviderRatePanel` supplies this read feedback and composition already.
 
 ## Exact limits and separate authorities
 

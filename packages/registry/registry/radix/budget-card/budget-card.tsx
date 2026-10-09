@@ -1,11 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { useBudgetsView } from "@usagekit/react";
 import type { AlertAt, BudgetRow, BudgetsInput, Figure, Limit } from "@usagekit/views";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { UsageMark, UsageTrack } from "@/components/usagekit/usage-meter";
+import { UsageStatus, usageMotion } from "@/components/usagekit/usage-motion";
+import type { UsageTone } from "@/components/usagekit/usage-motion";
 
 export const budgetCardLabels = {
   used: "Used",
@@ -24,20 +24,36 @@ export const budgetCardLabels = {
   allow: "Allows overage",
   ok: "Within budget",
   warning: "Warning",
-  exceeded: "Exceeded",
+  exceeded: "Over limit",
   loading: "Loading budgets.",
   empty: "No budgets apply.",
   forbidden: "You cannot view these budgets.",
   failed: "Budgets are unavailable right now.",
 };
 export type BudgetCardLabels = typeof budgetCardLabels;
+/** The row fields a card presents; hosts with native accounting can supply just these. */
+export type BudgetCardRow = Pick<
+  BudgetRow,
+  | "alerts"
+  | "bar"
+  | "level"
+  | "kind"
+  | "target"
+  | "boundary"
+  | "resetsAt"
+  | "redacted"
+  | "used"
+  | "reserved"
+  | "remaining"
+  | "limit"
+>;
 
-const levelClass = {
-  ok: "border-border bg-secondary text-secondary-foreground",
-  warning: "border-chart-4 bg-chart-4/15 text-foreground",
-  exceeded: "border-destructive bg-destructive/10 text-destructive",
-  unavailable: "border-border bg-muted text-muted-foreground",
-} as const;
+const tone: Record<BudgetRow["level"], UsageTone> = {
+  ok: "positive",
+  warning: "warning",
+  exceeded: "exceeded",
+  unavailable: "unknown",
+};
 
 function figure(value: Figure | Limit, labels: BudgetCardLabels): string {
   if (value === "unavailable") return labels.unavailable;
@@ -45,109 +61,172 @@ function figure(value: Figure | Limit, labels: BudgetCardLabels): string {
   if (value.certainty === "unknown") return labels.unknown;
   return `${value.text} ${value.unit}`;
 }
+/** An ISO instant reads as "2026-11-01 00:00 UTC"; hosts pass formatTime for local formats. */
+function utcMinute(iso: string): string {
+  const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(:\d{2}(\.\d+)?)?Z$/.exec(iso);
+  return match ? `${match[1]} ${match[2]} UTC` : iso;
+}
 function threshold(at: AlertAt): string {
   return "percent" in at ? `${at.percent}%` : `${at.text} ${at.unit}`;
 }
-function Marker({ left, label, className }: { left: string; label: ReactNode; className: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span
-          role="img"
-          aria-label={typeof label === "string" ? label : undefined}
-          className={`absolute top-0 h-full w-0.5 ${className}`}
-          style={{ left: `${left}%` }}
-        />
-      </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
-  );
-}
 
 export type BudgetCardProps = {
-  row: BudgetRow;
+  row: BudgetCardRow;
   /** Heading for the budget; defaults to the scope kind and target. */
   title?: string;
   labels?: Partial<BudgetCardLabels>;
   formatTime?: (iso: string) => string;
+  className?: string;
 };
 
-/** One budget with its bar, markers and figures. Redacted rows show no figures. */
-export function BudgetCard({ row, title, labels: custom, formatTime = (t) => t }: BudgetCardProps) {
+/** One budget with used and reserved figures, its limits on the scale and the reset time. */
+export function BudgetCard({
+  row,
+  title,
+  labels: custom,
+  formatTime = utcMinute,
+  className = "",
+}: BudgetCardProps) {
   const labels = { ...budgetCardLabels, ...custom };
-  const alerts = row.alerts.map((a, i) => ({ ...a, left: row.bar?.alerts[i] }));
+  const bar = row.level === "unavailable" ? null : row.bar;
+  const marks = bar
+    ? [
+        ...(bar.hardLimit !== null
+          ? [
+              {
+                key: "limit",
+                at: bar.limit,
+                tone: "bg-foreground",
+                label: `${labels.limit} ${figure(row.limit, labels)}`,
+              },
+            ]
+          : []),
+        ...(bar.hardLimit !== null && row.boundary.onExceed === "allow"
+          ? [
+              {
+                key: "hard",
+                at: bar.hardLimit,
+                tone: "bg-destructive",
+                label: `${labels.hardLimit} ${figure(row.boundary.hardLimit ?? "unavailable", labels)}`,
+              },
+            ]
+          : []),
+        ...row.alerts.flatMap((alert, index) => {
+          const at = bar.alerts[index];
+          return at === undefined
+            ? []
+            : [
+                {
+                  key: alert.key,
+                  at,
+                  tone: alert.crossed ? "bg-chart-4" : "bg-muted-foreground/70",
+                  label: `${labels.alert} ${threshold(alert.at)}`,
+                },
+              ];
+        }),
+      ]
+    : [];
+  const used = figure(row.used, labels);
+  const level = row.level === "unavailable" ? labels.unavailable : labels[row.level];
   return (
-    <TooltipProvider>
-      <Card data-level={row.level}>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between gap-2">
-            <span>{title ?? `${row.kind} ${row.target}`}</span>
-            <Badge variant="outline" className={levelClass[row.level]}>
-              {row.level === "unavailable" ? labels.unavailable : labels[row.level]}
-            </Badge>
+    <Card data-level={row.level} className={`min-w-0 ${className}`}>
+      <CardHeader>
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-x-3 gap-y-1">
+          <CardTitle className="min-w-0 break-words leading-snug">
+            {title ?? `${row.kind} ${row.target}`}
           </CardTitle>
-          <CardDescription>
-            {row.boundary.onExceed === "block" ? labels.block : labels.allow}
-            {" · "}
-            {row.resetsAt ? `${labels.resets} ${formatTime(row.resetsAt)}` : labels.noReset}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3">
-          {row.redacted ? (
-            <p className="text-sm text-muted-foreground">{labels.redacted}</p>
-          ) : (
-            <>
-              {row.bar && (
-                <div className="relative h-2 w-full overflow-visible rounded-full bg-muted">
-                  <div className="flex h-full overflow-hidden rounded-full">
-                    <div className="h-full bg-primary" style={{ width: `${row.bar.used}%` }} />
-                    <div
-                      className="h-full bg-primary/40"
-                      style={{ width: `${row.bar.reserved}%` }}
-                    />
-                  </div>
-                  {row.bar.hardLimit !== null && (
-                    <Marker
-                      left={row.bar.limit}
-                      className="bg-foreground"
-                      label={`${labels.limit} ${figure(row.limit, labels)}`}
-                    />
-                  )}
-                  {row.bar.hardLimit !== null && row.boundary.onExceed === "allow" && (
-                    <Marker
-                      left={row.bar.hardLimit}
-                      className="bg-destructive"
-                      label={`${labels.hardLimit} ${figure(row.boundary.hardLimit ?? "unavailable", labels)}`}
-                    />
-                  )}
-                  {alerts.map(
-                    (a) =>
-                      a.left !== undefined && (
-                        <Marker
-                          key={a.key}
-                          left={a.left}
-                          className={a.crossed ? "bg-chart-4" : "bg-muted-foreground"}
-                          label={`${labels.alert} ${threshold(a.at)}`}
-                        />
-                      ),
-                  )}
+          <UsageStatus key={row.level} tone={tone[row.level]} className={usageMotion.enter}>
+            {level}
+          </UsageStatus>
+        </div>
+        <CardDescription className="cn-usage-meta flex flex-wrap gap-x-3 gap-y-0.5">
+          <span>{row.boundary.onExceed === "block" ? labels.block : labels.allow}</span>
+          <span className="tabular-nums">
+            {row.resetsAt ? (
+              <>
+                {labels.resets} <time dateTime={row.resetsAt}>{formatTime(row.resetsAt)}</time>
+              </>
+            ) : (
+              labels.noReset
+            )}
+          </span>
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="cn-usage-gap-md flex min-w-0 flex-col">
+        {row.redacted ? (
+          <p className="cn-usage-panel cn-usage-body border border-dashed border-border text-muted-foreground">
+            {labels.redacted}
+          </p>
+        ) : (
+          <>
+            <dl className="grid min-w-0 grid-cols-3 gap-x-4 gap-y-3">
+              <div className="col-span-3 min-w-0">
+                <dt className="cn-usage-label text-muted-foreground">{labels.used}</dt>
+                <dd
+                  key={used}
+                  className={`cn-usage-figure-md mt-1 break-words font-semibold tabular-nums ${row.level === "exceeded" ? "text-destructive" : ""} ${usageMotion.enter}`}
+                >
+                  {used}
+                </dd>
+              </div>
+              {[
+                [labels.reserved, figure(row.reserved, labels)],
+                [labels.remaining, figure(row.remaining, labels)],
+                [labels.limit, figure(row.limit, labels)],
+              ].map(([label, value]) => (
+                <div key={label} className="min-w-0">
+                  <dt className="cn-usage-label text-muted-foreground">{label}</dt>
+                  <dd className="cn-usage-value mt-1 break-words font-medium tabular-nums">
+                    {value}
+                  </dd>
                 </div>
-              )}
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                <dt className="text-muted-foreground">{labels.used}</dt>
-                <dd className="text-right tabular-nums">{figure(row.used, labels)}</dd>
-                <dt className="text-muted-foreground">{labels.reserved}</dt>
-                <dd className="text-right tabular-nums">{figure(row.reserved, labels)}</dd>
-                <dt className="text-muted-foreground">{labels.remaining}</dt>
-                <dd className="text-right tabular-nums">{figure(row.remaining, labels)}</dd>
-                <dt className="text-muted-foreground">{labels.limit}</dt>
-                <dd className="text-right tabular-nums">{figure(row.limit, labels)}</dd>
-              </dl>
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </TooltipProvider>
+              ))}
+            </dl>
+            {bar && (
+              <UsageTrack
+                level={row.level === "unavailable" ? "ok" : row.level}
+                fill={`${bar.used}%`}
+                reserved={`${bar.reserved}%`}
+                trace={row.used !== "unavailable" && row.used.text !== "" && row.used.text !== "0"}
+                className="mt-1"
+                marks={marks.map((mark) => (
+                  <UsageMark
+                    key={mark.key}
+                    at={`${mark.at}%`}
+                    label={mark.label}
+                    tone={mark.tone}
+                  />
+                ))}
+              />
+            )}
+            {marks.length > 0 && (
+              <ul
+                aria-hidden
+                className="cn-usage-label m-0 flex list-none flex-wrap gap-x-4 gap-y-1 p-0 text-muted-foreground tabular-nums"
+              >
+                {marks.map((mark) => (
+                  <li key={mark.key} className="inline-flex items-center gap-1.5">
+                    <span className={`h-3 w-px ${mark.tone}`} />
+                    {mark.label}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function PanelMessage({ role, children }: { role: "alert" | "status"; children: string }) {
+  return (
+    <p
+      role={role}
+      className={`cn-usage-empty cn-usage-body border-border text-muted-foreground ${usageMotion.enter}`}
+    >
+      {children}
+    </p>
   );
 }
 
@@ -158,25 +237,35 @@ export function BudgetCardsPanel({
   ...input
 }: BudgetsInput & Pick<BudgetCardProps, "labels" | "formatTime">) {
   const result = useBudgetsView(input);
+  const text = { ...budgetCardLabels, ...labels };
   if (result.state === "unavailable" || result.state === "forbidden")
     return (
-      <p role="alert" className="text-sm text-muted-foreground">
-        {result.state === "forbidden"
-          ? (labels?.forbidden ?? budgetCardLabels.forbidden)
-          : (labels?.failed ?? budgetCardLabels.failed)}
-      </p>
+      <PanelMessage role="alert">
+        {result.state === "forbidden" ? text.forbidden : text.failed}
+      </PanelMessage>
     );
-  const text = { ...budgetCardLabels, ...labels };
-  if (!result.data) return <p className="text-sm text-muted-foreground">{text.loading}</p>;
+  if (!result.data)
+    return (
+      <div role="status" className="grid gap-4 sm:grid-cols-2">
+        <span className="sr-only">{text.loading}</span>
+        {[0, 1].map((key) => (
+          <span
+            key={key}
+            aria-hidden
+            className="cn-usage-skeleton-card block h-52 animate-pulse motion-reduce:animate-none"
+          />
+        ))}
+      </div>
+    );
   if (result.data.state !== "ok")
     return (
-      <p role="status" className="text-sm text-muted-foreground">
+      <PanelMessage role="status">
         {result.data.state === "empty"
           ? text.empty
           : result.data.state === "forbidden"
             ? text.forbidden
             : text.failed}
-      </p>
+      </PanelMessage>
     );
   return (
     <div className="grid gap-4 sm:grid-cols-2">

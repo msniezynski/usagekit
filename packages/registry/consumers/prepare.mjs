@@ -2,64 +2,182 @@ import { execFileSync } from "node:child_process";
 import {
   cpSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
   rmSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { legacy, sheets, styles } from "../styles/styles.mjs";
 
-// Prepare only ignored local showcases. No installation, registry traffic or publication.
+// Prepare only the ignored local showcase. No installation, registry traffic or publication.
+// One page switches every shadcn style in place, like the shadcn create preview: the blocks keep
+// their style tokens and every sheet is loaded under a .style-<sheet> class, while each host
+// primitive renders the exact file `shadcn add` writes for the current style.
 const consumers = dirname(fileURLToPath(import.meta.url));
 const registry = resolve(consumers, "..");
 const repo = resolve(registry, "../..");
 const work = join(registry, ".work/showcase");
-const output = join(work, "registry");
+const host = join(work, "app");
+if (!existsSync(join(repo, "node_modules/vite/bin/vite.js")))
+  throw Error("Run the root npm ci first");
 mkdirSync(work, { recursive: true });
-execFileSync(process.execPath, [join(repo, "scripts/registry-build.mjs"), "--out", output], {
-  cwd: repo,
-  stdio: "pipe",
-});
-for (const [variant, port] of [
-  ["radix", 5177],
-  ["base", 5178],
-]) {
-  const host = join(work, variant);
-  rmSync(host, { recursive: true, force: true });
-  cpSync(join(consumers, variant), host, { recursive: true });
-  symlinkSync(join(repo, "node_modules"), join(host, "node_modules"), "dir");
-  const index = JSON.parse(readFileSync(join(output, "r", variant, "registry.json"), "utf8"));
-  const copied = new Map();
-  for (const { name } of index.items) {
-    const artifact = JSON.parse(readFileSync(join(output, "r", variant, `${name}.json`), "utf8"));
-    for (const file of artifact.files) {
-      if (!/^@components\/usagekit\/[a-z-]+\.tsx$/.test(file.target))
-        throw Error("Invalid copied target");
-      const target = join(host, file.target.replace(/^@/, ""));
-      if (copied.has(target) && copied.get(target) !== file.content)
-        throw Error("Conflicting bundled dependency");
-      copied.set(target, file.content);
-      mkdirSync(dirname(target), { recursive: true });
-      writeFileSync(target, file.content);
-    }
-  }
-  const aliases = Object.fromEntries(
-    ["core", "store", "meter", "views", "react"].map((name) => [
-      `@usagekit/${name}`,
-      join(repo, "packages", name, "src/index.ts"),
-    ]),
+// The registry build stays the source of truth for installed code; the showcase checks against it.
+execFileSync(
+  process.execPath,
+  [join(repo, "scripts/registry-build.mjs"), "--out", join(work, "registry")],
+  {
+    cwd: repo,
+    stdio: "pipe",
+  },
+);
+rmSync(host, { recursive: true, force: true });
+cpSync(join(consumers, "radix"), host, { recursive: true });
+rmSync(join(host, "components"), { recursive: true, force: true });
+
+// Blocks whose base file is its own file rather than a link use library-specific primitive APIs.
+const variantSpecific = readdirSync(join(registry, "registry/base")).filter(
+  (name) => !lstatSync(join(registry, "registry/base", name, `${name}.tsx`)).isSymbolicLink(),
+);
+const primitives = ["badge", "button", "card", "input", "label", "select", "table", "tooltip"];
+const implementations = (style) =>
+  style.name === legacy[style.variant]
+    ? join(consumers, style.variant, "components/ui")
+    : join(consumers, "styles", style.name);
+for (const style of styles)
+  cpSync(implementations(style), join(host, "components/ui-styles", style.name), {
+    recursive: true,
+  });
+const exportsOf = (file) =>
+  [...readFileSync(file, "utf8").matchAll(/export \{([^}]+)\}/g)].flatMap(([, names]) =>
+    names
+      .split(",")
+      .map((name) => name.trim())
+      .filter((name) => name && !name.startsWith("type ")),
   );
-  aliases["@"] = host;
+const id = (name) => name.replace(/[^a-z0-9]/gi, "_");
+mkdirSync(join(host, "components/ui"), { recursive: true });
+for (const primitive of primitives) {
+  const names = [
+    ...new Set(
+      styles.flatMap((style) =>
+        exportsOf(join(host, "components/ui-styles", style.name, `${primitive}.tsx`)),
+      ),
+    ),
+  ];
+  const imports = styles
+    .map(
+      (style) =>
+        `import * as ${id(style.name)} from "@/components/ui-styles/${style.name}/${primitive}";`,
+    )
+    .join("\n");
+  const table = styles
+    .map((style) => `  ${JSON.stringify(style.name)}: ${id(style.name)},`)
+    .join("\n");
+  const shims = names
+    .map((name) => `export const ${name} = pick(${JSON.stringify(name)});`)
+    .join("\n");
   writeFileSync(
-    join(host, "vite.config.ts"),
-    `import tailwindcss from "@tailwindcss/vite";\nimport { defineConfig } from "vite";\nexport default defineConfig({ plugins: [tailwindcss()], resolve: { alias: ${JSON.stringify(aliases)} } });\n`,
-  );
-  if (!existsSync(join(repo, "node_modules/vite/bin/vite.js")))
-    throw Error("Run the root npm ci first");
-  console.log(`${variant}: ${copied.size} copied components, http://127.0.0.1:${port}`);
-  console.log(
-    `${process.execPath} ${join(repo, "node_modules/vite/bin/vite.js")} ${host} --config ${join(host, "vite.config.ts")} --host 127.0.0.1 --port ${port} --strictPort`,
+    join(host, "components/ui", `${primitive}.tsx`),
+    `// Generated by consumers/prepare.mjs: renders the current style's ${primitive}.\n/* eslint-disable */\nimport { createElement } from "react";\nimport { useShowcaseStyle } from "@/app/showcase-style";\n${imports}\n\nconst styles: Record<string, Record<string, unknown>> = {\n${table}\n};\nfunction pick(name: string): any {\n  function Styled(props: Record<string, unknown>) {\n    const component = styles[useShowcaseStyle()]![name];\n    if (!component) throw new Error(\`\${name} is missing in this style\`);\n    return createElement(component as never, props);\n  }\n  Styled.displayName = name;\n  return Styled;\n}\n${shims}\n`,
   );
 }
+
+// Blocks keep their style tokens. Library-specific blocks switch with the current style.
+const blocks = join(host, "components/usagekit");
+mkdirSync(blocks, { recursive: true });
+for (const name of readdirSync(join(registry, "registry/radix"))) {
+  if (variantSpecific.includes(name)) continue;
+  cpSync(join(registry, "registry/radix", name, `${name}.tsx`), join(blocks, `${name}.tsx`), {
+    dereference: true,
+  });
+}
+for (const name of variantSpecific) {
+  for (const variant of ["radix", "base"])
+    cpSync(
+      join(registry, "registry", variant, name, `${name}.tsx`),
+      join(host, `components/usagekit-${variant}`, `${name}.tsx`),
+      { dereference: true },
+    );
+  const names = exportsOf(join(registry, "registry/radix", name, `${name}.tsx`)).length
+    ? exportsOf(join(registry, "registry/radix", name, `${name}.tsx`))
+    : [
+        ...readFileSync(join(registry, "registry/radix", name, `${name}.tsx`), "utf8").matchAll(
+          /^export (?:const|function) ([A-Za-z0-9_]+)/gm,
+        ),
+      ].map(([, value]) => value);
+  writeFileSync(
+    join(blocks, `${name}.tsx`),
+    `// Generated by consumers/prepare.mjs: the ${name} block for the current style's library.\n/* eslint-disable */\nimport { createElement } from "react";\nimport { showcaseStyles, useShowcaseStyle } from "@/app/showcase-style";\nimport * as radix from "@/components/usagekit-radix/${name}";\nimport * as base from "@/components/usagekit-base/${name}";\n\nconst libraries = { radix, base } as Record<string, Record<string, unknown>>;\nconst variant = (style: string) => showcaseStyles.find((item) => item.name === style)?.variant ?? "radix";\nfunction pick(name: string): any {\n  const value = radix[name as keyof typeof radix];\n  if (typeof value !== "function" || !/^[A-Z]/.test(name)) return value;\n  function Styled(props: Record<string, unknown>) {\n    return createElement(libraries[variant(useShowcaseStyle())]![name] as never, props);\n  }\n  Styled.displayName = name;\n  return Styled;\n}\n${names.map((value) => `export const ${value} = pick(${JSON.stringify(value)});`).join("\n")}\n`,
+  );
+}
+
+// Every sheet loads at once, scoped by .style-<sheet>; the store swaps that class in place.
+mkdirSync(join(host, "app/styles"), { recursive: true });
+for (const sheet of sheets)
+  cpSync(join(registry, "styles", `${sheet}.css`), join(host, "app/styles", `${sheet}.css`));
+writeFileSync(
+  join(host, "app/index.css"),
+  readFileSync(join(consumers, "styles/index.css"), "utf8") +
+    `\n/* Usagekit style sheets, one class per style on <html>. */\n${sheets.map((sheet) => `@import "./styles/${sheet}.css";`).join("\n")}\n`,
+);
+const list = styles.map(({ name, variant, sheet, label }) => ({ name, variant, sheet, label }));
+writeFileSync(
+  join(host, "app/showcase-style.ts"),
+  `// Generated by consumers/prepare.mjs: the current shadcn style, kept in the address and on <html>.
+import { useSyncExternalStore } from "react";
+
+export type ShowcaseStyle = { name: string; variant: "radix" | "base"; sheet: string; label: string };
+export const showcaseStyles: readonly ShowcaseStyle[] = ${JSON.stringify(list)};
+const requested = new URLSearchParams(location.search).get("style");
+let current = showcaseStyles.some((style) => style.name === requested) ? requested! : "new-york";
+const listeners = new Set<() => void>();
+function apply() {
+  const style = showcaseStyles.find((item) => item.name === current)!;
+  const root = document.documentElement;
+  for (const sheet of new Set(showcaseStyles.map((item) => item.sheet)))
+    root.classList.remove(\`style-\${sheet}\`);
+  root.classList.add(\`style-\${style.sheet}\`);
+  root.dataset.library = style.variant;
+  const params = new URLSearchParams(location.search);
+  params.set("style", current);
+  history.replaceState(history.state, "", \`\${location.pathname}?\${params}\${location.hash}\`);
+}
+apply();
+export function useShowcaseStyle(): string {
+  return useSyncExternalStore(
+    (listener) => {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    () => current,
+  );
+}
+export function setShowcaseStyle(name: string): void {
+  if (name === current || !showcaseStyles.some((style) => style.name === name)) return;
+  current = name;
+  apply();
+  for (const listener of listeners) listener();
+}
+`,
+);
+symlinkSync(join(repo, "node_modules"), join(host, "node_modules"), "dir");
+const aliases = Object.fromEntries(
+  ["core", "store", "meter", "views", "react"].map((name) => [
+    `@usagekit/${name}`,
+    join(repo, "packages", name, "src/index.ts"),
+  ]),
+);
+aliases["@"] = host;
+writeFileSync(
+  join(host, "vite.config.ts"),
+  `import tailwindcss from "@tailwindcss/vite";\nimport { defineConfig } from "vite";\nexport default defineConfig({ cacheDir: ${JSON.stringify(join(host, ".vite-cache"))}, plugins: [tailwindcss()], resolve: { alias: ${JSON.stringify(aliases)} } });\n`,
+);
+console.log(`showcase: ${styles.length} styles in one page, ${host}`);
+console.log(
+  `${process.execPath} ${join(repo, "node_modules/vite/bin/vite.js")} ${host} --config ${join(host, "vite.config.ts")} --host 127.0.0.1 --port 5177 --strictPort`,
+);

@@ -5,12 +5,17 @@ import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { Ajv } from "ajv";
 import { blockNames, variantSpecific, variants } from "./index.js";
+import { legacy, sheets, styleMap, styleSource, styles } from "../styles/styles.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const repo = resolve(root, "../..");
 const read = (path: string) => JSON.parse(readFileSync(path, "utf8"));
 const version = (name: string) => read(join(repo, "packages", name, "package.json")).version;
 const primitives = ["table", "card", "badge", "tooltip", "select", "button", "input", "label"];
+/** Source as a style publishes it: that style's sheet baked into the tokens. */
+const styled = (path: string, sheet: (typeof sheets)[number]) =>
+  styleSource(readFileSync(path, "utf8"), styleMap(sheet));
+const sheetOf = (name: string) => styles.find((style) => style.name === name)!.sheet;
 let out: string;
 
 beforeAll(() => {
@@ -23,10 +28,17 @@ beforeAll(() => {
 afterAll(() => rmSync(out, { recursive: true, force: true }));
 
 describe("registry build", () => {
-  test("writes all defaults and one directory per variant", () => {
+  test("writes all defaults, one directory per variant and one per shadcn style", () => {
     expect(readdirSync(join(out, "r")).sort()).toEqual(
-      [...blockNames.map((n) => `${n}.json`), "base", "radix"].sort(),
+      [...blockNames.map((n) => `${n}.json`), "base", "radix", "styles"].sort(),
     );
+    expect(readdirSync(join(out, "r", "styles")).sort()).toEqual(
+      styles.map((style) => style.name).sort(),
+    );
+    for (const style of styles)
+      expect(readdirSync(join(out, "r", "styles", style.name)).sort()).toEqual(
+        [...blockNames.map((n) => `${n}.json`), "registry.json"].sort(),
+      );
     for (const variant of variants)
       expect(readdirSync(join(out, "r", variant)).sort()).toEqual(
         [...blockNames.map((n) => `${n}.json`), "registry.json"].sort(),
@@ -48,11 +60,12 @@ describe("registry build", () => {
     const item = ajv.getSchema("https://ui.shadcn.com/schema/registry-item.json")!;
     const index = ajv.compile(schema("registry.json"));
     expect(index(read(join(root, "registry.json"))), JSON.stringify(index.errors)).toBe(true);
-    for (const variant of variants) {
-      expect(index(read(join(out, "r", variant, "registry.json")))).toBe(true);
+    const dirs = [...variants, ...styles.map((style) => `styles/${style.name}`)];
+    for (const dir of dirs) {
+      expect(index(read(join(out, "r", dir, "registry.json")))).toBe(true);
       for (const name of blockNames) {
-        const data = read(join(out, "r", variant, `${name}.json`));
-        expect(item(data), `${variant}/${name} ${JSON.stringify(item.errors)}`).toBe(true);
+        const data = read(join(out, "r", dir, `${name}.json`));
+        expect(item(data), `${dir}/${name} ${JSON.stringify(item.errors)}`).toBe(true);
       }
     }
   });
@@ -73,7 +86,51 @@ describe("registry build", () => {
           expect(file.target).toMatch(/^@components\/usagekit\/[a-z-]+\.tsx$/);
           expect(file.path).toMatch(new RegExp(`^registry/${variant}/[a-z-]+/[a-z-]+\\.tsx$`));
           expect(file.target).toBe(`@components/usagekit/${file.path.split("/").at(-1)}`);
-          expect(file.content).toBe(readFileSync(join(root, file.path), "utf8"));
+          expect(file.content).toBe(styled(join(root, file.path), sheetOf(legacy[variant])));
+        }
+      }
+  });
+});
+
+describe("registry styles", () => {
+  const files = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? files(join(dir, e.name)) : [join(dir, e.name)],
+    );
+  const sources = files(join(root, "registry")).filter((file) => file.endsWith(".tsx"));
+  const tokens = new Set(
+    sources.flatMap((file) =>
+      [...readFileSync(file, "utf8").matchAll(/\bcn-usage-[a-z0-9]+(?:-[a-z0-9]+)*\b/g)].map(
+        ([token]) => token,
+      ),
+    ),
+  );
+  test("every sheet defines exactly the tokens the sources use", () => {
+    expect(tokens.size).toBeGreaterThan(30);
+    for (const sheet of sheets)
+      expect(Object.keys(styleMap(sheet)).sort(), sheet).toEqual([...tokens].sort());
+  });
+  test("sheets follow shadcn's format, name semantic colors and add no motion", () => {
+    for (const sheet of sheets) {
+      const text = readFileSync(join(root, "styles", `${sheet}.css`), "utf8");
+      expect(text, sheet).toMatch(new RegExp(`^/\\*[^\\n]*\\*/\\n\\.style-${sheet} \\{`));
+      expect(text, sheet).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|oklch\(/);
+      for (const classes of Object.values(styleMap(sheet))) {
+        expect(classes, sheet).not.toMatch(
+          /\b(bg|text|border|ring)-(red|orange|amber|yellow|green|blue|gray|zinc|neutral|black|white)(-\d+)?\b/,
+        );
+        expect(classes, sheet).not.toMatch(/\b(transition|animate|duration|delay)(-|\b)/);
+      }
+    }
+  });
+  test("each published style bakes its sheet into every file", () => {
+    for (const style of styles)
+      for (const name of blockNames) {
+        const data = read(join(out, "r", "styles", style.name, `${name}.json`));
+        for (const file of data.files) {
+          expect(file.path).toMatch(new RegExp(`^registry/${style.variant}/`));
+          expect(file.content).not.toMatch(/cn-usage-/);
+          expect(file.content).toBe(styled(join(root, file.path), style.sheet));
         }
       }
   });
@@ -146,6 +203,19 @@ describe("registry sources", () => {
         e.isDirectory() ? files(join(dir, e.name)) : [join(dir, e.name)],
       );
     expect(files(join(root, "registry")).filter((f) => !f.endsWith(".tsx"))).toEqual([]);
+  });
+  test("every transition and animation stops for reduced motion", () => {
+    const files = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+        e.isDirectory() ? files(join(dir, e.name)) : [join(dir, e.name)],
+      );
+    const moving = /(^|[\s"`])(transition(-\S+)?|animate-(spin|pulse|ping|bounce))(?=[\s"`]|$)/;
+    for (const file of files(join(root, "registry/radix"))) {
+      const text = readFileSync(file, "utf8");
+      for (const [literal] of text.matchAll(/"[^"\n]*"|`[^`]*`/g))
+        if (moving.test(literal))
+          expect(literal, `${file}: ${literal}`).toMatch(/motion-reduce:(transition|animate)-none/);
+    }
   });
   test("copy is host text with English defaults", () => {
     for (const { path } of sources)

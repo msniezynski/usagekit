@@ -1,8 +1,10 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useCoverageView } from "@usagekit/react";
 import type { CoverageInput, CoverageState, CoverageView } from "@usagekit/views";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { usageMotion } from "@/components/usagekit/usage-motion";
 
 export const coverageSummaryLabels = {
   title: "Coverage",
@@ -29,7 +31,15 @@ export type CoverageSummaryProps = {
   labels?: Partial<CoverageSummaryLabels>;
 };
 
-/** Five counts with shares and the sentence that cost excludes untracked requests. */
+const swatch: Record<CoverageState, string> = {
+  metered: "bg-primary",
+  cached: "bg-chart-2",
+  passthrough: "bg-chart-3",
+  unpriced: "bg-chart-4",
+  rate_limited: "bg-destructive",
+};
+
+/** Request counts by tracking state, their shares and what cost leaves out. */
 export function CoverageSummary({ view, labels: custom }: CoverageSummaryProps) {
   const labels = { ...coverageSummaryLabels, ...custom };
   const message = !view
@@ -41,48 +51,82 @@ export function CoverageSummary({ view, labels: custom }: CoverageSummaryProps) 
         : view.state === "empty"
           ? labels.empty
           : null;
+  // Any nonzero count keeps a sliver in the bar, even when its truncated share reads "0".
+  const shares =
+    view?.entries.filter(
+      (entry) => entry.share !== null && entry.count !== "0" && entry.count !== "unavailable",
+    ) ?? [];
   return (
-    <Card className="min-w-0 w-full">
+    <Card className="w-full min-w-0">
       <CardHeader>
-        <CardTitle>{labels.title}</CardTitle>
+        <CardTitle className="leading-snug">{labels.title}</CardTitle>
         <CardDescription>{labels.description}</CardDescription>
       </CardHeader>
-      <CardContent className="flex min-w-0 flex-col gap-3">
+      <CardContent className="gap-4 flex min-w-0 flex-col">
         {message || !view ? (
-          <p role="status" className="text-sm text-muted-foreground">
+          <p role="status" className={`text-sm text-muted-foreground ${usageMotion.enter}`}>
             {message}
           </p>
         ) : (
           <>
-            <dl className="space-y-2 text-sm">
+            {shares.length > 0 && (
+              <span
+                aria-hidden
+                className="rounded-full bg-muted h-2 flex min-w-0 gap-0.5 overflow-hidden"
+              >
+                {shares.map((entry, index) => (
+                  <span
+                    key={entry.state}
+                    className={`block h-full w-[var(--share)] min-w-1 shrink rounded-[2px] transition-[width] delay-[var(--delay)] duration-700 ease-out starting:w-0 motion-reduce:transition-none ${swatch[entry.state as CoverageState]}`}
+                    style={
+                      {
+                        "--share": `${entry.share}%`,
+                        "--delay": `${index * 60}ms`,
+                      } as CSSProperties
+                    }
+                  />
+                ))}
+              </span>
+            )}
+            <dl className="text-sm min-w-0">
               {view.entries.map((entry) => (
                 <div
                   key={entry.state}
-                  className="grid grid-cols-2 gap-x-4 sm:grid-cols-3"
+                  className={`grid grid-cols-[minmax(0,1fr)_auto_4.5rem] items-center gap-x-4 border-b border-border py-2 ${entry.count === "0" ? "text-muted-foreground" : ""}`}
                   data-state={entry.state}
                 >
-                  <dt className="min-w-0 break-words text-muted-foreground">
+                  <dt className="flex min-w-0 items-center gap-2 break-words">
+                    <span
+                      aria-hidden
+                      className={`rounded-[2px] size-2 shrink-0 ${entry.count === "0" ? "bg-muted-foreground/30" : swatch[entry.state as CoverageState]}`}
+                    />
                     {labels[entry.state as CoverageState]}
                   </dt>
-                  <dd className="min-w-0 text-right tabular-nums break-all">
+                  <dd className="min-w-0 text-right font-medium tabular-nums break-all">
                     {entry.count === "unavailable" ? labels.unavailable : entry.count}
                   </dd>
-                  <dd className="col-start-2 min-w-0 text-right tabular-nums break-all text-muted-foreground sm:col-start-auto">
-                    {entry.share === null ? "" : `${entry.share}%`}
+                  <dd className="text-xs/relaxed min-w-0 text-right text-muted-foreground tabular-nums break-all">
+                    {entry.share === null
+                      ? ""
+                      : entry.share === "0" && entry.count !== "0"
+                        ? "<0.01%"
+                        : `${entry.share}%`}
                   </dd>
                 </div>
               ))}
               {view.total !== null && (
-                <div className="grid grid-cols-2 gap-x-4 sm:grid-cols-3">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto_4.5rem] gap-x-4 pt-2.5">
                   <dt className="font-medium">{labels.total}</dt>
-                  <dd className="min-w-0 text-right font-medium tabular-nums break-all">
+                  <dd className="min-w-0 text-right font-semibold tabular-nums break-all">
                     {view.total}
                   </dd>
                   <dd />
                 </div>
               )}
             </dl>
-            <p className="text-sm text-muted-foreground">
+            <p
+              className={`rounded-lg px-3.5 py-3 text-sm ${view.costExcludesUntracked === false ? "bg-muted/60 text-muted-foreground" : "border border-chart-4/50 bg-chart-4/10"}`}
+            >
               {view.costExcludesUntracked === null
                 ? labels.unknown
                 : view.costExcludesUntracked
@@ -104,7 +148,10 @@ export function CoverageSummaryPanel({
   const result = useCoverageView(input);
   if (result.state === "unavailable" || result.state === "forbidden")
     return (
-      <p role="alert" className="text-sm text-muted-foreground">
+      <p
+        role="alert"
+        className={`rounded-lg border border-dashed px-4 py-3.5 text-sm border-border text-muted-foreground ${usageMotion.enter}`}
+      >
         {result.state === "forbidden"
           ? (labels?.forbidden ?? coverageSummaryLabels.forbidden)
           : (labels?.failed ?? coverageSummaryLabels.failed)}

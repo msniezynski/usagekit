@@ -8,13 +8,18 @@
       "type": "registry:block",
       "title": "Usage table",
       "description": "Usage rows from a UsageView with unit and cost columns, certainty badges and cursor pagination.",
-      "registryDependencies": ["table", "badge", "button"],
+      "registryDependencies": ["table", "button"],
       "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
       "files": [
         {
           "path": "registry/radix/usage-table/usage-table.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/usage-table.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
       "docs": "Rebind for hosts without shadcn: @/components/ui/table (Table, TableHeader, TableBody, TableRow, TableHead, TableCell); @/components/ui/badge (Badge); @/components/ui/button (Button). Data comes from @usagekit/views; the Panel export reads it with @usagekit/react inside a MeterProvider."
@@ -23,33 +28,53 @@
       "name": "budget-card",
       "type": "registry:block",
       "title": "Budget card",
-      "description": "One budget: used and reserved bar, hard limit marker, alert ticks, remaining, reset time and the redacted state.",
-      "registryDependencies": ["card", "badge", "tooltip"],
+      "description": "One budget: used and reserved figures on a shared meter, labelled limit, hard limit and alert marks, remaining, reset time and the redacted state.",
+      "registryDependencies": ["card"],
       "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
       "files": [
         {
           "path": "registry/radix/budget-card/budget-card.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/budget-card.tsx"
+        },
+        {
+          "path": "registry/radix/usage-meter/usage-meter.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-meter.tsx"
+        },
+        {
+          "path": "registry/radix/usage-progress/usage-progress.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-progress.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
-      "docs": "Rebind for hosts without shadcn: @/components/ui/card (Card, CardHeader, CardTitle, CardDescription, CardContent); @/components/ui/badge (Badge); @/components/ui/tooltip (TooltipProvider, Tooltip, TooltipTrigger, TooltipContent). Data comes from @usagekit/views; the Panel export reads it with @usagekit/react inside a MeterProvider."
+      "docs": "Rebind for hosts without shadcn: @/components/ui/card (Card, CardHeader, CardTitle, CardDescription, CardContent). Data comes from @usagekit/views; the Panel export reads it with @usagekit/react inside a MeterProvider. Includes the shared usage meter and motion helpers."
     },
     {
       "name": "header-status",
       "type": "registry:block",
       "title": "Header status",
       "description": "Compact inline status for a header: one pill per visible bound, level colors by token.",
-      "registryDependencies": ["badge", "tooltip"],
+      "registryDependencies": ["tooltip"],
       "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
       "files": [
         {
           "path": "registry/radix/header-status/header-status.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/header-status.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
-      "docs": "Rebind for hosts without shadcn: @/components/ui/badge (Badge); @/components/ui/tooltip (TooltipProvider, Tooltip, TooltipTrigger, TooltipContent). Data comes from @usagekit/views; the Panel export reads it with @usagekit/react inside a MeterProvider."
+      "docs": "Rebind for hosts without shadcn: @/components/ui/tooltip (TooltipProvider, Tooltip, TooltipTrigger, TooltipContent). Data comes from @usagekit/views; the Panel export reads it with @usagekit/react inside a MeterProvider. Includes the shared motion helpers."
     },
     {
       "name": "coverage-summary",
@@ -63,6 +88,11 @@
           "path": "registry/radix/coverage-summary/coverage-summary.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/coverage-summary.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
       "docs": "Rebind for hosts without shadcn: @/components/ui/card (Card, CardHeader, CardTitle, CardDescription, CardContent). Data comes from @usagekit/views; the Panel export reads it with @usagekit/react inside a MeterProvider."
@@ -72,13 +102,18 @@
       "type": "registry:block",
       "title": "Exceptions list",
       "description": "Expired reservations, expired dispatch leases and pending operations with state and age.",
-      "registryDependencies": ["table", "badge"],
+      "registryDependencies": ["table"],
       "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
       "files": [
         {
           "path": "registry/radix/exceptions-list/exceptions-list.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/exceptions-list.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
       "docs": "Rebind for hosts without shadcn: @/components/ui/table (Table, TableHeader, TableBody, TableRow, TableHead, TableCell); @/components/ui/badge (Badge). Data comes from @usagekit/views; the Panel export reads it with @usagekit/react inside a MeterProvider."
@@ -120,13 +155,18 @@
       "type": "registry:block",
       "title": "Measurement card",
       "description": "One exact measurement with known, estimated, unknown or unavailable certainty.",
-      "registryDependencies": ["card", "badge"],
+      "registryDependencies": ["card"],
       "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
       "files": [
         {
           "path": "registry/radix/measurement-card/measurement-card.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/measurement-card.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
       "docs": "Host primitives: @/components/ui/card, @/components/ui/badge. Bundled component dependencies copy to @components/usagekit/. Panel exports require MeterProvider; budget writes require a server-authorized BudgetWriter and canManageBudgets."
@@ -136,7 +176,7 @@
       "type": "registry:block",
       "title": "Usage summary cards",
       "description": "Complete usage totals by unit, with exact quantities and independent certainty.",
-      "registryDependencies": ["card", "badge"],
+      "registryDependencies": ["card"],
       "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
       "files": [
         {
@@ -148,6 +188,11 @@
           "path": "registry/radix/measurement-card/measurement-card.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/measurement-card.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
       "docs": "Host primitives: @/components/ui/card, @/components/ui/badge. Bundled component dependencies copy to @components/usagekit/. Panel exports require MeterProvider; budget writes require a server-authorized BudgetWriter and canManageBudgets."
@@ -157,7 +202,7 @@
       "type": "registry:block",
       "title": "Cost summary card",
       "description": "Provider cost separated by funding and cost owner, with honest incomplete states.",
-      "registryDependencies": ["card", "badge"],
+      "registryDependencies": ["card"],
       "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
       "files": [
         {
@@ -169,6 +214,11 @@
           "path": "registry/radix/measurement-card/measurement-card.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/measurement-card.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
       "docs": "Host primitives: @/components/ui/card, @/components/ui/badge. Bundled component dependencies copy to @components/usagekit/. Panel exports require MeterProvider; budget writes require a server-authorized BudgetWriter and canManageBudgets."
@@ -185,6 +235,11 @@
           "path": "registry/radix/budget-editor/budget-editor.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/budget-editor.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
       "docs": "Host primitives: @/components/ui/card, @/components/ui/button, @/components/ui/input, @/components/ui/label. Bundled component dependencies copy to @components/usagekit/. Panel exports require MeterProvider; budget writes require a server-authorized BudgetWriter and canManageBudgets."
@@ -206,6 +261,11 @@
           "path": "registry/radix/budget-editor/budget-editor.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/budget-editor.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
       "docs": "Host primitives: @/components/ui/card, @/components/ui/button, @/components/ui/input, @/components/ui/label. Bundled component dependencies copy to @components/usagekit/. Panel exports require MeterProvider; budget writes require a server-authorized BudgetWriter and canManageBudgets."
@@ -227,6 +287,11 @@
           "path": "registry/radix/provider-feedback/provider-feedback.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/provider-feedback.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
       "docs": "Host primitives: @/components/ui/badge, @/components/ui/button, @/components/ui/card. Bundled components copy to @components/usagekit/. Wrap panels in ProviderManagementProvider with a verified host binding. Read-only by default; credentials travel only in the explicit action argument. The host must authorize every read and action."
@@ -248,6 +313,11 @@
           "path": "registry/radix/provider-feedback/provider-feedback.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/provider-feedback.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
       "docs": "Host primitives: @/components/ui/button, @/components/ui/card, @/components/ui/input, @/components/ui/label. Bundled components copy to @components/usagekit/. Wrap panels in ProviderManagementProvider with a verified host binding. Read-only by default; credentials travel only in the explicit action argument. The host must authorize every read and action."
@@ -269,6 +339,11 @@
           "path": "registry/radix/provider-feedback/provider-feedback.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/provider-feedback.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
       "docs": "Host primitives: @/components/ui/button, @/components/ui/card. Bundled components copy to @components/usagekit/. Wrap panels in ProviderManagementProvider with a verified host binding. Read-only by default; credentials travel only in the explicit action argument. The host must authorize every read and action."
@@ -290,6 +365,11 @@
           "path": "registry/radix/provider-feedback/provider-feedback.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/provider-feedback.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
       "docs": "Host primitives: @/components/ui/button, @/components/ui/card, @/components/ui/input, @/components/ui/label. Bundled components copy to @components/usagekit/. Wrap panels in ProviderManagementProvider with a verified host binding. Read-only by default; credentials travel only in the explicit action argument. The host must authorize every read and action."
@@ -311,6 +391,11 @@
           "path": "registry/radix/provider-feedback/provider-feedback.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/provider-feedback.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
       "docs": "Host primitives: @/components/ui/badge, @/components/ui/button, @/components/ui/card. Bundled components copy to @components/usagekit/. Wrap panels in ProviderManagementProvider with a verified host binding. Read-only by default; credentials travel only in the explicit action argument. The host must authorize every read and action."
@@ -332,6 +417,11 @@
           "path": "registry/radix/provider-feedback/provider-feedback.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/provider-feedback.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
       "docs": "Host primitives: @/components/ui/badge, @/components/ui/button, @/components/ui/card. Bundled components copy to @components/usagekit/. Wrap panels in ProviderManagementProvider with a verified host binding. Read-only by default; credentials travel only in the explicit action argument. The host must authorize every read and action."
@@ -358,6 +448,11 @@
           "path": "registry/radix/provider-allocation-row/provider-allocation-row.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/provider-allocation-row.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
       "docs": "Host primitives: @/components/ui/button, @/components/ui/card, @/components/ui/input, @/components/ui/label. Bundled components copy to @components/usagekit/. Wrap panels in ProviderManagementProvider with a verified host binding. Read-only by default; credentials travel only in the explicit action argument. The host must authorize every read and action."
@@ -419,9 +514,81 @@
           "path": "registry/radix/provider-allocation-row/provider-allocation-row.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/provider-allocation-row.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
         }
       ],
       "docs": "Host primitives: @/components/ui/badge, @/components/ui/button, @/components/ui/card, @/components/ui/input, @/components/ui/label. Bundled components copy to @components/usagekit/. Wrap panels in ProviderManagementProvider with a verified host binding. Read-only by default; credentials travel only in the explicit action argument. The host must authorize every read and action."
+    },
+    {
+      "name": "usage-overview-card",
+      "type": "registry:block",
+      "title": "Usage overview card",
+      "description": "Host-authoritative budget figure and meter, metrics, and expandable connection rows with distinct known, partial, unknown and over-limit readings.",
+      "registryDependencies": ["card"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/usage-overview-card/usage-overview-card.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-overview-card.tsx"
+        },
+        {
+          "path": "registry/radix/usage-connection-row/usage-connection-row.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-connection-row.tsx"
+        },
+        {
+          "path": "registry/radix/usage-meter/usage-meter.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-meter.tsx"
+        },
+        {
+          "path": "registry/radix/usage-progress/usage-progress.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-progress.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
+        }
+      ],
+      "docs": "Rebind @/components/ui/card to host primitives. Pass authorized native observations, localized labels and actions. Bundles UsageConnectionRow, the shared usage meter and motion helpers, and the pure usageProgress helper for headless presentation; no Meter or balance authority is inferred."
+    },
+    {
+      "name": "usage-cap-pill",
+      "type": "registry:block",
+      "title": "Usage cap pill",
+      "description": "Compact header meter for host-authoritative usage with distinct known, partial, unknown, uncapped and unavailable states.",
+      "registryDependencies": ["badge"],
+      "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
+      "files": [
+        {
+          "path": "registry/radix/usage-cap-pill/usage-cap-pill.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-cap-pill.tsx"
+        },
+        {
+          "path": "registry/radix/usage-meter/usage-meter.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-meter.tsx"
+        },
+        {
+          "path": "registry/radix/usage-progress/usage-progress.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-progress.tsx"
+        },
+        {
+          "path": "registry/radix/usage-motion/usage-motion.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/usage-motion.tsx"
+        }
+      ],
+      "docs": "Rebind @/components/ui/badge to host primitives. Pass authorized native observations, localized labels and actions. Bundles the shared usage meter and motion helpers and the pure usageProgress helper; no Meter or balance authority is inferred."
     }
   ]
 }

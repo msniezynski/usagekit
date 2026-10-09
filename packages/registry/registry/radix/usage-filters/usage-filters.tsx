@@ -51,8 +51,8 @@ function Filter({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="flex flex-col gap-1 text-sm text-muted-foreground">
-      <span>{label}</span>
+    <label className="flex flex-col gap-1.5">
+      <span className="cn-usage-label font-medium text-muted-foreground">{label}</span>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger aria-label={label} className="min-w-40">
           <SelectValue placeholder={placeholder} />

@@ -2,6 +2,7 @@
 import { useId, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useProviderAction, useProviderManagementBinding } from "@usagekit/react";
+import type { ProviderAction } from "@usagekit/react";
 import type { ProviderConnection, ProviderDefinition, ProviderCommand } from "@usagekit/views";
 import type { FundingSource } from "@usagekit/core";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { fundingLabel, ProviderActionFeedback } from "@/components/usagekit/provider-feedback";
+import { UsageNotice, UsageSegmented, usageMotion } from "@/components/usagekit/usage-motion";
 export const providerConnectLabels = {
   connect: "Connect",
   reconnect: "Replace credentials",
@@ -23,9 +25,11 @@ export const providerConnectLabels = {
   label: "Connection name",
   required: "Enter the required credentials.",
   funding: "Funding source",
+  form: "credentials",
 };
 export type ProviderConnectLabels = typeof providerConnectLabels;
 type ConnectProps = {
+  action?: ProviderAction;
   provider: ProviderDefinition;
   connection?: ProviderConnection;
   fundingSource?: FundingSource;
@@ -48,22 +52,17 @@ export function ProviderConnectForm(props: ConnectProps) {
   return <CredentialForm key={retained.current.epoch} {...props} />;
 }
 function CredentialForm({
+  action: guardedAction,
   provider,
   connection,
   fundingSource = "byok",
   oauth,
   onConnected,
   labels: custom,
-}: {
-  provider: ProviderDefinition;
-  connection?: ProviderConnection;
-  fundingSource?: FundingSource;
-  oauth?: ReactNode;
-  onConnected?: (connection: ProviderConnection) => void;
-  labels?: Partial<ProviderConnectLabels>;
-}) {
+}: ConnectProps) {
   const labels = { ...providerConnectLabels, ...custom };
-  const action = useProviderAction();
+  const sharedAction = useProviderAction();
+  const action = guardedAction ?? sharedAction;
   const id = useId();
   const [secrets, setSecrets] = useState<Record<string, string>>({});
   const [label, setLabel] = useState(connection?.label ?? provider.label);
@@ -111,15 +110,15 @@ function CredentialForm({
   return (
     <Card className="w-full min-w-0">
       <CardHeader>
-        <CardTitle>{labels.title}</CardTitle>
+        <CardTitle className="leading-snug">{labels.title}</CardTitle>
         <CardDescription>
-          {provider.label} · {labels.secretHint}
+          <span className="font-medium text-foreground">{provider.label}</span> {labels.secretHint}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="gap-4 flex flex-col">
         <form
-          aria-label={`${provider.label} credentials`}
-          className="space-y-4"
+          aria-label={`${provider.label} ${labels.form}`}
+          className="gap-4 flex flex-col"
           onSubmit={(event) => {
             event.preventDefault();
             void submit(connection ? "reconnect" : "connect");
@@ -136,30 +135,25 @@ function CredentialForm({
                   onChange={(event) => setLabel(event.target.value)}
                 />
               </div>
-              <fieldset>
-                <legend className="mb-2 text-sm font-medium">{labels.funding}</legend>
-                <div className="flex flex-wrap gap-2">
-                  {provider.fundingSources.map((value) => (
-                    <Button
-                      key={value}
-                      type="button"
-                      variant={source === value ? "secondary" : "outline"}
-                      disabled={!editable}
-                      aria-pressed={source === value}
-                      onClick={() => {
-                        setSource(value);
-                        setSecrets({});
-                      }}
-                    >
-                      {fundingLabel(value)}
-                    </Button>
-                  ))}
-                </div>
+              <fieldset className="m-0 min-w-0 border-0 p-0">
+                <legend className="text-sm mb-2 font-medium">{labels.funding}</legend>
+                <UsageSegmented
+                  value={source}
+                  disabled={!editable}
+                  options={provider.fundingSources.map((value) => ({
+                    value,
+                    label: fundingLabel(value),
+                  }))}
+                  onChange={(value) => {
+                    setSource(value);
+                    setSecrets({});
+                  }}
+                />
               </fieldset>
             </>
           )}
           {fields.map((field) => (
-            <div key={field.name} className="space-y-2">
+            <div key={`${source}:${field.name}`} className={`space-y-2 ${usageMotion.enter}`}>
               <Label htmlFor={`${id}-${field.name}`}>{field.label}</Label>
               <Input
                 id={`${id}-${field.name}`}
@@ -174,13 +168,18 @@ function CredentialForm({
             </div>
           ))}
           {oauth}
-          <p className="text-xs text-muted-foreground">{labels.testHint}</p>
+          <p className="text-xs/relaxed text-muted-foreground">{labels.testHint}</p>
           {error && (
-            <p role="alert" className="text-sm text-destructive">
+            <UsageNotice key={error} tone="error" role="alert">
               {error}
-            </p>
+            </UsageNotice>
           )}
           <div className="flex flex-wrap gap-2">
+            {capabilities.includes(connection ? "reconnect" : "connect") && (
+              <Button type="submit" disabled={!editable}>
+                {connection ? labels.reconnect : labels.connect}
+              </Button>
+            )}
             {capabilities.includes("test") && (
               <Button
                 type="button"
@@ -191,21 +190,20 @@ function CredentialForm({
                 {labels.test}
               </Button>
             )}
-            {capabilities.includes(connection ? "reconnect" : "connect") && (
-              <Button type="submit" disabled={!editable}>
-                {connection ? labels.reconnect : labels.connect}
-              </Button>
-            )}
           </div>
         </form>
         {connection && capabilities.includes("disconnect") && (
-          <div className="space-y-2">
+          <div className="border-t border-border pt-4">
             {confirm ? (
-              <>
-                <p>{labels.disconnectHint}</p>
+              <div
+                className={`rounded-lg px-3.5 py-3 flex flex-wrap items-center justify-between gap-3 border border-destructive/30 bg-destructive/5 ${usageMotion.enter}`}
+              >
+                <p className="text-sm font-medium">{labels.disconnectHint}</p>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
+                    variant="destructive"
+                    size="sm"
                     disabled={!editable}
                     onClick={() => {
                       setConfirm(false);
@@ -220,15 +218,21 @@ function CredentialForm({
                   >
                     {labels.confirmDisconnect}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => setConfirm(false)}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setConfirm(false)}
+                  >
                     {labels.cancel}
                   </Button>
                 </div>
-              </>
+              </div>
             ) : (
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
+                className="text-destructive hover:text-destructive"
                 disabled={!editable}
                 onClick={() => setConfirm(true)}
               >

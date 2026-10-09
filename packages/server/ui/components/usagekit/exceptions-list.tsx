@@ -2,7 +2,6 @@
 
 import { useExceptionsView } from "@usagekit/react";
 import type { ExceptionKind, ExceptionsInput, ExceptionsView } from "@usagekit/views";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -11,6 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { UsageStatus, usageMotion } from "@/components/usagekit/usage-motion";
+import type { UsageTone } from "@/components/usagekit/usage-motion";
 
 export const exceptionsListLabels = {
   title: "Needs attention",
@@ -30,11 +31,13 @@ export const exceptionsListLabels = {
 };
 export type ExceptionsListLabels = typeof exceptionsListLabels;
 
-const kindVariant = {
-  lease_expired: "destructive",
-  reservation_expired: "outline",
-  pending: "secondary",
-} as const;
+const kindTone: Record<ExceptionKind, UsageTone> = {
+  lease_expired: "exceeded",
+  reservation_expired: "warning",
+  pending: "neutral",
+};
+const head = "h-10 px-4 text-xs font-medium text-muted-foreground";
+const cell = "px-4 py-3";
 
 /** Seconds, minutes, hours or days; hosts pass formatAge for their own language. */
 export function formatAge(seconds: number): string {
@@ -57,52 +60,82 @@ export function ExceptionsList({
   formatAge: age = formatAge,
 }: ExceptionsListProps) {
   const labels = { ...exceptionsListLabels, ...custom };
-  if (!view) return <p className="text-sm text-muted-foreground">{labels.loading}</p>;
+  if (!view)
+    return (
+      <div role="status" className="rounded-xl border px-4 py-3 min-w-0 border-border">
+        <span className="sr-only">{labels.loading}</span>
+        <span
+          aria-hidden
+          className="block h-4 w-full max-w-sm rounded-md bg-muted animate-pulse motion-reduce:animate-none"
+        />
+      </div>
+    );
   if (view.state === "forbidden" || view.state === "unavailable")
     return (
-      <p role="status" className="text-sm text-muted-foreground">
+      <p
+        role="status"
+        className={`rounded-lg border border-dashed px-4 py-3.5 text-sm border-border text-muted-foreground ${usageMotion.enter}`}
+      >
         {view.state === "forbidden" ? labels.forbidden : labels.failed}
       </p>
     );
   return (
-    <Table
-      tabIndex={0}
-      aria-label={labels.title}
-      className="focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
-    >
-      <TableHeader>
-        <TableRow>
-          <TableHead>{labels.operation}</TableHead>
-          <TableHead>{labels.provider}</TableHead>
-          <TableHead>{labels.principal}</TableHead>
-          <TableHead>{labels.kind}</TableHead>
-          <TableHead>{labels.state}</TableHead>
-          <TableHead className="text-right">{labels.age}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {view.rows.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={6} className="text-center text-muted-foreground">
-              {labels.empty}
-            </TableCell>
+    <div className="rounded-xl border min-w-0 overflow-hidden border-border">
+      <Table
+        tabIndex={0}
+        aria-label={labels.title}
+        className="focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+      >
+        <TableHeader className="bg-muted/40">
+          <TableRow className="hover:bg-transparent">
+            <TableHead className={head}>{labels.operation}</TableHead>
+            <TableHead className={head}>{labels.provider}</TableHead>
+            <TableHead className={head}>{labels.principal}</TableHead>
+            <TableHead className={head}>{labels.kind}</TableHead>
+            <TableHead className={head}>{labels.state}</TableHead>
+            <TableHead className={`${head} text-right`}>{labels.age}</TableHead>
           </TableRow>
-        ) : (
-          view.rows.map((row) => (
-            <TableRow key={row.operationId} data-kind={row.kind}>
-              <TableCell className="font-mono text-xs">{row.operationId}</TableCell>
-              <TableCell>{`${row.provider} ${row.operation}`}</TableCell>
-              <TableCell>{row.principal}</TableCell>
-              <TableCell>
-                <Badge variant={kindVariant[row.kind]}>{labels[row.kind as ExceptionKind]}</Badge>
+        </TableHeader>
+        <TableBody>
+          {view.rows.length === 0 ? (
+            <TableRow className="hover:bg-transparent">
+              <TableCell
+                colSpan={6}
+                className="text-sm px-4 py-8 text-center text-muted-foreground"
+              >
+                {labels.empty}
               </TableCell>
-              <TableCell className="text-muted-foreground">{row.state}</TableCell>
-              <TableCell className="text-right tabular-nums">{age(row.ageSeconds)}</TableCell>
             </TableRow>
-          ))
-        )}
-      </TableBody>
-    </Table>
+          ) : (
+            view.rows.map((row) => (
+              <TableRow
+                key={row.operationId}
+                data-kind={row.kind}
+                className="transition-[background-color,opacity] duration-300 starting:opacity-0 motion-reduce:transition-none"
+              >
+                <TableCell className={`${cell} font-mono text-xs text-muted-foreground`}>
+                  {row.operationId}
+                </TableCell>
+                <TableCell className={cell}>
+                  <span className="font-medium">{row.provider}</span>{" "}
+                  <span className="text-muted-foreground">{row.operation}</span>
+                </TableCell>
+                <TableCell className={cell}>{row.principal}</TableCell>
+                <TableCell className={cell}>
+                  <UsageStatus tone={kindTone[row.kind]}>
+                    {labels[row.kind as ExceptionKind]}
+                  </UsageStatus>
+                </TableCell>
+                <TableCell className={`${cell} text-muted-foreground`}>{row.state}</TableCell>
+                <TableCell className={`${cell} text-right tabular-nums`}>
+                  {age(row.ageSeconds)}
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 
@@ -115,7 +148,10 @@ export function ExceptionsListPanel({
   const result = useExceptionsView(input);
   if (result.state === "unavailable" || result.state === "forbidden")
     return (
-      <p role="alert" className="text-sm text-muted-foreground">
+      <p
+        role="alert"
+        className={`rounded-lg border border-dashed px-4 py-3.5 text-sm border-border text-muted-foreground ${usageMotion.enter}`}
+      >
         {result.state === "forbidden"
           ? (labels?.forbidden ?? exceptionsListLabels.forbidden)
           : (labels?.failed ?? exceptionsListLabels.failed)}

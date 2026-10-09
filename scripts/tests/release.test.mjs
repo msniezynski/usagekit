@@ -68,10 +68,10 @@ test("release publishes the allow-listed packages with public access", () => {
   assert.equal(args.includes("restricted"), false);
   assert.equal(args[args.indexOf("--registry") + 1], "https://registry.npmjs.org/");
 });
-test("the 0.6.0 contract cohort stays aligned across public and private consumers", async () => {
+test("the 0.7.0 contract cohort stays aligned across public and private consumers", async () => {
   const { readFileSync } = await import("node:fs");
   const { releaseVersion } = await import("../lib/release.mjs");
-  assert.equal(releaseVersion, "0.6.0");
+  assert.equal(releaseVersion, "0.7.0");
   for (const name of [
     "core",
     "store",

@@ -1,0 +1,202 @@
+/* Usagekit elements in shadcn Sera: editorial, sharp edges, spaced uppercase labels and generous room. */
+.style-sera {
+  .cn-usage-track {
+    @apply rounded-none bg-muted;
+  }
+
+  .cn-usage-track-lg {
+    @apply h-1;
+  }
+
+  .cn-usage-track-md {
+    @apply h-0.5;
+  }
+
+  .cn-usage-track-sm {
+    @apply h-0.5;
+  }
+
+  .cn-usage-notch {
+    @apply rounded-none;
+  }
+
+  .cn-usage-status {
+    @apply text-[0.625rem] uppercase tracking-widest;
+  }
+
+  .cn-usage-dot {
+    @apply size-1.5 rounded-none;
+  }
+
+  .cn-usage-segmented {
+    @apply rounded-none bg-muted;
+  }
+
+  .cn-usage-segmented-list {
+    @apply p-1;
+  }
+
+  .cn-usage-segment {
+    @apply rounded-none px-4 py-1.5 text-xs font-semibold uppercase tracking-wider;
+  }
+
+  .cn-usage-thumb {
+    @apply inset-y-1 left-1 w-[calc((100%_-_0.5rem)/var(--count))] rounded-none bg-background dark:bg-input/30;
+  }
+
+  .cn-usage-focus {
+    @apply outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30;
+  }
+
+  .cn-usage-body {
+    @apply text-sm;
+  }
+
+  .cn-usage-meta {
+    @apply text-xs/relaxed;
+  }
+
+  .cn-usage-label {
+    @apply text-[0.625rem] uppercase tracking-widest;
+  }
+
+  .cn-usage-affix {
+    @apply text-muted-foreground;
+  }
+
+  .cn-usage-tag {
+    @apply text-muted-foreground;
+  }
+
+  .cn-usage-title {
+    @apply text-xs uppercase tracking-wider;
+  }
+
+  .cn-usage-value {
+    @apply text-sm;
+  }
+
+  .cn-usage-heading {
+    @apply text-[0.625rem] uppercase tracking-widest;
+  }
+
+  .cn-usage-section {
+    @apply text-lg uppercase tracking-wider;
+  }
+
+  .cn-usage-pill {
+    @apply rounded-none border-0 font-semibold leading-none uppercase tracking-widest;
+  }
+
+  .cn-usage-pill-fill {
+    @apply bg-transparent;
+  }
+
+  .cn-usage-pill-sm {
+    @apply h-6 gap-1.5 px-0 text-[0.625rem];
+  }
+
+  .cn-usage-pill-md {
+    @apply h-7 gap-2 px-0 text-[0.625rem];
+  }
+
+  .cn-usage-pill-link {
+    @apply hover:underline hover:underline-offset-4;
+  }
+
+  .cn-usage-pill-skeleton {
+    @apply rounded-none bg-muted;
+  }
+
+  .cn-usage-row {
+    @apply rounded-none py-4 hover:bg-muted/40;
+  }
+
+  .cn-usage-chip {
+    @apply rounded-none border-0 bg-transparent px-0 py-0 text-[0.625rem] font-semibold uppercase tracking-widest text-muted-foreground;
+  }
+
+  .cn-usage-panel {
+    @apply rounded-none px-5 py-4;
+  }
+
+  .cn-usage-well {
+    @apply rounded-none bg-muted/50 px-5 py-4;
+  }
+
+  .cn-usage-gap-lg {
+    @apply gap-8;
+  }
+
+  .cn-usage-gap-md {
+    @apply gap-5;
+  }
+
+  .cn-usage-gap-sm {
+    @apply gap-4;
+  }
+
+  .cn-usage-skeleton {
+    @apply rounded-none bg-muted;
+  }
+
+  .cn-usage-skeleton-card {
+    @apply rounded-none bg-muted;
+  }
+
+  .cn-usage-notice {
+    @apply rounded-none border px-4 py-3 text-sm;
+  }
+
+  .cn-usage-empty {
+    @apply rounded-none border border-dashed px-5 py-4;
+  }
+
+  .cn-usage-figure-xl {
+    @apply text-5xl leading-none tracking-tight @xl:text-6xl;
+  }
+
+  .cn-usage-figure-lg {
+    @apply text-4xl leading-none tracking-tight;
+  }
+
+  .cn-usage-figure-md {
+    @apply text-3xl tracking-tight;
+  }
+
+  .cn-usage-figure-sm {
+    @apply text-xl leading-snug;
+  }
+
+  .cn-usage-figure-xs {
+    @apply text-lg leading-snug;
+  }
+
+  .cn-usage-frame {
+    @apply rounded-none border;
+  }
+
+  .cn-usage-head {
+    @apply h-11 px-5 text-[0.625rem] leading-normal uppercase tracking-widest;
+  }
+
+  .cn-usage-cell {
+    @apply px-5 py-4;
+  }
+
+  .cn-usage-tile {
+    @apply p-6 sm:p-8;
+  }
+
+  .cn-usage-item {
+    @apply rounded-none border px-4 py-3.5;
+  }
+
+  .cn-usage-index {
+    @apply size-6 rounded-none text-[0.625rem];
+  }
+
+  .cn-usage-swatch {
+    @apply rounded-none;
+  }
+}

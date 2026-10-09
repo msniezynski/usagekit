@@ -3,7 +3,9 @@
 Use Node 22.23.1 and pin packages from a release cohort to the same exact version.
 The seven-package 0.6.0 cohort is published and includes views, React and Postgres storage.
 The four-package 0.5.0 runtime cohort remains available as the preceding version.
-Use the registry commands below for 0.6.0 and reviewed local tarballs for unpublished candidates.
+The seven-package 0.7.0 source cohort adds `useProviderEditor` to `@usagekit/react`; the other
+six packages move to 0.7.0 without functional changes.
+Use the npm commands below for 0.6.0 and reviewed local tarballs for 0.7.0 until it is published.
 
 Source: <https://github.com/msniezynski/usagekit>. Documentation and registry: <https://usagekit.dev>.
 
@@ -60,10 +62,13 @@ Skipped capabilities are not passed guarantees.
 
 ## Headless views and React components
 
-`@usagekit/views` and `@usagekit/react` belong to the seven-package 0.6.0 cohort,
-alongside `@usagekit/store-postgres`. Keep packages on the same exact cohort; do not mix
-0.5.0 and 0.6.0 contracts. The component registry is private build tooling that distributes
-public shadcn JSON, rather than an npm package.
+`@usagekit/views` and `@usagekit/react` belong to the seven-package 0.7.0 source cohort,
+alongside `@usagekit/store-postgres`; the published 0.6.0 cohort has the same seven packages.
+In 0.7.0, `@usagekit/react` adds `useProviderEditor(query, options?)`, which keeps a draft base
+separate from current evidence and rebases only after an explicit successful reload; see
+[provider UI](PROVIDER-UI.md). Keep packages on the same exact cohort; do not mix 0.6.0 and
+0.7.0 packages. The component registry is private build tooling that distributes public shadcn
+JSON, rather than an npm package.
 
 Check availability without credentials:
 
@@ -79,9 +84,18 @@ After all seven versions are available, install the packages your application ne
 npm install --save-exact @usagekit/core@0.6.0 @usagekit/store@0.6.0 @usagekit/meter@0.6.0 @usagekit/providers@0.6.0 @usagekit/views@0.6.0 @usagekit/react@0.6.0
 # Optional server-side Postgres storage:
 npm install --save-exact @usagekit/store-postgres@0.6.0
+```
+
+Registry blocks request exact 0.7.0 `@usagekit/react`, `@usagekit/views` and `@usagekit/core`
+versions, which resolve anonymously only after 0.7.0 is published. Run the check above with
+0.7.0, then pin every `@usagekit` package in the application to 0.7.0 before copying blocks:
+
+```sh
 # Choose the primitive family configured in your shadcn application:
 npx shadcn add https://usagekit.dev/r/radix/budget-manager-panel.json
 # Or: npx shadcn add https://usagekit.dev/r/base/budget-manager-panel.json
+# Any shadcn style: add "@usagekit": "https://usagekit.dev/r/styles/{style}/{name}.json" to
+# "registries" in components.json, then: npx shadcn add @usagekit/budget-manager-panel
 ```
 
 If a version is unavailable, use the reviewed seven-tarball candidate workflow below.
@@ -90,8 +104,10 @@ Backend consumers need no React dependency unless they install the React package
 
 From a checkout, run the root `npm ci` and `npm run build`. A workspace host can use
 `loadUsageSummary` and the other views directly, or share reads through `MeterProvider`
-and the React hooks. The copied blocks use host primitives for either Radix/New York or
-Base UI/base-vega. Registry artifacts contain their dependency manifest and bundled
+and the React hooks. The copied blocks use the host's primitives, and their own elements follow
+the host's shadcn style: New York, or Vega, Nova, Maia, Lyra, Mira, Luma, Sera or Rhea on Radix
+or Base UI when copied from `r/styles/{style}`; `r/radix` stays New York and `r/base` stays
+Base UI Vega. Registry artifacts contain their dependency manifest and bundled
 component files. Published UI dependencies resolve anonymously from npm; unreleased
 candidates require the reviewed tarballs before copying blocks.
 
@@ -101,30 +117,31 @@ For a complete local example without package downloads:
 node packages/registry/consumers/prepare.mjs
 ```
 
-Run the two printed Vite commands to open the dashboards on loopback ports 5177 and 5178.
-The preparation copies every registry artifact into ignored consumer directories and
-resolves the local workspace source. Both dashboards use a shared in-memory Meter and a
-sample budget writer; they include light/dark themes, read-only mode and exact budget
-inputs. They do not access an external provider or production database.
+Run the printed Vite command to open the showcase on loopback port 5177. One page shows every
+block and switches all seventeen shadcn styles in place. The preparation copies the blocks,
+primitives and style sheets into an ignored host directory and resolves the local workspace
+source. The showcase uses one in-memory Meter and a sample budget writer; it includes light/dark
+themes, read-only mode and exact budget inputs. It does not access an external provider or
+production database.
 
 Use a stable, memoized host `BudgetWriter` to enable edits. Its server implementation must
 verify authorization, preserve allowed scope/unit/window and use budget version
 compare-and-swap. A timed-out write stays unknown until authoritative reconciliation;
 never translate a missing read into permission to retry. Read-only is the default, and
-customer credit authority remains in the host. See [UI](UI.md) for APIs, all twenty blocks,
+customer credit authority remains in the host. See [UI](UI.md) for APIs, all twenty-two blocks,
 shared cache behavior and writer outcomes.
 
 ## Release operators
 
 Only `npm run release` can publish the allow-listed core, store, meter, providers, views, react
-and store-postgres packages. Other workspaces stay private. The 0.6.0 candidate requires
+and store-postgres packages. Other workspaces stay private. The 0.7.0 candidate requires
 separate approval of its exact SHA, squash title and seven public versions before promotion.
-Live release requires clean main, its verified signed v0.6.0 tag, full checks, inspected
+Live release requires clean main, its verified signed v0.7.0 tag, full checks, inspected
 tarballs and a token-free consumer installation that checks declarations and React rendering.
 A dry run on a clean branch builds and audits packages without checking live authorization or publishing.
 Apache-2.0 LICENSE and NOTICE are included in every tarball.
 
-## Trying the 0.6.0 candidate
+## Trying the 0.7.0 candidate
 
 From its reviewed checkout, run `npm ci`, `npm run check`, `npm run build`,
 `npm run check:packages` and `npm run check:consumer`. The last command packs all seven
@@ -136,4 +153,5 @@ To use the candidate in your own test application, run `npm pack --workspace <na
 each of the seven allow-listed packages and install those seven resulting tarballs together
 with React 19 if you use the UI. Avoid `npm link`: it can hide missing package files and
 resolve dependencies from the checkout. The existing 0.5.0 migration rules still apply to
-custom Stores and Meters; 0.6.0 adds adapters and UI without changing that accounting contract.
+custom Stores and Meters. Neither the 0.6.0 adapters and UI nor the 0.7.0 `useProviderEditor`
+hook changes that accounting contract.

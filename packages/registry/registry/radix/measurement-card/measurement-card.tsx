@@ -1,8 +1,9 @@
 "use client";
 
 import type { Figure } from "@usagekit/views";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { UsageStatus, usageMotion } from "@/components/usagekit/usage-motion";
+import type { UsageTone } from "@/components/usagekit/usage-motion";
 
 export const measurementCardLabels = {
   measured: "Measured",
@@ -17,41 +18,108 @@ export type MeasurementCardProps = {
   value: Figure;
   description?: string;
   labels?: Partial<MeasurementCardLabels>;
+  /** "plain" drops the card chrome so several measurements can share one surface. */
+  variant?: "card" | "plain";
+  className?: string;
+};
+
+const certaintyTone: Record<"measured" | "estimated" | "unknown" | "unavailable", UsageTone> = {
+  measured: "positive",
+  estimated: "neutral",
+  unknown: "unknown",
+  unavailable: "unknown",
 };
 
 /** Exact measurement text and its certainty. Unknown and unavailable never display zero. */
+export function MeasurementValue({
+  value,
+  labels: custom,
+  size = "lg",
+}: {
+  value: Figure;
+  labels?: Partial<MeasurementCardLabels>;
+  size?: "lg" | "md";
+}) {
+  const labels = { ...measurementCardLabels, ...custom };
+  const missing =
+    value === "unavailable"
+      ? labels.unavailable
+      : value.certainty === "unknown"
+        ? labels.unknown
+        : null;
+  if (missing !== null || value === "unavailable")
+    return (
+      <p
+        className={`font-semibold text-muted-foreground ${size === "lg" ? "cn-usage-figure-md" : "cn-usage-figure-xs"}`}
+      >
+        {missing}
+      </p>
+    );
+  return (
+    <p className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+      <span
+        key={value.text}
+        className={`min-w-0 break-all font-semibold tabular-nums ${size === "lg" ? "cn-usage-figure-lg" : "cn-usage-figure-xs"} ${usageMotion.enter}`}
+      >
+        {value.text}
+      </span>
+      {value.unit && (
+        <span className="cn-usage-body text-muted-foreground">
+          {value.unit === "customer_cents" ? labels.cents : value.unit}
+        </span>
+      )}
+    </p>
+  );
+}
+
+/** Certainty in words with its tone. */
+export function MeasurementCertainty({
+  value,
+  labels: custom,
+}: {
+  value: Figure;
+  labels?: Partial<MeasurementCardLabels>;
+}) {
+  const labels = { ...measurementCardLabels, ...custom };
+  const certainty = value === "unavailable" ? "unavailable" : value.certainty;
+  return (
+    <UsageStatus key={certainty} tone={certaintyTone[certainty]} className={usageMotion.enter}>
+      {labels[certainty]}
+    </UsageStatus>
+  );
+}
+
 export function MeasurementCard({
   title,
   value,
   description,
-  labels: custom,
+  labels,
+  variant = "card",
+  className = "",
 }: MeasurementCardProps) {
-  const labels = { ...measurementCardLabels, ...custom };
   const certainty = value === "unavailable" ? "unavailable" : value.certainty;
+  if (variant === "plain")
+    return (
+      <div className={`min-w-0 space-y-3 ${className}`} data-certainty={certainty}>
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <p className="cn-usage-title min-w-0 break-words font-medium">{title}</p>
+          <MeasurementCertainty value={value} labels={labels} />
+        </div>
+        {description && <p className="cn-usage-meta text-muted-foreground">{description}</p>}
+        <MeasurementValue value={value} labels={labels} />
+      </div>
+    );
   return (
-    <Card className="min-w-0 w-full" data-certainty={certainty}>
+    <Card className={`w-full min-w-0 ${className}`} data-certainty={certainty}>
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-x-3 gap-y-1">
+          <CardTitle className="min-w-0 break-words leading-snug">{title}</CardTitle>
+          <MeasurementCertainty value={value} labels={labels} />
+        </div>
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
-      <CardContent className="flex flex-wrap items-baseline justify-between gap-3">
-        <p className="min-w-0 text-2xl font-semibold tabular-nums break-all">
-          {value === "unavailable" ? (
-            labels.unavailable
-          ) : value.certainty === "unknown" ? (
-            labels.unknown
-          ) : (
-            <>
-              {value.text}
-              <span className="ml-1 text-sm font-normal text-muted-foreground">
-                {value.unit === "customer_cents" ? labels.cents : value.unit}
-              </span>
-            </>
-          )}
-        </p>
-        <Badge variant={certainty === "measured" ? "secondary" : "outline"}>
-          {labels[certainty]}
-        </Badge>
+      <CardContent>
+        <MeasurementValue value={value} labels={labels} />
       </CardContent>
     </Card>
   );

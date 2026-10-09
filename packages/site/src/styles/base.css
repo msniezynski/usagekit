@@ -638,7 +638,7 @@ svg {
     margin-bottom: 40px;
   }
 }
-@media (max-width: 880px) {
+@media (max-width: 960px) {
   .nav-links,
   .version-link,
   .header-cta {

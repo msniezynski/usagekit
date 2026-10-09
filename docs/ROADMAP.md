@@ -1,6 +1,6 @@
 # usagekit roadmap
 
-Established: 2026-09-24. Owner: Michal. Repository status reviewed: 2026-10-08.
+Established: 2026-09-24. Owner: Michal. Repository status reviewed: 2026-10-09.
 This is the bird's-eye view. [PLAN.md](PLAN.md) holds the
 engineering contract, constraints and stage exit gates; this file holds purpose, model,
 current position and the order of work. When they disagree, this file wins on order and scope,
@@ -137,12 +137,13 @@ maintain and a registry to test against both.
 
 This is a repository snapshot, not a live audit of npm, Cloudflare or a host deployment.
 Public source: <https://github.com/msniezynski/usagekit>. Website: <https://usagekit.dev>.
-The reviewed public main at `767a20c` contains the React UI, Postgres adapter and P8
+The reviewed public main at `e4b9e73` contains the React UI, Postgres adapter and P8
 billing imports. The four-package 0.5.0 cohort was verified without registry credentials
-on 2026-10-07. The seven-package 0.6.0 cohort requires separate publication verification;
-source promotion, npm publication and host integration have distinct receipts.
+on 2026-10-07. The seven-package 0.6.0 cohort is published; all seven versions were verified
+without registry credentials on 2026-10-09. The 0.7.0 source cohort awaits owner approval.
+Source promotion, npm publication and host integration have distinct receipts.
 
-| Item                                 | State on 2026-10-07                                                                                                                                                                                                                                                                   |
+| Item                                 | State on 2026-10-09                                                                                                                                                                                                                                                                   |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | P1 core, store, meter                | On `main`: embedded Meter, shared conformance suite and property tests.                                                                                                                                                                                                               |
 | P2 SQLite, HTTP, client, server, CLI | On `main`: durable local storage, authenticated API and CLI, encrypted vault, reservation expiry and restart recovery.                                                                                                                                                                |
@@ -150,15 +151,19 @@ source promotion, npm publication and host integration have distinct receipts.
 | P5 provider catalog                  | On `main`, tagged `v0.4.0`: descriptors, pricing, fixture extraction/recording and the wrapper boundary.                                                                                                                                                                              |
 | P6 local proxy                       | On `main`: routed provider dispatch, budget enforcement and crash recovery. See [PROXY](PROXY.md).                                                                                                                                                                                    |
 | P7 Cloudflare storage                | Approved on local `main`: authoritative SQLite-backed Durable Object storage and Worker example. Direct D1Database support remains unimplemented.                                                                                                                                     |
-| Library release                      | Public `core`, `store`, `meter` and `providers` 0.5.0 are published. Other workspaces remain private; public React distribution needs separate authorization.                                                                                                                         |
+| Library release                      | The seven-package 0.6.0 cohort is published. The 0.7.0 source cohort adds `useProviderEditor` to the React package; the other six packages move in lockstep. Its publication awaits owner approval. Other workspaces remain private.                                                  |
 | Repository hosting and CI            | Public repository and GitHub Actions are configured. The first public run found a Cloudflare fixture race; its local regression fix passes. Fresh exact-head public CI remains a release gate.                                                                                        |
 | P3 host shadow and P8 cutover        | Current host PR, deployment, shadow observations and credit authority must be checked in the host repository before cutover. Library checks do not establish production readiness.                                                                                                    |
 | P8 billing import                    | Approved on local `main`: atomic imports, scoped request matching, immutable revisions, reconciliation, SQLite and Durable Object replay, HTTP and local parsing. Included in published 0.5.0. See [billing imports](BILLING-IMPORTS.md) and the [migration guide](MIGRATING-0.5.md). |
 
-Next: finish the seven-package 0.6.0 publication, verify anonymous registry installs
-and both public shadcn variants, then complete the host React preview and merge.
+Next: after owner approval, publish the seven-package 0.7.0 cohort from a signed `v0.7.0` tag
+on main through `release.yml`, verify anonymous registry installs and the public style
+registries, then complete the host React preview and merge. The 0.7.0 source cohort adds
+`useProviderEditor` to `@usagekit/react`; the other six packages move in lockstep. Registry
+blocks follow every shadcn style on Radix and Base UI and request exact 0.7.0 packages; the
+redesigned usage surfaces share one meter, motion, connection rows and summaries.
 Shared metering/provider hooks, measurement cards, connection tools and allocation editors
-are implemented in both styles; the local Usagekit dashboard already uses shared blocks. Hosts supply authorized budget-write and provider-management adapters;
+are implemented in every style; the redesigned local Usagekit dashboard uses shared blocks. Hosts supply authorized budget-write and provider-management adapters;
 read-only dashboards stay read-only. See [provider UI](PROVIDER-UI.md) and [the site](SITE.md).
 Promotion, UI package publication and website hosting are separate gates.
 Host integration and shadow evidence are

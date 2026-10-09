@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { sourceRepo } from "./content.js";
 
 /* The agents page around AgentsSection: its header (the only h1), questions and closing. */
 
@@ -74,8 +75,16 @@ function Terminal() {
 const faqs: readonly { question: string; answer: ReactNode }[] = [
   {
     question: "Which APIs work?",
-    answer:
-      "DataForSEO and SerpApi, through bundled provider descriptors. Any other provider needs a descriptor first.",
+    answer: (
+      <>
+        DataForSEO and SerpApi work out of the box through bundled provider descriptors. Adding
+        another API is simple: a descriptor is data plus a few small extractors, and the{" "}
+        <a className="link" href={`${sourceRepo}/blob/main/.claude/skills/add-provider/SKILL.md`}>
+          add-provider skill
+        </a>{" "}
+        walks your coding agent through it, from sourced prices to fixture tests.
+      </>
+    ),
   },
   {
     question: "Does it stop calls that skip the proxy?",

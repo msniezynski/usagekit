@@ -23,9 +23,7 @@ export function ProductsSection() {
                 Show your users their usage, provider costs and budgets with shadcn blocks for Radix
                 or Base UI, or with headless React hooks.
               </p>
-              <p className="prod-note">
-                The runtime is on npm. The React layer runs from the repository checkout.
-              </p>
+              <p className="prod-note">The runtime and the React layer are on npm.</p>
               <p className="prod-more">
                 <a className="prod-link" href="/components/">
                   Explore the blocks

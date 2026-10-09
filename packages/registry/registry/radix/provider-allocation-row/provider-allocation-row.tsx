@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { figureText, fundingLabel } from "@/components/usagekit/provider-feedback";
+import { UsageStatus, usageMotion } from "@/components/usagekit/usage-motion";
 export const providerAllocationLabels = {
   title: "Allocations",
   description:
@@ -28,11 +29,13 @@ export const providerAllocationLabels = {
   within: "Within this period",
   noUsage: "No measured usage yet",
   unknown: "Unknown",
+  reload: "Reload allocations",
 };
 export type ProviderAllocationLabels = typeof providerAllocationLabels;
 export type Draft = { limit: string; unlimited: boolean };
 export function AllocationRow({
   row,
+  evidence = row,
   draft,
   change,
   editable,
@@ -41,6 +44,8 @@ export function AllocationRow({
   projection,
 }: {
   row: ProviderAllocationRow;
+  /** Current evidence only. Null preserves the draft without displaying retained figures. */
+  evidence?: ProviderAllocationRow | null;
   draft: Draft;
   change: (value: Draft) => void;
   editable: boolean;
@@ -50,42 +55,50 @@ export function AllocationRow({
 }) {
   const id = useId();
   const available =
-    fresh && row.available && row.availabilityBasis
+    fresh && evidence?.available && evidence.availabilityBasis
       ? allocationLimitFromAvailable({
-          used: row.used,
-          reserved: row.reserved,
-          available: row.available,
-          availabilityBasis: row.availabilityBasis,
+          used: evidence.used,
+          reserved: evidence.reserved,
+          available: evidence.available,
+          availabilityBasis: evidence.availabilityBasis,
         })
       : { outcome: "unavailable" as const, reason: labels.unavailable };
   const suggestion =
     available.outcome === "ready" && available.limit.unit === row.unit
       ? available.limit.text
       : null;
-  const forecast = projection ? projectBudgetExhaustion(projection) : null;
+  const forecast = evidence && projection ? projectBudgetExhaustion(projection) : null;
   return (
     <section
       aria-label={`${fundingLabel(row.fundingSource)} ${labels[row.surface]}`}
-      className="space-y-3 rounded-lg border border-border p-4 min-w-0"
+      className="cn-usage-item cn-usage-gap-md flex min-w-0 flex-col border-border"
     >
-      <h3 className="font-medium">
-        {fundingLabel(row.fundingSource)} · {labels[row.surface]}
-      </h3>
-      <p className="text-sm text-muted-foreground break-words">{row.label}</p>
-      <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
-        {[
-          [labels.used, row.used],
-          [labels.reserved, row.reserved],
-          [labels.remaining, row.remaining],
-        ].map(([label, value]) => (
-          <div key={label as string} className="min-w-0">
-            <dt className="text-muted-foreground">{label as string}</dt>
-            <dd className="tabular-nums break-all">
-              {figureText(value as ProviderAllocationRow["used"])}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <div className="min-w-0 space-y-0.5">
+        <h3 className="cn-usage-title font-medium">
+          {fundingLabel(row.fundingSource)}
+          <span className="text-muted-foreground"> {labels[row.surface]}</span>
+        </h3>
+        <p className="cn-usage-body break-words text-muted-foreground">{row.label}</p>
+      </div>
+      {evidence && (
+        <dl className="cn-usage-well cn-usage-body grid min-w-0 grid-cols-3 gap-3">
+          {[
+            [labels.used, evidence.used],
+            [labels.reserved, evidence.reserved],
+            [labels.remaining, evidence.remaining],
+          ].map(([label, value]) => (
+            <div key={label as string} className="min-w-0">
+              <dt className="cn-usage-label text-muted-foreground">{label as string}</dt>
+              <dd
+                key={figureText(value as ProviderAllocationRow["used"])}
+                className={`mt-0.5 break-all font-medium tabular-nums ${usageMotion.enter}`}
+              >
+                {figureText(value as ProviderAllocationRow["used"])}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
       <div className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Label htmlFor={id}>
@@ -109,38 +122,53 @@ export function AllocationRow({
           readOnly={!editable}
           disabled={draft.unlimited}
           value={draft.limit}
+          className="tabular-nums"
           onChange={(event) => change({ ...draft, limit: event.target.value })}
         />
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={!editable || suggestion === null}
-          onClick={() => {
-            if (suggestion !== null) change({ limit: suggestion, unlimited: false });
-          }}
-        >
-          {labels.available}
-        </Button>
-        {suggestion === null && (
-          <p className="text-xs text-muted-foreground">
-            {available.outcome === "unavailable" ? available.reason : labels.unavailable}
-          </p>
-        )}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!editable || suggestion === null}
+            onClick={() => {
+              if (suggestion !== null) change({ limit: suggestion, unlimited: false });
+            }}
+          >
+            {labels.available}
+          </Button>
+          {suggestion === null && (
+            <p className="cn-usage-meta min-w-0 flex-1 basis-48 text-muted-foreground">
+              {available.outcome === "unavailable" ? available.reason : labels.unavailable}
+            </p>
+          )}
+        </div>
       </div>
       {forecast && (
-        <p className="text-sm break-words">
-          {labels.forecast}:{" "}
-          {forecast.kind === "estimated"
-            ? `${labels.estimated} · ${forecast.at}`
-            : forecast.kind === "exhausted"
-              ? `${labels.exhausted} · ${forecast.at}`
-              : forecast.kind === "within_limits"
-                ? labels.within
-                : forecast.kind === "no_usage"
-                  ? labels.noUsage
-                  : forecast.reason}
-        </p>
+        <div className="cn-usage-body flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-t border-border pt-3">
+          <span className="text-muted-foreground">{labels.forecast}</span>
+          <UsageStatus
+            tone={
+              forecast.kind === "exhausted"
+                ? "exceeded"
+                : forecast.kind === "estimated"
+                  ? "warning"
+                  : forecast.kind === "within_limits"
+                    ? "positive"
+                    : "neutral"
+            }
+          >
+            {forecast.kind === "estimated"
+              ? `${labels.estimated} ${forecast.at}`
+              : forecast.kind === "exhausted"
+                ? `${labels.exhausted} ${forecast.at}`
+                : forecast.kind === "within_limits"
+                  ? labels.within
+                  : forecast.kind === "no_usage"
+                    ? labels.noUsage
+                    : forecast.reason}
+          </UsageStatus>
+        </div>
       )}
     </section>
   );

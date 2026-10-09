@@ -20,13 +20,11 @@ export const blockNames = [
   "provider-balance-card",
   "provider-allocation-editor",
   "provider-manager-panel",
+  "usage-overview-card",
+  "usage-cap-pill",
 ] as const;
 export type BlockName = (typeof blockNames)[number];
 export const variants = ["radix", "base"] as const;
 export type Variant = (typeof variants)[number];
 /** Blocks whose primitive API differs between Radix and Base UI; the others share one file. */
-export const variantSpecific: readonly BlockName[] = [
-  "budget-card",
-  "header-status",
-  "usage-filters",
-];
+export const variantSpecific: readonly BlockName[] = ["header-status", "usage-filters"];
