@@ -2,7 +2,8 @@
 
 All seven packages, including `@usagekit/react`, `@usagekit/views` and
 `@usagekit/store-postgres`, are published at 0.7.0, which adds
-`useProviderEditor` to the React package. The registry remains private build tooling whose
+`useProviderEditor` to the React package. The 0.8.0 source cohort adds `ProviderRate.fallback`
+to `@usagekit/views` for the dollar rate editor. The registry remains private build tooling whose
 blocks are distributed as public copyable JSON.
 Verify exact npm versions before installing a cohort; use reviewed tarballs for unreleased
 candidates. See [consuming packages](CONSUMING.md) for both workflows.
@@ -158,7 +159,7 @@ Both Radix/New York and Base UI/base-vega contain the same twenty-two blocks:
 | `provider-card`              | Connection status, availability and explicit actions             |
 | `provider-connect-form`      | Draft credentials, test, connect and reconnect                   |
 | `provider-source-selector`   | Own-key or platform funding with explicit confirmation           |
-| `provider-rate-editor`       | Exact rates, measured/manual/list provenance and editing         |
+| `provider-rate-editor`       | Exact dollar rates, provenance, fallback and editing             |
 | `provider-chain-editor`      | Enable connections and edit fallback ordering                    |
 | `provider-balance-card`      | Separate provider or host-wallet balance and freshness           |
 | `provider-allocation-editor` | Funding-by-surface limits and availability suggestions           |
@@ -190,7 +191,8 @@ The manager bundles its editor; summary cards bundle their measurement card. Fil
 `@/components/usagekit/` and import `@/components/ui/*`. Root `r/<name>.json` defaults to
 Radix. The header status tooltip trigger and the filter selects have variant-specific files;
 other block source is shared.
-The shadcn CLI requests exact 0.7.0 UI package versions, which resolve anonymously from npm. The
+The shadcn CLI requests exact 0.8.0 UI package versions, which resolve anonymously from npm once
+0.8.0 is published. The
 [public examples](https://usagekit.dev/examples/) show every block in every shadcn style and
 provide each block's install command. See [consuming packages](CONSUMING.md) for local tarball
 validation of unreleased candidates.
@@ -322,6 +324,6 @@ Both artifacts bundle `usage-progress.tsx`, a pure `usageProgress(percent, parti
 projection with no React, DOM or styling imports. It can be used without the styled blocks.
 It preserves complete zero, partial positive usage, unknown zero and over-limit status.
 The existing headless Meter and provider hooks remain available from `@usagekit/react`.
-Like every registry item, these blocks request exact 0.7.0 package versions. The provider
-rate, allocation and manager blocks also need `useProviderEditor`, which is new in the 0.7.0
-React package.
+Like every registry item, these blocks request exact 0.8.0 package versions. The provider
+rate, allocation and manager blocks also need `useProviderEditor`, new in the 0.7.0 React
+package, and the rate editor reads `ProviderRate.fallback`, new in the 0.8.0 views package.

@@ -209,17 +209,24 @@ export function createDemoProviderPort(scopeKey = "acme") {
         if (command.kind === "rates")
           item.rates = item.rates.map((rate) => {
             const change = command.rates.find((change) => change.rateId === rate.id);
-            return change
-              ? {
-                  ...rate,
-                  price: figure(change.price ?? "0.6250", "cents"),
+            if (!change) return rate;
+            const { fallback, ...current } = rate;
+            // The measured rate the sample starts with applies again once a manual price clears.
+            const measured = fallback ?? { price: current.price, provenance: current.provenance };
+            return change.price === null
+              ? { ...current, ...measured }
+              : {
+                  ...current,
+                  price: figure(change.price, "cents"),
                   provenance: {
-                    ...rate.provenance,
-                    source: change.price === null ? ("list" as const) : ("manual" as const),
+                    source: "manual" as const,
                     origin: "host" as const,
+                    checkedAt: freshness.observedAt,
+                    sampleSize: null,
+                    version: null,
                   },
-                }
-              : rate;
+                  fallback: measured,
+                };
           });
       }
       const result = success(command.commandId, item ?? undefined);

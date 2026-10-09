@@ -1,6 +1,6 @@
 {
   "name": "@usagekit/core",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "type": "module",
   "license": "Apache-2.0",
   "description": "Exact quantities, ownership and pure domain types.",
@@ -29,11 +29,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/msniezynski/usagekit.git",
+    "url": "git+https://github.com/usagekit/usagekit.git",
     "directory": "packages/core"
   },
   "homepage": "https://usagekit.dev",
   "bugs": {
-    "url": "https://github.com/msniezynski/usagekit/issues"
+    "url": "https://github.com/usagekit/usagekit/issues"
   }
 }

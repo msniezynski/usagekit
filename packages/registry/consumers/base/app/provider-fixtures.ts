@@ -74,7 +74,7 @@ export const connection = (
       id: "standard",
       label: "Standard request",
       operation: "request",
-      unit: "requests",
+      unit: "request",
       priceUnit: "cents",
       price: figure("0.6250", "cents"),
       fundingSource,

@@ -298,8 +298,11 @@ test("manual rates are exact, atomically validate every row, and clear only sele
       connection: {
         rates: [
           {
+            unit: "request",
             price: { text: "9007199254740993.000000000000000001", unit: "units" },
             provenance: { source: "manual" },
+            // No list row applies to this operation, so clearing restores an unknown price.
+            fallback: { price: "unavailable", provenance: { source: "unknown" } },
           },
         ],
       },
@@ -318,14 +321,18 @@ test("manual rates are exact, atomically validate every row, and clear only sele
       }),
     ).toMatchObject({ outcome: "invalid", field: "rates" });
     expect(f.server.vault.describe()).toEqual(before);
-    expect(
-      await f.command({
-        ...rates,
-        commandId: crypto.randomUUID(),
-        expectedRevision: saved.connection.revision,
-        rates: [{ rateId: "search", price: null }],
-      }),
-    ).toMatchObject({ outcome: "success", connection: { rates: [{ price: "unavailable" }] } });
+    const cleared = await f.command({
+      ...rates,
+      commandId: crypto.randomUUID(),
+      expectedRevision: saved.connection.revision,
+      rates: [{ rateId: "search", price: null }],
+    });
+    expect(cleared).toMatchObject({
+      outcome: "success",
+      connection: { rates: [{ price: "unavailable", provenance: { source: "unknown" } }] },
+    });
+    if (cleared.outcome !== "success") throw new Error("Expected cleared rates");
+    expect(cleared.connection?.rates[0]).not.toHaveProperty("fallback");
     expect(f.transport).not.toHaveBeenCalled();
   } finally {
     await f.server.stop();

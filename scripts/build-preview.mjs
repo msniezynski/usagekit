@@ -40,7 +40,7 @@ async function checkStaticTree(path) {
 }
 
 function navigation() {
-  return '<a href="/">Usagekit</a><a href="/components/">Components</a><a href="/agents/">Agents</a><a href="/docs/">Docs</a><a href="/examples/">Examples</a><a href="/examples/showcase/">Showcase</a><a href="https://github.com/msniezynski/usagekit">Source on GitHub</a>';
+  return '<a href="/">Usagekit</a><a href="/components/">Components</a><a href="/agents/">Agents</a><a href="/docs/">Docs</a><a href="/examples/">Examples</a><a href="/examples/showcase/">Showcase</a><a href="https://github.com/usagekit/usagekit">Source on GitHub</a>';
 }
 
 const bannerCss = `
@@ -97,7 +97,7 @@ ${bannerCss}
 <div class="note"><p>Each example runs in memory in your browser. Changes reset on reload; there is no durable backend, provider request or billing action. Credential fields accept demo values only.</p></div>
 <h2>Copy a block into your app</h2><p>These JSON artifacts are ready for the shadcn CLI. Every shadcn style has its own build with the style baked into the blocks: point a registry at <code>/r/styles/{style}/{name}.json</code> in <code>components.json</code> and the shadcn CLI fills in your style. The table offers the New York and Base UI Vega builds. First install <code>@usagekit/react</code>, <code>@usagekit/views</code> and their dependencies from the published 0.7.0 cohort that the blocks request; they resolve anonymously from npm. For an unpublished candidate, use reviewed tarballs as described in <a href="/docs/#checkout">the installation guide</a>. Hosting the registry does not publish npm packages.</p><p>The install command below uses this preview's own origin.</p>
 <p id="copy-status" role="status" aria-live="polite">Choose a block to get its install command.</p><code id="install-command"></code><div class="table-wrap" role="region" aria-label="Component registry" tabindex="0"><table><thead><tr><th scope="col">Block</th><th scope="col">New York / Radix</th><th scope="col">Base UI / Vega</th></tr></thead><tbody>${rows}</tbody></table></div>
-<footer><p>Apache-2.0 · <a href="/LICENSE">License</a> · <a href="https://github.com/msniezynski/usagekit">Usagekit source</a></p></footer>
+<footer><p>Apache-2.0 · <a href="/LICENSE">License</a> · <a href="https://github.com/usagekit/usagekit">Usagekit source</a></p></footer>
 </main><script>
 document.querySelectorAll('[data-install]').forEach(function(button){button.addEventListener('click',async function(){var command='npx shadcn add '+new URL(button.dataset.install,location.origin).href;document.getElementById('install-command').textContent=command;try{await navigator.clipboard.writeText(command);document.getElementById('copy-status').textContent='Install command copied.';}catch{document.getElementById('copy-status').textContent='Select and copy the install command shown below.';}});});
 </script></body></html>\n`;
@@ -178,7 +178,7 @@ async function buildPreview() {
       ),
       backend: "none",
       examples: "browser-only in-memory fixtures",
-      uiPackages: "0.7.0 cohort; published on registry.npmjs.org",
+      uiPackages: "0.8.0 source cohort; publication pending",
       registryBlocksPerVariant: index.items.length,
       routes: [
         "/",

@@ -137,6 +137,24 @@ figures only from `evidence`, honor `disabled` and current per-command capabilit
 submit through `action.run`. Render the hook's read state and error alongside the form.
 The copyable `ProviderRatePanel` supplies this read feedback and composition already.
 
+## Rates
+
+A `ProviderRate` prices one `unit`, named in the singular ("request", "keyword"), in its
+native `priceUnit`. Usagekit money is USD cents, so the rate editor shows a `cents` price
+as exact dollars ("$0.00625") and takes dollars with at most six decimal places, converting
+them to cents without floating point. Other price units are shown and entered as they are.
+
+`provenance` says where the current price comes from: a manual price, a measured rate, a
+list price or nothing yet. For a manual price, the host may add `fallback`: the price and
+provenance that apply once the manual price is cleared; `fallback` is new in the 0.8.0 views
+package. The editor then names the reset
+after it ("Use measured rate", "Use list price") and shows it as "Without your rate". Without
+`fallback` the reset reads "Clear your rate". Only a manual rate offers a reset.
+
+Each rate is a collapsed row with its price per unit and source. Opening it shows when the
+rate was checked, its samples and version where known, the operation and funding source,
+and the form.
+
 ## Exact limits and separate authorities
 
 An allocation row has its own funding source, surface, unit and revision. In the common

@@ -1,6 +1,6 @@
 {
   "name": "@usagekit/meter",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "type": "module",
   "license": "Apache-2.0",
   "description": "Admission, reservations, settlement and recovery.",
@@ -23,8 +23,8 @@
     "prepack": "node ../../scripts/package-license.mjs"
   },
   "dependencies": {
-    "@usagekit/core": "0.7.0",
-    "@usagekit/store": "0.7.0"
+    "@usagekit/core": "0.8.0",
+    "@usagekit/store": "0.8.0"
   },
   "sideEffects": false,
   "publishConfig": {
@@ -33,11 +33,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/msniezynski/usagekit.git",
+    "url": "git+https://github.com/usagekit/usagekit.git",
     "directory": "packages/meter"
   },
   "homepage": "https://usagekit.dev",
   "bugs": {
-    "url": "https://github.com/msniezynski/usagekit/issues"
+    "url": "https://github.com/usagekit/usagekit/issues"
   }
 }

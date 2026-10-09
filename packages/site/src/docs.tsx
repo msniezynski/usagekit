@@ -242,7 +242,7 @@ function Adapters() {
           Durable accounting through pg or Prisma. Run <C>migratePostgresStore</C> explicitly before
           starting the application; runtime creation never applies DDL. Use{" "}
           <C>createTransactionBoundStore</C> when accounting must commit with a host ledger. See{" "}
-          <a href="https://github.com/msniezynski/usagekit/blob/main/docs/POSTGRES.md">
+          <a href="https://github.com/usagekit/usagekit/blob/main/docs/POSTGRES.md">
             the Postgres guide
           </a>
           .

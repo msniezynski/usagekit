@@ -57,7 +57,7 @@ jobs:
         env:
           RELEASE_DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          test "$GITHUB_REPOSITORY" = msniezynski/usagekit
+          test "$GITHUB_REPOSITORY" = usagekit/usagekit
           test "$GITHUB_REF" = refs/heads/main
           test "$GITHUB_SHA" = "$USAGEKIT_APPROVED_RELEASE_SHA"
           test "$(git rev-parse HEAD)" = "$USAGEKIT_APPROVED_RELEASE_SHA"

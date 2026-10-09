@@ -54,30 +54,44 @@ export function managementReader(vault: Vault, catalog: Catalog, now: () => Date
               row.validFrom <= now().toISOString().slice(0, 10),
           ) ?? [];
         const row = rows.sort((a, b) => b.validFrom.localeCompare(a.validFrom))[0];
+        // The list row is what applies without a manual price, so it is also the fallback.
+        const list = {
+          price: row
+            ? { text: row.perUnit, unit: row.unit, certainty: "estimated" as const }
+            : ("unavailable" as const),
+          provenance: {
+            source: row ? ("list" as const) : ("unknown" as const),
+            origin: row ? ("catalog" as const) : ("unknown" as const),
+            checkedAt: row?.checkedAt ?? null,
+            sampleSize: null,
+            version: row?.validFrom ?? null,
+          },
+        };
         return {
           id: op.id,
           label: op.label,
           operation: op.id,
-          unit: "requests",
+          unit: "request",
           priceUnit: unit,
-          price: manual
-            ? {
-                text: formatQuantity({ ...manual, value: BigInt(manual.value) }),
-                unit: manual.unit,
-                certainty: "estimated" as const,
-              }
-            : row
-              ? { text: row.perUnit, unit: row.unit, certainty: "estimated" as const }
-              : ("unavailable" as const),
           fundingSource: "byok" as const,
           editable: !!descriptor && vault.unlocked,
-          provenance: {
-            source: manual ? ("manual" as const) : row ? ("list" as const) : ("unknown" as const),
-            origin: manual ? ("host" as const) : row ? ("catalog" as const) : ("unknown" as const),
-            checkedAt: manual ? null : (row?.checkedAt ?? null),
-            sampleSize: null,
-            version: manual ? (entry.revision ?? null) : (row?.validFrom ?? null),
-          },
+          ...(manual
+            ? {
+                price: {
+                  text: formatQuantity({ ...manual, value: BigInt(manual.value) }),
+                  unit: manual.unit,
+                  certainty: "estimated" as const,
+                },
+                provenance: {
+                  source: "manual" as const,
+                  origin: "host" as const,
+                  checkedAt: null,
+                  sampleSize: null,
+                  version: entry.revision ?? null,
+                },
+                fallback: list,
+              }
+            : list),
         };
       });
     return {

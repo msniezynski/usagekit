@@ -352,7 +352,7 @@
       "name": "provider-rate-editor",
       "type": "registry:block",
       "title": "Provider rate editor",
-      "description": "Exact rate inputs with manual, measured and list provenance and host fallback.",
+      "description": "Expandable rates in exact dollars with manual, measured and list provenance and the host fallback.",
       "registryDependencies": ["button", "card", "input", "label"],
       "dependencies": ["@usagekit/react", "@usagekit/views", "@usagekit/core"],
       "files": [

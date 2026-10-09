@@ -34,23 +34,30 @@ export type ProviderDefinition = {
   fundingSources: readonly FundingSource[];
   capabilities: readonly ProviderCommand["kind"][];
 };
+export type ProviderRateProvenance = {
+  source: "manual" | "measured" | "list" | "unknown";
+  origin: "provider" | "host" | "catalog" | "unknown";
+  checkedAt: string | null;
+  sampleSize: string | null;
+  version: string | null;
+};
 export type ProviderRate = {
   id: string;
   label: string;
   operation: string;
+  /** Singular quantity one price covers, such as "request" or "keyword". */
   unit: string;
   /** Native price denomination, independent of the operation's quantity unit. */
   priceUnit: string;
   price: Figure;
   fundingSource: FundingSource;
   editable: boolean;
-  provenance: {
-    source: "manual" | "measured" | "list" | "unknown";
-    origin: "provider" | "host" | "catalog" | "unknown";
-    checkedAt: string | null;
-    sampleSize: string | null;
-    version: string | null;
-  };
+  provenance: ProviderRateProvenance;
+  /**
+   * The rate that applies once a manual price is cleared, such as the measured or list rate.
+   * Omitted when the rate is not manual or the host cannot say.
+   */
+  fallback?: { price: Figure; provenance: ProviderRateProvenance };
 };
 export type ProviderConnection = {
   id: string;

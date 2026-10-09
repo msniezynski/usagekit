@@ -78,10 +78,10 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/msniezynski/usagekit.git"
+    "url": "git+https://github.com/usagekit/usagekit.git"
   },
   "homepage": "https://usagekit.dev",
   "bugs": {
-    "url": "https://github.com/msniezynski/usagekit/issues"
+    "url": "https://github.com/usagekit/usagekit/issues"
   }
 }

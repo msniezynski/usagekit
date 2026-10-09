@@ -55,6 +55,7 @@ export type {
   ProviderCredentialField,
   ProviderDefinition,
   ProviderRate,
+  ProviderRateProvenance,
   ProviderConnection,
   ProviderBalance,
   ProviderProjection,

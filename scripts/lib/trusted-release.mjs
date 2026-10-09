@@ -6,11 +6,11 @@ export function validateTrustedRelease(env, head, version) {
   assert.equal(env.GITHUB_ACTIONS, "true", "Trusted publishing requires GitHub Actions.");
   assert.equal(env.RUNNER_ENVIRONMENT, "github-hosted");
   assert.equal(env.GITHUB_EVENT_NAME, "workflow_dispatch");
-  assert.equal(env.GITHUB_REPOSITORY, "msniezynski/usagekit");
+  assert.equal(env.GITHUB_REPOSITORY, "usagekit/usagekit");
   assert.equal(env.GITHUB_REF, "refs/heads/main");
   assert.equal(
     env.GITHUB_WORKFLOW_REF,
-    "msniezynski/usagekit/.github/workflows/release.yml@refs/heads/main",
+    "usagekit/usagekit/.github/workflows/release.yml@refs/heads/main",
   );
   assert.match(head, /^[0-9a-f]{40}$/);
   assert.equal(env.GITHUB_SHA, head);

@@ -1459,7 +1459,7 @@ describe.each(variants)("%s provider blocks use explicit host ports", (variant) 
     );
     expect(screen.getByText("153")).toBeTruthy();
     expect(screen.getByText("rate-1")).toBeTruthy();
-    fireEvent.change(screen.getByLabelText(/Price/), { target: { value: "1000.1234" } });
+    fireEvent.change(screen.getByLabelText(/Price/), { target: { value: "10.001234" } });
     fireEvent.click(screen.getByRole("button", { name: "Save rate" }));
     await waitFor(() => expect(demo.calls).toHaveLength(1));
     expect(demo.calls[0]).toMatchObject({
@@ -1471,7 +1471,7 @@ describe.each(variants)("%s provider blocks use explicit host ports", (variant) 
         createElement(ProviderRateEditor!, { connection: demo.snapshots().connections[0] }),
       ),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Use host rate" }));
+    fireEvent.click(screen.getByRole("button", { name: "Use measured rate" }));
     await waitFor(() => expect(demo.calls).toHaveLength(2));
     expect(demo.calls[1]).toMatchObject({ rates: [{ rateId: "standard", price: null }] });
   });
@@ -1513,6 +1513,88 @@ describe.each(variants)("%s provider blocks use explicit host ports", (variant) 
     expect(demo.calls[0]).toMatchObject({
       rates: [{ price: "9007199254740993.125", rateId: "standard" }],
     });
+  });
+  test("rates read and edit as exact dollars, and only a manual rate offers its fallback", async () => {
+    const { ProviderRateEditor } = await load(variant, "provider-rate-editor");
+    const demo = fixture();
+    const rendered = mounted(
+      createElement(ProviderRateEditor!, { connection: initialConnections[0] }),
+      demo,
+    );
+    const row = screen.getByRole("button", { name: /Standard request/ });
+    expect(row.getAttribute("aria-expanded")).toBe("false");
+    expect(row.textContent).toContain("$0.00625 per request");
+    expect(row.textContent).toContain("Measured");
+    fireEvent.click(row);
+    expect(row.getAttribute("aria-expanded")).toBe("true");
+    expect((screen.getByLabelText(/Price/) as HTMLInputElement).value).toBe("0.006250");
+    expect(screen.getByText("(USD)")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Use measured rate|Use list price/ })).toBeNull();
+    fireEvent.change(screen.getByLabelText(/Price/), { target: { value: "0.0000001" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save rate" }));
+    expect(screen.getByRole("alert").textContent).toBe("Enter an exact nonnegative price.");
+    expect(demo.calls).toEqual([]);
+    fireEvent.change(screen.getByLabelText(/Price/), { target: { value: "0.02" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save rate" }));
+    await waitFor(() => expect(demo.calls).toHaveLength(1));
+    expect(demo.calls[0]).toMatchObject({ rates: [{ rateId: "standard", price: "2" }] });
+    rendered.rerender(
+      rendered.wrap(
+        createElement(ProviderRateEditor!, { connection: demo.snapshots().connections[0] }),
+      ),
+    );
+    const saved = screen.getByRole("button", { name: /Standard request/ });
+    expect(saved.textContent).toContain("$0.02 per request");
+    expect(saved.textContent).toContain("Your rate");
+    fireEvent.click(saved);
+    expect(screen.getByText("Without your rate").nextElementSibling?.textContent).toContain(
+      "$0.00625",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Use measured rate" }));
+    await waitFor(() => expect(demo.calls).toHaveLength(2));
+    expect(demo.calls[1]).toMatchObject({ rates: [{ rateId: "standard", price: null }] });
+  });
+  test("a manual rate names what clearing it restores", async () => {
+    const { ProviderRateEditor } = await load(variant, "provider-rate-editor");
+    const connection = structuredClone(initialConnections[0]!);
+    const rate = connection.rates[0]!;
+    const manual = { ...rate.provenance, source: "manual" as const, origin: "host" as const };
+    connection.rates = [
+      {
+        ...rate,
+        id: "listed",
+        label: "Listed",
+        provenance: manual,
+        fallback: {
+          price: rate.price,
+          provenance: { ...rate.provenance, source: "list", origin: "catalog", sampleSize: null },
+        },
+      },
+      { ...rate, id: "bare", label: "Bare", provenance: manual },
+    ];
+    mounted(createElement(ProviderRateEditor!, { connection }));
+    for (const name of [/Listed/, /Bare/]) fireEvent.click(screen.getByRole("button", { name }));
+    expect(screen.getByRole("button", { name: "Use list price" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Clear your rate" })).toBeTruthy();
+  });
+  test("dollar text and input move the decimal point exactly", async () => {
+    const money = (await load(variant, "provider-feedback")) as unknown as Record<
+      "usdText" | "usdInput" | "centsFromUsd",
+      (text: string) => string | null
+    >;
+    expect(money.usdText("0.6250")).toBe("$0.00625");
+    expect(money.usdText("123456789.5")).toBe("$1,234,567.895");
+    expect(money.usdText("100")).toBe("$1.00");
+    expect(money.usdText("-5")).toBe("−$0.05");
+    expect(money.usdText("1e3")).toBeNull();
+    expect(money.usdInput("1250.00")).toBe("12.5000");
+    expect(money.usdInput("0.6250")).toBe("0.006250");
+    expect(money.centsFromUsd("12.5000")).toBe("1250.00");
+    expect(money.centsFromUsd("0.000001")).toBe("0.0001");
+    expect(money.centsFromUsd("5")).toBe("500");
+    expect(money.centsFromUsd("9007199254740993.125")).toBe("900719925474099312.5");
+    expect(money.centsFromUsd("0.0000001")).toBeNull();
+    expect(money.centsFromUsd("-1")).toBeNull();
   });
   test("fallback order is one atomic CAS command and excludes its own connection", async () => {
     const { ProviderChainEditor } = await load(variant, "provider-chain-editor");
@@ -1796,7 +1878,7 @@ describe.each(variants)("%s provider blocks use explicit host ports", (variant) 
         "985 requests",
       ])
         expect(screen.queryByText(value)).toBeNull();
-      expect(screen.queryByText(/0\.6250 cents/)).toBeNull();
+      expect(screen.queryByText(/\$0\.00625/)).toBeNull();
       expect(f.demo.calls).toEqual([]);
 
       f.newer();
@@ -1808,7 +1890,7 @@ describe.each(variants)("%s provider blocks use explicit host ports", (variant) 
       await waitFor(() => expect(screen.queryByLabelText(/Price/)).toBeNull());
       fireEvent.click(screen.getAllByRole("button", { name: "Manage connection" })[0]!);
       await waitFor(() =>
-        expect((screen.getByLabelText(/Price/) as HTMLInputElement).value).toBe("9.7500"),
+        expect((screen.getByLabelText(/Price/) as HTMLInputElement).value).toBe("0.097500"),
       );
       expect(f.demo.calls).toEqual([]);
     },
@@ -1886,7 +1968,7 @@ describe.each(variants)("%s provider blocks use explicit host ports", (variant) 
       true,
     );
     expect(screen.queryByText("rate-1")).toBeNull();
-    expect(screen.queryByText(/0\.6250 cents/)).toBeNull();
+    expect(screen.queryByText(/\$0\.00625/)).toBeNull();
     expect(
       (screen.getByRole("button", { name: "New connection: Search" }) as HTMLButtonElement)
         .disabled,
@@ -1907,7 +1989,7 @@ describe.each(variants)("%s provider blocks use explicit host ports", (variant) 
       true,
     );
     expect(screen.queryByText("rate-1")).toBeNull();
-    expect(screen.queryByText(/0\.6250 cents/)).toBeNull();
+    expect(screen.queryByText(/\$0\.00625/)).toBeNull();
     f.newer();
     f.fail(null);
     await f.refresh();
@@ -1915,7 +1997,7 @@ describe.each(variants)("%s provider blocks use explicit host ports", (variant) 
     expect((screen.getByLabelText(/Price/) as HTMLInputElement).value).toBe("12.5000");
     fireEvent.click(screen.getByRole("button", { name: "Reload rates" }));
     await waitFor(() =>
-      expect((screen.getByLabelText(/Price/) as HTMLInputElement).value).toBe("9.7500"),
+      expect((screen.getByLabelText(/Price/) as HTMLInputElement).value).toBe("0.097500"),
     );
     expect(f.demo.calls).toEqual([]);
   });
@@ -1940,7 +2022,7 @@ describe.each(variants)("%s provider blocks use explicit host ports", (variant) 
       true,
     );
     expect(screen.queryByText("rate-1")).toBeNull();
-    expect(screen.queryByText(/0\.6250 cents/)).toBeNull();
+    expect(screen.queryByText(/\$0\.00625/)).toBeNull();
     expect(f.demo.calls).toEqual([]);
   });
   test.each(["forbidden", "unavailable", "empty"])(

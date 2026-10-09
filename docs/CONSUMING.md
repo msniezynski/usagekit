@@ -4,10 +4,12 @@ Use Node 22.23.1 and pin packages from a release cohort to the same exact versio
 The seven-package 0.7.0 cohort is published and includes views, React and Postgres storage.
 It adds `useProviderEditor` to `@usagekit/react`; the other six packages moved to 0.7.0 without
 functional changes.
+The 0.8.0 source cohort adds `ProviderRate.fallback` to `@usagekit/views`; the other six packages
+move to 0.8.0 without functional changes.
 The preceding seven-package 0.6.0 cohort and the four-package 0.5.0 runtime cohort remain available.
-Use the npm commands below for 0.7.0 and reviewed local tarballs for unpublished candidates.
+Use the npm commands below for 0.7.0 and reviewed local tarballs for 0.8.0 until it is published.
 
-Source: <https://github.com/msniezynski/usagekit>. Documentation and registry: <https://usagekit.dev>.
+Source: <https://github.com/usagekit/usagekit>. Documentation and registry: <https://usagekit.dev>.
 
 ```sh
 npm install --save-exact @usagekit/core@0.7.0 @usagekit/store@0.7.0 @usagekit/meter@0.7.0 @usagekit/providers@0.7.0
@@ -66,8 +68,9 @@ Skipped capabilities are not passed guarantees.
 alongside `@usagekit/store-postgres`; the preceding 0.6.0 cohort has the same seven packages.
 In 0.7.0, `@usagekit/react` adds `useProviderEditor(query, options?)`, which keeps a draft base
 separate from current evidence and rebases only after an explicit successful reload; see
-[provider UI](PROVIDER-UI.md). Keep packages on the same exact cohort; do not mix 0.6.0 and
-0.7.0 packages. The component registry is private build tooling that distributes public shadcn
+[provider UI](PROVIDER-UI.md). In 0.8.0, `@usagekit/views` adds `ProviderRate.fallback`, the price
+and provenance that apply once a manual rate is cleared. Keep packages on the same exact cohort;
+do not mix cohorts. The component registry is private build tooling that distributes public shadcn
 JSON, rather than an npm package.
 
 Check availability without credentials:
@@ -86,9 +89,9 @@ npm install --save-exact @usagekit/core@0.7.0 @usagekit/store@0.7.0 @usagekit/me
 npm install --save-exact @usagekit/store-postgres@0.7.0
 ```
 
-Registry blocks request exact 0.7.0 `@usagekit/react`, `@usagekit/views` and `@usagekit/core`
-versions, which resolve anonymously from npm. Pin every `@usagekit` package in the application
-to 0.7.0 before copying blocks:
+Registry blocks request exact 0.8.0 `@usagekit/react`, `@usagekit/views` and `@usagekit/core`
+versions, which resolve anonymously only after 0.8.0 is published. Run the check above with
+0.8.0, then pin every `@usagekit` package in the application to 0.8.0 before copying blocks:
 
 ```sh
 # Choose the primitive family configured in your shadcn application:

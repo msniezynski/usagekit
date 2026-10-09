@@ -247,7 +247,7 @@ function providerFixture() {
         id: "request",
         label: "Request",
         operation: "query",
-        unit: "requests",
+        unit: "request",
         priceUnit: "cents",
         price: { text: "0.6250", unit: "cents", certainty: "measured" },
         fundingSource: "byok",
@@ -396,7 +396,7 @@ describe("shared local management flows", () => {
     expect(
       (screen.getByRole("button", { name: "Save rate" }) as { disabled: boolean }).disabled,
     ).toBe(true);
-    expect(screen.queryByText(/0\.6250 cents/)).toBeNull();
+    expect(screen.queryByText(/\$0\.00625/)).toBeNull();
     expect(fixture.commands).toEqual([]);
   });
   test.each(["forbidden", "unavailable"] as const)(
@@ -462,7 +462,7 @@ describe("shared local management flows", () => {
       expect(
         (screen.getByRole("button", { name: "Save rate" }) as { disabled: boolean }).disabled,
       ).toBe(true);
-      expect(screen.queryByText(/0\.6250 cents/)).toBeNull();
+      expect(screen.queryByText(/\$0\.00625/)).toBeNull();
       expect(fixture.commands).toEqual([]);
       failed = false;
       recovered = true;
@@ -474,7 +474,7 @@ describe("shared local management flows", () => {
       fireEvent.click(screen.getByRole("button", { name: "Reload connections" }));
       await waitFor(() => expect(screen.queryByLabelText(/Price/)).toBeNull());
       fireEvent.click(screen.getByRole("button", { name: "Manage connection" }));
-      expect((screen.getByLabelText(/Price/) as { value: string }).value).toBe("9.7500");
+      expect((screen.getByLabelText(/Price/) as { value: string }).value).toBe("0.097500");
       expect(fixture.commands).toEqual([]);
     },
   );
@@ -523,7 +523,7 @@ describe("shared local management flows", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reload connections" }));
     await waitFor(() => expect(screen.queryByLabelText(/Price/)).toBeNull());
     fireEvent.click(screen.getAllByRole("button", { name: "Manage connection" })[1]!);
-    fireEvent.change(screen.getByLabelText(/Price/), { target: { value: "10.1234" } });
+    fireEvent.change(screen.getByLabelText(/Price/), { target: { value: "0.101234" } });
     fireEvent.click(screen.getByRole("button", { name: "Save rate" }));
     await waitFor(() => expect(fixture.commands).toHaveLength(4));
     expect(fixture.commands[3]).toMatchObject({
