@@ -12,7 +12,6 @@ import {
   reactPackages,
   runtimePackages,
   runtimeVersion,
-  sourceVersion,
 } from "./content.js";
 import { maxInFlight, useLive, useLiveBudgets } from "./live.js";
 import type { Live } from "./live.js";
@@ -563,8 +562,8 @@ export function InstallSection() {
             <p className="install-text">
               <code className="sec-code">@usagekit/react</code>,{" "}
               <code className="sec-code">@usagekit/views</code> and their runtime dependencies are
-              available on npm. Registry blocks request the {sourceVersion} source cohort and
-              install with the shadcn CLI once it is published.
+              available on npm. Registry blocks request the same {runtimeVersion} cohort and install
+              with the shadcn CLI.
             </p>
             <Install packages={reactPackages} label="Install the React layer" />
             <p className="install-text">
@@ -704,9 +703,9 @@ const faqs: readonly { question: string; answer: ReactNode }[] = [
     answer: (
       <>
         {pkg("@usagekit/core")}, {pkg("store")}, {pkg("meter")}, {pkg("providers")}, {pkg("views")},{" "}
-        {pkg("react")} and {pkg("store-postgres")} {runtimeVersion} are on npm. The {sourceVersion}{" "}
-        source cohort adds the {pkg("useProviderEditor")} hook. Copyable blocks in the public
-        registry request {sourceVersion} and install once it is published. The local server, SQLite
+        {pkg("react")} and {pkg("store-postgres")} {runtimeVersion} are on npm. Release{" "}
+        {runtimeVersion} adds the {pkg("useProviderEditor")} hook. Copyable blocks in the public
+        registry request {runtimeVersion} and install with the shadcn CLI. The local server, SQLite
         and Cloudflare workspaces run from a repository checkout.
       </>
     ),

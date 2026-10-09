@@ -73,8 +73,8 @@ unpublished-package installation claims. Mona Sans and Geist Mono are bundled fr
 their `@fontsource-variable` packages (OFL-1.1); there are no external font
 requests. Runtime packages link to their npm pages. Source links point to
 <https://github.com/msniezynski/usagekit>; the website is <https://usagekit.dev>.
-All seven packages, including React, views and Postgres storage, are published at 0.6.0;
-installation commands pin that cohort until the 0.7.0 source cohort is published.
+All seven packages, including React, views and Postgres storage, are published at 0.7.0;
+installation commands pin that cohort.
 Registry tooling, SQLite and Cloudflare adapters remain repository workspaces.
 
 ## Build and accessibility

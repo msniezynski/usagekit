@@ -7,8 +7,7 @@ The React layer composes both capabilities without introducing another balance a
 `@usagekit/views` exports provider DTOs and the `ProviderManagementPort` contract.
 `@usagekit/react` consumes that port without styling. Registry blocks render the same
 models with Radix or Base UI primitives in each shadcn style. `@usagekit/views` and
-`@usagekit/react` are published at 0.6.0 and belong to the 0.7.0 source cohort; registry and
-site workspaces remain private.
+`@usagekit/react` are published at 0.7.0; registry and site workspaces remain private.
 See [consuming packages](CONSUMING.md) for published packages and reviewed checkout candidates.
 
 ## Host adapter
@@ -62,8 +61,8 @@ provider configuration actions invalidate provider reads.
 ## Provider editors
 
 `useProviderEditor(query, options?)` is new in the 0.7.0 React package and absent from the
-published 0.6.0 package. Until 0.7.0 is published, use the matching reviewed cohort tarballs.
-It accepts the provider context or the same standalone binding options as the read hooks.
+published 0.6.0 package. It accepts the provider context or the same standalone binding options
+as the read hooks.
 
 The editor separates two snapshots:
 

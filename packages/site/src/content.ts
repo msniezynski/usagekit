@@ -1,7 +1,5 @@
 /** Facts shared by the homepage and the docs. Keep them true to the repository. */
-export const runtimeVersion = "0.6.0";
-/** The source cohort awaiting publication. Registry blocks request it; install commands do not. */
-export const sourceVersion = "0.7.0";
+export const runtimeVersion = "0.7.0";
 export const sourceRepo = "https://github.com/msniezynski/usagekit";
 export const npmOrg = "https://www.npmjs.com/org/usagekit";
 export const npmPackage = (name: string) => `https://www.npmjs.com/package/@usagekit/${name}`;

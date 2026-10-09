@@ -1,16 +1,16 @@
 # Consuming usagekit
 
 Use Node 22.23.1 and pin packages from a release cohort to the same exact version.
-The seven-package 0.6.0 cohort is published and includes views, React and Postgres storage.
-The four-package 0.5.0 runtime cohort remains available as the preceding version.
-The seven-package 0.7.0 source cohort adds `useProviderEditor` to `@usagekit/react`; the other
-six packages move to 0.7.0 without functional changes.
-Use the npm commands below for 0.6.0 and reviewed local tarballs for 0.7.0 until it is published.
+The seven-package 0.7.0 cohort is published and includes views, React and Postgres storage.
+It adds `useProviderEditor` to `@usagekit/react`; the other six packages moved to 0.7.0 without
+functional changes.
+The preceding seven-package 0.6.0 cohort and the four-package 0.5.0 runtime cohort remain available.
+Use the npm commands below for 0.7.0 and reviewed local tarballs for unpublished candidates.
 
 Source: <https://github.com/msniezynski/usagekit>. Documentation and registry: <https://usagekit.dev>.
 
 ```sh
-npm install --save-exact @usagekit/core@0.6.0 @usagekit/store@0.6.0 @usagekit/meter@0.6.0 @usagekit/providers@0.6.0
+npm install --save-exact @usagekit/core@0.7.0 @usagekit/store@0.7.0 @usagekit/meter@0.7.0 @usagekit/providers@0.7.0
 ```
 
 The registry is `https://registry.npmjs.org/`. No scope registry mapping is needed.
@@ -62,8 +62,8 @@ Skipped capabilities are not passed guarantees.
 
 ## Headless views and React components
 
-`@usagekit/views` and `@usagekit/react` belong to the seven-package 0.7.0 source cohort,
-alongside `@usagekit/store-postgres`; the published 0.6.0 cohort has the same seven packages.
+`@usagekit/views` and `@usagekit/react` belong to the seven-package 0.7.0 cohort,
+alongside `@usagekit/store-postgres`; the preceding 0.6.0 cohort has the same seven packages.
 In 0.7.0, `@usagekit/react` adds `useProviderEditor(query, options?)`, which keeps a draft base
 separate from current evidence and rebases only after an explicit successful reload; see
 [provider UI](PROVIDER-UI.md). Keep packages on the same exact cohort; do not mix 0.6.0 and
@@ -74,21 +74,21 @@ Check availability without credentials:
 
 ```sh
 for package in core store meter providers views react store-postgres; do
-  npm view "@usagekit/$package@0.6.0" version --registry https://registry.npmjs.org/
+  npm view "@usagekit/$package@0.7.0" version --registry https://registry.npmjs.org/
 done
 ```
 
 After all seven versions are available, install the packages your application needs:
 
 ```sh
-npm install --save-exact @usagekit/core@0.6.0 @usagekit/store@0.6.0 @usagekit/meter@0.6.0 @usagekit/providers@0.6.0 @usagekit/views@0.6.0 @usagekit/react@0.6.0
+npm install --save-exact @usagekit/core@0.7.0 @usagekit/store@0.7.0 @usagekit/meter@0.7.0 @usagekit/providers@0.7.0 @usagekit/views@0.7.0 @usagekit/react@0.7.0
 # Optional server-side Postgres storage:
-npm install --save-exact @usagekit/store-postgres@0.6.0
+npm install --save-exact @usagekit/store-postgres@0.7.0
 ```
 
 Registry blocks request exact 0.7.0 `@usagekit/react`, `@usagekit/views` and `@usagekit/core`
-versions, which resolve anonymously only after 0.7.0 is published. Run the check above with
-0.7.0, then pin every `@usagekit` package in the application to 0.7.0 before copying blocks:
+versions, which resolve anonymously from npm. Pin every `@usagekit` package in the application
+to 0.7.0 before copying blocks:
 
 ```sh
 # Choose the primitive family configured in your shadcn application:
@@ -134,14 +134,14 @@ shared cache behavior and writer outcomes.
 ## Release operators
 
 Only `npm run release` can publish the allow-listed core, store, meter, providers, views, react
-and store-postgres packages. Other workspaces stay private. The 0.7.0 candidate requires
+and store-postgres packages. Other workspaces stay private. Each candidate requires
 separate approval of its exact SHA, squash title and seven public versions before promotion.
-Live release requires clean main, its verified signed v0.7.0 tag, full checks, inspected
+Live release requires clean main, its verified signed version tag, full checks, inspected
 tarballs and a token-free consumer installation that checks declarations and React rendering.
 A dry run on a clean branch builds and audits packages without checking live authorization or publishing.
 Apache-2.0 LICENSE and NOTICE are included in every tarball.
 
-## Trying the 0.7.0 candidate
+## Trying an unpublished candidate
 
 From its reviewed checkout, run `npm ci`, `npm run check`, `npm run build`,
 `npm run check:packages` and `npm run check:consumer`. The last command packs all seven

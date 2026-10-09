@@ -53,8 +53,10 @@ by hand unless the retry keeps failing after two minutes.
 
 ## 2. Release publishable packages
 
-Publishable set: `core`, `store`, `meter` (extend `publishable` in `scripts/lib/release.mjs`
-when `http`, `client`, `views` or `react` are meant to ship). All packages are public.
+Publishable set: the seven packages in `publishable` in `scripts/lib/release.mjs` (`core`, `store`,
+`meter`, `providers`, `views`, `react`, `store-postgres`). All of them are public. The normal path
+is the `release.yml` workflow described under Automated package releases in the root README; the
+manual steps below remain the fallback.
 
 Preconditions, in order:
 

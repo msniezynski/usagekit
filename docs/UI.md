@@ -1,7 +1,7 @@
 # UI layers
 
 All seven packages, including `@usagekit/react`, `@usagekit/views` and
-`@usagekit/store-postgres`, are published at 0.6.0. The 0.7.0 source cohort adds
+`@usagekit/store-postgres`, are published at 0.7.0, which adds
 `useProviderEditor` to the React package. The registry remains private build tooling whose
 blocks are distributed as public copyable JSON.
 Verify exact npm versions before installing a cohort; use reviewed tarballs for unreleased
@@ -190,8 +190,7 @@ The manager bundles its editor; summary cards bundle their measurement card. Fil
 `@/components/usagekit/` and import `@/components/ui/*`. Root `r/<name>.json` defaults to
 Radix. The header status tooltip trigger and the filter selects have variant-specific files;
 other block source is shared.
-The shadcn CLI requests exact 0.7.0 UI package versions. They resolve anonymously on npm once
-0.7.0 is published; until then, install the reviewed local tarballs first. The
+The shadcn CLI requests exact 0.7.0 UI package versions, which resolve anonymously from npm. The
 [public examples](https://usagekit.dev/examples/) show every block in every shadcn style and
 provide each block's install command. See [consuming packages](CONSUMING.md) for local tarball
 validation of unreleased candidates.

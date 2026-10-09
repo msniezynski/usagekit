@@ -1,4 +1,4 @@
-import { registryBlocks, sourceVersion } from "./content.js";
+import { registryBlocks, runtimeVersion } from "./content.js";
 
 /**
  * The components page header and its only h1. The live gallery right below is the visual, so the
@@ -27,7 +27,7 @@ export function ComponentsHero() {
           </div>
           <p className="cmp-note">
             Hooks are on npm. All {registryBlocks.length} blocks in the public shadcn registry
-            request {sourceVersion} and install once it is published.
+            request {runtimeVersion} and install with the shadcn CLI.
           </p>
         </div>
       </div>

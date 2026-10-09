@@ -18,7 +18,6 @@ import {
   reactPackages,
   registryBlocks,
   runtimeVersion,
-  sourceVersion,
 } from "./content.js";
 import { BisibilityMark } from "./ui.js";
 
@@ -466,8 +465,8 @@ export function Docs() {
             <p>
               Choose the layer you need. All seven packages are published on npm at{" "}
               <strong>{runtimeVersion}</strong>: the runtime, headless views, React hooks and
-              durable Postgres storage. The {sourceVersion} source cohort adds the{" "}
-              <C>useProviderEditor</C> React hook. Start with the runtime below.
+              durable Postgres storage. Release {runtimeVersion} adds the <C>useProviderEditor</C>{" "}
+              React hook. Start with the runtime below.
             </p>
             <div className="docs-block">
               <Install packages={installPackages} label="Install the runtime" />
@@ -574,12 +573,11 @@ export function Docs() {
               {`npm install --save-exact ${reactPackages.join(" ")}\n# Optional durable Postgres adapter:\nnpm install --save-exact @usagekit/store-postgres@${runtimeVersion}`}
             </Code>
             <p>
-              The {sourceVersion} source cohort adds <C>useProviderEditor</C> to{" "}
-              <C>@usagekit/react</C>; the other six packages move to {sourceVersion} in lockstep.
-              Registry blocks request exact {sourceVersion} package versions, which resolve
-              anonymously from npm once {sourceVersion} is published. Until then, install the
-              reviewed {sourceVersion} cohort tarballs before copying blocks, as described in{" "}
-              <C>docs/CONSUMING.md</C>.
+              Release {runtimeVersion} adds <C>useProviderEditor</C> to <C>@usagekit/react</C>; the
+              other six packages moved to {runtimeVersion} in lockstep. Registry blocks request
+              exact {runtimeVersion} package versions, which resolve anonymously from npm. For an
+              unpublished candidate, install the reviewed cohort tarballs together before copying
+              blocks, as described in <C>docs/CONSUMING.md</C>.
             </p>
             <p>
               To build an unreleased source checkout, from the repository root with Node{" "}
@@ -666,9 +664,8 @@ export function Docs() {
             <p>
               Point a registry at <C>{"/r/styles/{style}/{name}.json"}</C> in <C>components.json</C>{" "}
               and the shadcn CLI fills in your style. <C>/r/radix</C> stays New York and{" "}
-              <C>/r/base</C> stays Base UI Vega. Blocks request exact {sourceVersion} package
-              versions. Until {sourceVersion} is published, follow the React installation section
-              above.
+              <C>/r/base</C> stays Base UI Vega. Blocks request exact {runtimeVersion} package
+              versions from npm; install them first with the React installation commands above.
             </p>
             <p>
               <a href="/examples/">Open the public registry</a> to try every block in each style and
@@ -753,10 +750,9 @@ export function Docs() {
               duplicate writes.
             </p>
             <p>
-              <C>useProviderEditor</C> is new in the {sourceVersion} source cohort and absent from
-              the published {runtimeVersion} React package. It keeps a draft base separate from
-              current evidence and rebases only after an explicit successful reload. The provider
-              rate, allocation and manager blocks use it.
+              <C>useProviderEditor</C> is new in the published {runtimeVersion} React package. It
+              keeps a draft base separate from current evidence and rebases only after an explicit
+              successful reload. The provider rate, allocation and manager blocks use it.
             </p>
             <p>
               <C>useProviderProjection</C> quotes one proposed request. <C>useBudgetProjection</C>{" "}

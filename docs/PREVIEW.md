@@ -2,7 +2,7 @@
 
 The preview combines the project home, component and agent pages, prerendered docs, the interactive
 registry showcase and the shadcn JSON artifacts. It does not deploy a backend or publish
-npm packages. React and views belong to the 0.7.0 source cohort; check registry availability
+npm packages. React and views belong to the published 0.7.0 cohort; check registry availability
 separately from hosting. The server and registry tooling remain private.
 
 From the repository root, with the pinned Node/npm runtime:
@@ -44,8 +44,8 @@ for demo values only. The registry's host primitive dependencies remain shadcn n
 there is no invented production origin. Copy commands use the current preview's origin.
 
 A configured consumer installs `@usagekit/react`, `@usagekit/views` and their dependencies
-from the 0.7.0 cohort that the blocks request, with reviewed candidate tarballs until 0.7.0 is
-published, as described in [consuming packages](CONSUMING.md). Hosting the JSON does not publish
+from the published 0.7.0 cohort that the blocks request, or reviewed tarballs for an unpublished
+candidate, as described in [consuming packages](CONSUMING.md). Hosting the JSON does not publish
 those dependencies. The public source is <https://github.com/msniezynski/usagekit>;
 the project website is <https://usagekit.dev>.
 
@@ -64,6 +64,6 @@ emulate Vercel headers or routing configuration.
 Building is separate from deployment. Verify the target Vercel project and obtain explicit
 deployment authorization. Exact-SHA promotion to main requires separate approval.
 A preview can host this static artifact; the production provider-management server still
-requires its own authenticated, authorized and durable host integration. Bisibility's
-React adoption is locally verified and remains separate from its existing production
-metering integration.
+requires its own authenticated, authorized and durable host integration. A host's
+React adoption is verified locally and stays separate from its production metering
+integration.
