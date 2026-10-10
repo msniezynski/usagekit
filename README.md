@@ -5,8 +5,8 @@ costs and application credits. Both BYOK and platform-funded keys are in scope.
 Host A uses Postgres and Prisma. Host B adds team-owned connections.
 Host C targets Cloudflare D1. A local server shares the embedded Meter contract.
 
-**Release lines: 0.7.0 is published. The 0.8.0 source cohort adds `ProviderRate.fallback` to `@usagekit/views` for the dollar rate editor; the other six packages move to 0.8.0 in lockstep.**
-Licensed under Apache-2.0. `@usagekit/core`, `store`, `meter`, `providers`, `views`, `react` and `store-postgres` 0.7.0 are published on registry.npmjs.org.
+**Release 0.8.0 is published, adding `ProviderRate.fallback` to `@usagekit/views` for the dollar rate editor; the other six packages moved to 0.8.0 in lockstep.**
+Licensed under Apache-2.0. `@usagekit/core`, `store`, `meter`, `providers`, `views`, `react` and `store-postgres` 0.8.0 are published on registry.npmjs.org.
 The 0.8.0 release allow-list contains `core`, `store`, `meter`, `providers`, `views`, `react` and `store-postgres`. Other workspaces remain private. See [consuming packages](docs/CONSUMING.md) for registry availability and candidate validation. Candidate publication needs exact-source owner approval.
 
 [Project website](https://usagekit.dev) · [Source](https://github.com/usagekit/usagekit) · [Issues](https://github.com/usagekit/usagekit/issues) · [Roadmap](docs/ROADMAP.md)

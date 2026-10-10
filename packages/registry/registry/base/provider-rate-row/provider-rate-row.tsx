@@ -1,0 +1,1 @@
+../../radix/provider-rate-row/provider-rate-row.tsx

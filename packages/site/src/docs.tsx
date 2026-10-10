@@ -464,8 +464,8 @@ export function Docs() {
             <p>
               Choose the layer you need. All seven packages are published on npm at{" "}
               <strong>{runtimeVersion}</strong>: the runtime, headless views, React hooks and
-              durable Postgres storage. Release {runtimeVersion} adds the <C>useProviderEditor</C>{" "}
-              React hook. Start with the runtime below.
+              durable Postgres storage. Release {runtimeVersion} adds <C>ProviderRate.fallback</C>{" "}
+              to the views package for the dollar rate editor. Start with the runtime below.
             </p>
             <div className="docs-block">
               <Install packages={installPackages} label="Install the runtime" />
@@ -572,8 +572,8 @@ export function Docs() {
               {`npm install --save-exact ${reactPackages.join(" ")}\n# Optional durable Postgres adapter:\nnpm install --save-exact @usagekit/store-postgres@${runtimeVersion}`}
             </Code>
             <p>
-              Release {runtimeVersion} adds <C>useProviderEditor</C> to <C>@usagekit/react</C>; the
-              other six packages moved to {runtimeVersion} in lockstep. Registry blocks request
+              Release {runtimeVersion} adds <C>ProviderRate.fallback</C> to <C>@usagekit/views</C>;
+              the other six packages moved to {runtimeVersion} in lockstep. Registry blocks request
               exact {runtimeVersion} package versions, which resolve anonymously from npm. For an
               unpublished candidate, install the reviewed cohort tarballs together before copying
               blocks, as described in <C>docs/CONSUMING.md</C>.
@@ -749,9 +749,9 @@ export function Docs() {
               duplicate writes.
             </p>
             <p>
-              <C>useProviderEditor</C> is new in the published {runtimeVersion} React package. It
-              keeps a draft base separate from current evidence and rebases only after an explicit
-              successful reload. The provider rate, allocation and manager blocks use it.
+              <C>useProviderEditor</C>, in the React package since 0.7.0, keeps a draft base
+              separate from current evidence and rebases only after an explicit successful reload.
+              The provider rate, allocation and manager blocks use it.
             </p>
             <p>
               <C>useProviderProjection</C> quotes one proposed request. <C>useBudgetProjection</C>{" "}

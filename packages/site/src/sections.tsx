@@ -704,9 +704,9 @@ const faqs: readonly { question: string; answer: ReactNode }[] = [
       <>
         {pkg("@usagekit/core")}, {pkg("store")}, {pkg("meter")}, {pkg("providers")}, {pkg("views")},{" "}
         {pkg("react")} and {pkg("store-postgres")} {runtimeVersion} are on npm. Release{" "}
-        {runtimeVersion} adds the {pkg("useProviderEditor")} hook. Copyable blocks in the public
-        registry request {runtimeVersion} and install with the shadcn CLI. The local server, SQLite
-        and Cloudflare workspaces run from a repository checkout.
+        {runtimeVersion} adds {pkg("ProviderRate.fallback")} for the dollar rate editor. Copyable
+        blocks in the public registry request {runtimeVersion} and install with the shadcn CLI. The
+        local server, SQLite and Cloudflare workspaces run from a repository checkout.
       </>
     ),
   },

@@ -80,6 +80,7 @@ test("the UI uses the base registry blocks in the Vega style and base primitives
     "provider-card",
     "provider-connect-form",
     "provider-rate-editor",
+    "provider-rate-row",
     "provider-feedback",
     "usage-overview-card",
     "usage-connection-row",

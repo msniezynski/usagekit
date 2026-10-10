@@ -88,7 +88,8 @@ export function useProviderEditor<K extends ProviderQuery["kind"]>(
   };
   updateFence();
   if (editor.reload !== null && entry) {
-    if (entry.generation !== editor.reload) editor.reload = null;
+    // A newer read, such as an access or focus refresh, also started after the request and answers it.
+    if (entry.generation < editor.reload) editor.reload = null;
     else if (!entry.running) {
       editor.reload = null;
       if (

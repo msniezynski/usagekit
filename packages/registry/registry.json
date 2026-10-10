@@ -362,6 +362,11 @@
           "target": "@components/usagekit/provider-rate-editor.tsx"
         },
         {
+          "path": "registry/radix/provider-rate-row/provider-rate-row.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-rate-row.tsx"
+        },
+        {
           "path": "registry/radix/provider-feedback/provider-feedback.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/provider-feedback.tsx"
@@ -489,6 +494,11 @@
           "path": "registry/radix/provider-rate-editor/provider-rate-editor.tsx",
           "type": "registry:component",
           "target": "@components/usagekit/provider-rate-editor.tsx"
+        },
+        {
+          "path": "registry/radix/provider-rate-row/provider-rate-row.tsx",
+          "type": "registry:component",
+          "target": "@components/usagekit/provider-rate-row.tsx"
         },
         {
           "path": "registry/radix/provider-chain-editor/provider-chain-editor.tsx",

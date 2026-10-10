@@ -1577,6 +1577,29 @@ describe.each(variants)("%s provider blocks use explicit host ports", (variant) 
     expect(screen.getByRole("button", { name: "Use list price" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Clear your rate" })).toBeTruthy();
   });
+  test("rate feedback, funding and recovery copy come from the host", async () => {
+    const { ProviderRateEditor } = await load(variant, "provider-rate-editor");
+    const demo = fixture();
+    demo.setNextOutcome("unknown");
+    mounted(
+      createElement(ProviderRateEditor!, {
+        connection: initialConnections[0],
+        feedbackLabels: {
+          unknown: "Unconfirmed save.",
+          reconcile: "Check save status",
+          own: "Own API key",
+        },
+      }),
+      demo,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Standard request/ }));
+    expect(screen.getByText("Own API key")).toBeTruthy();
+    fireEvent.change(screen.getByLabelText(/Price/), { target: { value: "0.02" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save rate" }));
+    await screen.findByText("Unconfirmed save.");
+    expect(screen.getByRole("button", { name: "Check save status" })).toBeTruthy();
+    expect(screen.queryByText(/The result is unknown/)).toBeNull();
+  });
   test("dollar text and input move the decimal point exactly", async () => {
     const money = (await load(variant, "provider-feedback")) as unknown as Record<
       "usdText" | "usdInput" | "centsFromUsd",
@@ -1975,6 +1998,21 @@ describe.each(variants)("%s provider blocks use explicit host ports", (variant) 
     ).toBe(false);
     fireEvent.click(screen.getByRole("button", { name: "Save rate" }));
     expect(f.demo.calls).toEqual([]);
+  });
+  test("rate panel states a refused change once and reloads with the host", async () => {
+    const { ProviderRatePanel } = await load(variant, "provider-rate-editor");
+    const f = editorFixture();
+    const onReload = vi.fn();
+    f.demo.port.execute = vi.fn(async (_binding, command) => ({
+      outcome: "forbidden" as const,
+      commandId: command.commandId,
+    }));
+    render(f.wrap(createElement(ProviderRatePanel!, { connectionId: "search-own", onReload })));
+    fireEvent.change(await screen.findByLabelText(/Price/), { target: { value: "0.02" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save rate" }));
+    expect(await screen.findAllByText("You cannot make this change.")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button", { name: "Reload rates" }));
+    expect(onReload).toHaveBeenCalledTimes(1);
   });
   test("hook-backed rate panel preserves a dirty draft on failed read and rebases only on successful Reload", async () => {
     const { ProviderRatePanel } = await load(variant, "provider-rate-editor");

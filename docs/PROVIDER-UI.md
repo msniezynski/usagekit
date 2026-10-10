@@ -7,7 +7,7 @@ The React layer composes both capabilities without introducing another balance a
 `@usagekit/views` exports provider DTOs and the `ProviderManagementPort` contract.
 `@usagekit/react` consumes that port without styling. Registry blocks render the same
 models with Radix or Base UI primitives in each shadcn style. `@usagekit/views` and
-`@usagekit/react` are published at 0.7.0; registry and site workspaces remain private.
+`@usagekit/react` are published at 0.8.0; registry and site workspaces remain private.
 See [consuming packages](CONSUMING.md) for published packages and reviewed checkout candidates.
 
 ## Host adapter
@@ -154,6 +154,11 @@ after it ("Use measured rate", "Use list price") and shows it as "Without your r
 Each rate is a collapsed row with its price per unit and source. Opening it shows when the
 rate was checked, its samples and version where known, the operation and funding source,
 and the form.
+
+`ProviderRatePanel` takes the host's copy through `labels` for the rates and `feedbackLabels`
+for status, recovery and funding text. `onReload` runs first on every explicit reload, so a host
+can reverify its access grant in the same step. A refused change is stated once, in the
+action feedback.
 
 ## Exact limits and separate authorities
 

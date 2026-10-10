@@ -554,6 +554,24 @@ test.each([false, true])(
   },
 );
 
+test("an explicit reload rebases from a newer read that supersedes it, such as an access refresh", async () => {
+  const f = fixture();
+  const { result } = renderHook(() => useEditor(f.input));
+  await waitFor(() => expect(result.current.canEdit).toBe(true));
+  const superseded = deferred<ProviderReadResult>();
+  f.read.mockReturnValueOnce(superseded.promise).mockResolvedValueOnce(details("2", "2.0000"));
+  act(() => {
+    result.current.reload();
+    f.input.client.invalidate(f.input.port, f.input.binding);
+  });
+  await waitFor(() => expect(result.current.editorData?.revision).toBe("2"));
+  await act(async () => {
+    superseded.resolve(details("9", "9.0000"));
+  });
+  expect(result.current.editorData?.revision).toBe("2");
+  expect(result.current.evidence?.revision).toBe("2");
+});
+
 test("a sibling command taking the journal fence consumes an in-flight reload without rebasing", async () => {
   const f = fixture(),
     read = deferred<ProviderReadResult>(),
